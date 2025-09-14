@@ -232,6 +232,7 @@
     <div class="form-row">
       <label for="store">店家：</label>
       <input type="text" id="store" placeholder="選填">
+      <datalist id="storeList"></datalist>
     </div>
 
     <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
@@ -606,8 +607,8 @@
   <!-- LIFF 初始化 + 登錄送出 -->
   <script>  
     const LIFF_ID = "2008096451-3DobjEw8";   // 換成你的 LIFF ID test
-    const VERSION = "T2";                   // 固定版次
-    const API_URL = "https://script.google.com/macros/s/AKfycbymjvqPOjO690X3HMLCmM2xYyKbJc_pW0wkiW-7qDBjqlCek4z1oA8P5hGxLkH7jfv_Ew/exec";  // 換成你的 GAS PATH
+    const VERSION = "T3";                   // 固定版次
+    const API_URL = "https://script.google.com/macros/s/AKfycbxsIRCzdimL-ovXV5ZeLBy8FLf2mwroQpkHGyZgwc1VHaOM3dr4HDOpzHwZrqRHJR9GWg/exec";  // 換成你的 GAS PATH
 
     document.getElementById("version").textContent = VERSION;
 
@@ -678,6 +679,7 @@
   </script>
 </body>
 </html>
+
 
 
 
