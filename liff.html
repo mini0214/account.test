@@ -389,36 +389,71 @@
       html += `<div class="total">📌 本月總額：${Number(json.total || 0).toLocaleString()} 元（共 ${paymentCount} 種付款方式）</div>`;
     }
 
-<!-- 🔹 本月店家統計表格 -->
-<table id="storeTable" border="1" style="margin-top:10px; width:100%; border-collapse: collapse;">
-  <thead>
-    <tr>
-      <th onclick="sortTable('store')" style="cursor:pointer;">店家 <span id="storeSortIcon">↕️</span></th>
-      <th onclick="sortTable('amount')" style="cursor:pointer;">金額 <span id="amountSortIcon">↕️</span></th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+<!-- 🔹 查詢結果區 -->
+<div id="queryResult"></div>
 
 <script>
-// 排序狀態記錄
-let currentSort = { column: null, asc: true };
+// 👉 本月店家
+if (command === "本月店家" && json.stores) {
+  let html = `
+    <div style="border:2px solid #2196F3; padding:10px; margin-top:15px; border-radius:8px; background:#f0f8ff;">
+      <h4 style="margin:0 0 10px 0;">📋 本月店家統計</h4>
+      <table id="storeTable" style="width:100%; border-collapse:collapse;">
+        <thead>
+          <tr>
+            <th onclick="sortStoreTable('store')" style="cursor:pointer;">店家方式 <span id="storeSortIcon">↕️</span></th>
+            <th onclick="sortStoreTable('amount')" style="cursor:pointer;">金額 <span id="amountSortIcon">↕️</span></th>
+            <th>占比</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
 
-// ✅ 生成表格 (呼叫這個就會刷新畫面)
-function renderStoreTable(data) {
-  const tbody = document.querySelector("#storeTable tbody");
-  tbody.innerHTML = "";
-  data.forEach(row => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${row.store}</td><td>${row.amount}</td>`;
-    tbody.appendChild(tr);
+  for (const [store, amt] of Object.entries(json.stores)) {
+    const percent = ((amt / json.total) * 100).toFixed(1);
+    html += `<tr><td>${store}</td><td>${Number(amt).toLocaleString()}</td><td>${percent}%</td></tr>`;
+  }
+
+  html += `
+        </tbody>
+      </table>
+    </div>
+    <canvas id="storeChart" width="300" height="300" style="margin-top:20px;"></canvas>
+    <div class="total">📌 本月總額：${Number(json.total || 0).toLocaleString()} 元（共 ${Object.keys(json.stores).length} 種店家方式）</div>
+  `;
+
+  // 將結果寫入網頁
+  document.getElementById("queryResult").innerHTML = html;
+
+  // 生成圓餅圖
+  const ctx = document.getElementById('storeChart').getContext('2d');
+  if (window.storeChart) window.storeChart.destroy(); // 避免重複
+  window.storeChart = new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: Object.keys(json.stores),
+      datasets: [{
+        data: Object.values(json.stores),
+        backgroundColor: ['#FF9800','#2196F3','#4CAF50','#9C27B0','#00BCD4','#FF6384'],
+      }]
+    }
   });
+
+  // 將資料存到全域，給排序用
+  window.storeData = Object.entries(json.stores).map(([store, amount]) => ({
+    store,
+    amount,
+    percent: ((amount / json.total) * 100).toFixed(1)
+  }));
 }
 
-// ✅ 排序函式
-function sortTable(column) {
+// ✅ 排序功能
+let currentSort = { column: null, asc: true };
+
+function sortStoreTable(column) {
+  if (!window.storeData) return;
   if (currentSort.column === column) {
-    currentSort.asc = !currentSort.asc; // 第二次點 → 反轉
+    currentSort.asc = !currentSort.asc;
   } else {
     currentSort.column = column;
     currentSort.asc = true;
@@ -430,7 +465,7 @@ function sortTable(column) {
   const icon = currentSort.asc ? "⬆️" : "⬇️";
   document.getElementById(column + "SortIcon").textContent = icon;
 
-  // 排序處理
+  // 排序
   let sorted = [...window.storeData];
   if (column === "store") {
     sorted.sort((a, b) =>
@@ -442,8 +477,21 @@ function sortTable(column) {
     );
   }
 
-  renderStoreTable(sorted);
+  // 重新渲染表格
+  const tbody = document.querySelector("#storeTable tbody");
+  tbody.innerHTML = "";
+  sorted.forEach(row => {
+    tbody.innerHTML += `<tr><td>${row.store}</td><td>${Number(row.amount).toLocaleString()}</td><td>${row.percent}%</td></tr>`;
+  });
+
+  // 重新繪製圓餅圖
+  if (window.storeChart) {
+    window.storeChart.data.labels = sorted.map(r => r.store);
+    window.storeChart.data.datasets[0].data = sorted.map(r => r.amount);
+    window.storeChart.update();
+  }
 }
+</script>
 
     
     // 再去畫圓餅圖 (一定要放在 innerHTML 之後)
@@ -715,6 +763,7 @@ function sortTable(column) {
   </script>
 </body>
 </html>
+
 
 
 
