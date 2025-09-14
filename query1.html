@@ -4,154 +4,44 @@
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbzp7z2jx-chJ15TGqCNhDuOaJrV92CEGYU-6XrA_qdIjeEg2lFmKwmPZcjfnBthcndbJw/exec"; // 👈 改成你後端的 API
+<div id="queryResult"></div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const API_URL = "/your/api/url"; // 👈 改成你後端的 API
 
-  async function sendQuery(command) {
+async function sendQuery(command) {
   const body = { type: "query", command: command };
-  const res = await fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify(body)
-  });
+  const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(body) });
   const json = await res.json();
-
-  if (!json.ok) {
-    document.getElementById("queryResult").innerHTML = `<p style="color:red">❌ 查詢失敗</p>`;
-    return;
-  }
+  console.log("回傳資料：", json);
 
   let html = "";
-  let sortAsc = true;
 
-  // 👉 本月分類
-  if (command === "本月分類" && json.categories) {
-    html += `<div style="border:2px solid #4CAF50; padding:10px; margin-top:15px; border-radius:8px; background:#f9fff9;">`;
-    html += `<h4 style="margin:0 0 10px 0;">📊 本月分類統計</h4>`;
-    html += `<table><tr><th>分類</th><th>金額</th><th>占比</th></tr>`;
-    for (const [cat, amt] of Object.entries(json.categories)) {
-      const percent = ((amt / json.total) * 100).toFixed(1);
-      html += `<tr><td>${cat}</td><td>${Number(amt).toLocaleString()}</td><td>${percent}%</td></tr>`;
-    }
-    html += `</table></div>`;
-    html += `<canvas id="typeChart" width="300" height="300" style="margin-top:20px;"></canvas>`;
-    html += `<div class="total">📌 本月總額：${Number(json.total || 0).toLocaleString()} 元</div>`;
-  }
-
-  // 👉 本月付款
-  if (command === "本月付款" && json.payments) {
-    html += `<div style="border:2px solid #FF9800; padding:10px; margin-top:15px; border-radius:8px; background:#fff8f0;">`;
-    html += `<h4 style="margin:0 0 10px 0;">💳 本月付款方式</h4>`;
-    html += `<table><tr><th>付款方式</th><th>金額</th><th>占比</th></tr>`;
-    for (const [pay, amt] of Object.entries(json.payments)) {
-      const percent = ((amt / json.total) * 100).toFixed(1);
-      html += `<tr><td>${pay}</td><td>${Number(amt).toLocaleString()}</td><td>${percent}%</td></tr>`;
-    }
-    html += `</table></div>`;
-    html += `<canvas id="payChart" width="300" height="300" style="margin-top:20px;"></canvas>`;
-  }
-
-  // 👉 本月店家
   if (command === "本月店家" && json.stores) {
-    html += `<div style="border:2px solid #2196F3; padding:10px; margin-top:15px; border-radius:8px; background:#f0f8ff;">`;
-    html += `<h4 style="margin:0 0 10px 0;">📋 本月店家統計</h4>`;
-    html += `<table id="storeTable"><tr><th onclick="sortStoreTable(0)">店家方式 ⬍</th><th onclick="sortStoreTable(1)">金額 ⬍</th><th>占比</th></tr>`;
+    html += `<h4>📋 本月店家統計</h4>`;
+    html += `<table><tr><th>店家</th><th>金額</th><th>占比</th></tr>`;
     for (const [store, amt] of Object.entries(json.stores)) {
       const percent = ((amt / json.total) * 100).toFixed(1);
-      html += `<tr><td>${store}</td><td>${Number(amt).toLocaleString()}</td><td>${percent}%</td></tr>`;
+      html += `<tr><td>${store}</td><td>${amt}</td><td>${percent}%</td></tr>`;
     }
-    html += `</table></div>`;
-    html += `<canvas id="storeChart" width="300" height="300" style="margin-top:20px;"></canvas>`;
-    const storeCount = Object.keys(json.stores).length;
-    html += `<div class="total">📌 本月總額：${Number(json.total || 0).toLocaleString()} 元（共 ${storeCount} 種店家方式）</div>`;
+    html += `</table>`;
+    html += `<canvas id="storeChart"></canvas>`;
   }
 
-  // 👉 本月明細
-  if (command === "本月" && json.rows && json.rows.length > 0) {
-    json.rows.sort((a, b) => {
-      const da = a[4] ? new Date(a[4]) : new Date(0);
-      const db = b[4] ? new Date(b[4]) : new Date(0);
-      return da - db;
-    });
-    html += `<div style="border:2px solid #9C27B0; padding:10px; margin-top:15px; border-radius:8px; background:#fdf0ff;">`;
-    html += `<h4 style="margin:0 0 10px 0;">📅 本月消費明細</h4>`;
-    html += `<table><tr><th>日期</th><th>分類</th><th>店家</th><th>金額</th><th>付款</th></tr>`;
-    json.rows.forEach(r => {
-      let dateStr = "";
-      if (r[4]) {
-        const d = new Date(r[4]);
-        dateStr = d.toLocaleDateString("zh-TW", { timeZone: "Asia/Taipei", year: "numeric", month: "2-digit", day: "2-digit" });
-      }
-      html += `<tr><td>${dateStr}</td><td>${r[0]}</td><td>${r[1]}</td><td>${Number(r[2]).toLocaleString()}</td><td>${r[3]}</td></tr>`;
-    });
-    html += `</table></div>`;
-  }
-
-  // 🚀 一次性輸出
   document.getElementById("queryResult").innerHTML = html;
-
-  // 👉 再畫圖（要等 DOM 建立完）
-  if (command === "本月分類" && json.categories) {
-    const ctx = document.getElementById("typeChart").getContext("2d");
-    new Chart(ctx, {
-      type: "pie",
-      data: {
-        labels: Object.keys(json.categories),
-        datasets: [{
-          data: Object.values(json.categories),
-          backgroundColor: ["#4CAF50","#2196F3","#FF9800","#E91E63","#9C27B0","#00BCD4","#8BC34A","#FFC107","#FF5722","#795548"]
-        }]
-      },
-      options: { responsive: true, plugins: { legend: { position: "bottom" } } }
-    });
-  }
-
-  if (command === "本月付款" && json.payments) {
-    const ctx = document.getElementById("payChart").getContext("2d");
-    new Chart(ctx, {
-      type: "pie",
-      data: {
-        labels: Object.keys(json.payments),
-        datasets: [{
-          data: Object.values(json.payments),
-          backgroundColor: ["#4CAF50","#2196F3","#FF9800","#E91E63","#9C27B0","#00BCD4","#8BC34A","#FFC107","#FF5722","#795548"]
-        }]
-      },
-      options: { responsive: true, plugins: { legend: { position: "bottom" } } }
-    });
-  }
 
   if (command === "本月店家" && json.stores) {
     const ctx = document.getElementById("storeChart").getContext("2d");
     new Chart(ctx, {
-      type: "bar",
+      type: "pie",
       data: {
         labels: Object.keys(json.stores),
-        datasets: [{
-          data: Object.values(json.stores),
-          backgroundColor: "#36A2EB"
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { title: { display: true, text: "店家" } },
-          y: { title: { display: true, text: "金額 (元)" } }
-        }
+        datasets: [{ data: Object.values(json.stores) }]
       }
     });
   }
 }
 
-// 👉 簡單表格排序函數
-function sortStoreTable(colIndex) {
-  const table = document.getElementById("storeTable");
-  const rows = Array.from(table.rows).slice(1);
-  const asc = table.getAttribute("data-sort") !== "asc";
-  rows.sort((a, b) => {
-    const valA = colIndex === 1 ? parseInt(a.cells[colIndex].innerText.replace(/,/g, "")) : a.cells[colIndex].innerText;
-    const valB = colIndex === 1 ? parseInt(b.cells[colIndex].innerText.replace(/,/g, "")) : b.cells[colIndex].innerText;
-    return asc ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
-  });
-  rows.forEach(r => table.appendChild(r));
-  table.setAttribute("data-sort", asc ? "asc" : "desc");
-}
+// 測試直接呼叫
+sendQuery("本月店家");
 </script>
