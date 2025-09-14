@@ -445,29 +445,6 @@ function sortTable(column) {
   renderStoreTable(sorted);
 }
 
-// 🔹 假設這是後端回來的本月 json.categories 結果
-// 例：json.categories = { "全家": 120, "美廉社": 500, "7-11": 300 }
-function handleMonthlyData(json) {
-  if (json.categories) {
-    // 轉成陣列
-    window.storeData = Object.entries(json.categories).map(([store, amount]) => ({
-      store,
-      amount
-    }));
-
-    // 預設依金額降冪排序
-    window.storeData.sort((a, b) => b.amount - a.amount);
-    renderStoreTable(window.storeData);
-  }
-}
-
-// 🔹 測試用：模擬呼叫 API 回來的資料
-handleMonthlyData({
-  categories: { "全家": 120, "美廉社": 500, "7-11": 300 }
-});
-</script>
-
-
     
     // 再去畫圓餅圖 (一定要放在 innerHTML 之後)
     // 👉 畫付款圓餅圖 
@@ -738,6 +715,7 @@ handleMonthlyData({
   </script>
 </body>
 </html>
+
 
 
 
