@@ -390,50 +390,104 @@
       html += `<div class="total">📌 本月總額：${Number(json.total || 0).toLocaleString()} 元（共 ${paymentCount} 種付款方式）</div>`;
     }
 
-    // 👉 本月店家
-    if (command === "本月店家" && json.stores) {
-      html += `<div style="border:2px solid #2196F3; padding:10px; margin-top:15px; border-radius:8px; background:#f0f8ff;">`;
-      html += `<h4 style="margin:0 0 10px 0;">📋 本月店家統計</h4>`;
-      html += `<table><tr><th>店家方式</th><th>金額</th><th>占比</th></tr>`;
-    
-      for (const [store, amt] of Object.entries(json.stores)) {
-        const percent = ((amt / json.total) * 100).toFixed(1);
-        html += `<tr><td>${store}</td><td>${Number(amt).toLocaleString()}</td><td>${percent}%</td></tr>`;
-      }
-    
-      html += `</table></div>`;
-      html += `<canvas id="storeChart" width="300" height="300" style="margin-top:20px;"></canvas>`;
-      const storeCount = Object.keys(json.stores).length;
-      html += `<div class="total">📌 本月總額：${Number(json.total || 0).toLocaleString()} 元（共 ${storeCount} 種店家方式）</div>`;
-    }
+// 👉 本月付款
+if (command === "本月付款" && json.payments) {
+  html += `
+    <div style="border:2px solid #4CAF50; padding:10px; margin-top:15px; border-radius:8px; background:#f9fff5;">
+      <h4 style="margin:0 0 10px 0;">💳 本月付款方式統計</h4>
+      <canvas id="payChart" width="300" height="300"></canvas>
+      <table style="margin-top:10px; width:100%; border-collapse:collapse;">
+        <tr><th>付款方式</th><th>金額</th><th>占比</th></tr>
+  `;
 
-    // 將結果寫入網頁
-    document.getElementById("queryResult").innerHTML = html;
-    
-    // 再去畫圓餅圖 (一定要放在 innerHTML 之後)
-    // 👉 畫付款圓餅圖 
-    if (command === "本月付款" && json.payments) {
-      const ctx = document.getElementById("payChart").getContext("2d");
-      new Chart(ctx, {
-        type: "pie",
-        data: {
-          labels: Object.keys(json.payments),
-          datasets: [{
-            data: Object.values(json.payments),
-            backgroundColor: [
-              "#4CAF50", "#2196F3", "#FF9800", "#E91E63", "#9C27B0",
-              "#00BCD4", "#8BC34A", "#FFC107", "#FF5722", "#795548"
-            ]
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { position: "bottom" }
-          }
-        }
+  for (const [pay, amt] of Object.entries(json.payments)) {
+    const percent = ((amt / json.total) * 100).toFixed(1);
+    html += `<tr><td>${pay}</td><td>${Number(amt).toLocaleString()}</td><td>${percent}%</td></tr>`;
+  }
+
+  html += `
+      </table>
+      <div class="total">📌 本月總額：${Number(json.total || 0).toLocaleString()} 元（共 ${Object.keys(json.payments).length} 種付款方式）</div>
+    </div>
+  `;
+}
+
+// 👉 本月明細
+if (command === "本月" && json.rows && json.rows.length > 0) {
+  // 依日期排序
+  json.rows.sort((a, b) => {
+    const da = a[4] ? new Date(a[4]) : new Date(0);
+    const db = b[4] ? new Date(b[4]) : new Date(0);
+    return da - db;
+  });
+
+  html += `
+    <div style="border:2px solid #2196F3; padding:10px; margin-top:15px; border-radius:8px; background:#f0f8ff;">
+      <h4 style="margin:0 0 10px 0;">📑 本月明細</h4>
+      <table style="width:100%; border-collapse:collapse;">
+        <tr>
+          <th>日期</th><th>金額</th><th>分類</th><th>付款方式</th><th>店家</th><th>備註</th>
+        </tr>
+  `;
+
+  json.rows.forEach(r => {
+    let dateStr = "";
+    if (r[4]) {
+      const d = new Date(r[4]);
+      dateStr = d.toLocaleDateString("zh-TW", {
+        timeZone: "Asia/Taipei",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
       });
     }
+    html += `
+      <tr>
+        <td>${dateStr}</td>
+        <td>${Number(r[5] || 0).toLocaleString()}</td>
+        <td>${r[6] || ""}</td>
+        <td>${r[7] || ""}</td>
+        <td>${r[8] || ""}</td>
+        <td>${r[9] || ""}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+      </table>
+      <div class="total">📌 本月總筆數：${json.rows.length} 筆，總金額 ${Number(json.total || 0).toLocaleString()} 元</div>
+    </div>
+  `;
+}
+
+// 👉 渲染 HTML
+document.getElementById("queryResult").innerHTML = html;
+
+// 👉 畫付款圓餅圖 (一定要放在 innerHTML 之後)
+if (command === "本月付款" && json.payments) {
+  const ctx = document.getElementById("payChart").getContext("2d");
+  if (window.payChart) window.payChart.destroy(); // 避免重複
+  window.payChart = new Chart(ctx, {
+    type: "pie",
+    data: {
+      labels: Object.keys(json.payments),
+      datasets: [{
+        data: Object.values(json.payments),
+        backgroundColor: [
+          "#4CAF50", "#2196F3", "#FF9800", "#E91E63",
+          "#9C27B0", "#00BCD4", "#8BC34A", "#FFC107",
+          "#FF5722", "#795548"
+        ]
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: "bottom" }
+      }
+    }
+  });
+}
 
     // 👉 本月明細
     if (command === "本月" && json.rows && json.rows.length > 0) {
@@ -679,6 +733,7 @@
   </script>
 </body>
 </html>
+
 
 
 
