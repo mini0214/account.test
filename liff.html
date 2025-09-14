@@ -389,71 +389,84 @@
       html += `<div class="total">📌 本月總額：${Number(json.total || 0).toLocaleString()} 元（共 ${paymentCount} 種付款方式）</div>`;
     }
 
-// 👉 本月店家
-if (command === "本月店家" && json.stores) {
-  html += `<div style="border:2px solid #2196F3; padding:10px; margin-top:15px; border-radius:8px; background:#f0f8ff;">`;
-  html += `<h4 style="margin:0 0 10px 0;">📋 本月店家統計</h4>`;
-  html += `<table id="storeTable">
+<!-- 🔹 本月店家統計表格 -->
+<table id="storeTable" border="1" style="margin-top:10px; width:100%; border-collapse: collapse;">
+  <thead>
     <tr>
-      <th id="storeHeader" style="cursor:pointer;">店家 ⬆️</th>
-      <th id="amountHeader" style="cursor:pointer;">金額</th>
-      <th>占比</th>
-    </tr>`;
+      <th onclick="sortTable('store')" style="cursor:pointer;">店家 <span id="storeSortIcon">↕️</span></th>
+      <th onclick="sortTable('amount')" style="cursor:pointer;">金額 <span id="amountSortIcon">↕️</span></th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
 
-  const sortedStores = Object.entries(json.stores).sort((a, b) => b[1] - a[1]); // 預設金額大到小
+<script>
+// 排序狀態記錄
+let currentSort = { column: null, asc: true };
 
-  for (const [store, amt] of sortedStores) {
-    const percent = ((amt / json.total) * 100).toFixed(1);
-    html += `<tr><td>${store}</td><td>${Number(amt).toLocaleString()}</td><td>${percent}%</td></tr>`;
-  }
-
-  html += `</table></div>`;
-  html += `<canvas id="storeChart" width="300" height="300" style="margin-top:20px;"></canvas>`;
-  const storeCount = sortedStores.length;
-  html += `<div class="total">📌 本月總額：${Number(json.total || 0).toLocaleString()} 元（共 ${storeCount} 種店家）</div>`;
+// ✅ 生成表格 (呼叫這個就會刷新畫面)
+function renderStoreTable(data) {
+  const tbody = document.querySelector("#storeTable tbody");
+  tbody.innerHTML = "";
+  data.forEach(row => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${row.store}</td><td>${row.amount}</td>`;
+    tbody.appendChild(tr);
+  });
 }
 
-document.getElementById("queryResult").innerHTML = html;
-
-// 👉 排序功能：店家 / 金額
-if (command === "本月店家" && json.stores) {
-  let sortByStoreAsc = true;
-  let sortByAmountAsc = false;
-
-  const rowsData = Object.entries(json.stores);
-
-  function renderTable(data) {
-    let tableHtml = `<tr>
-      <th id="storeHeader" style="cursor:pointer;">店家</th>
-      <th id="amountHeader" style="cursor:pointer;">金額</th>
-      <th>占比</th>
-    </tr>`;
-    data.forEach(([store, amt]) => {
-      const percent = ((amt / json.total) * 100).toFixed(1);
-      tableHtml += `<tr><td>${store}</td><td>${Number(amt).toLocaleString()}</td><td>${percent}%</td></tr>`;
-    });
-    document.querySelector("#storeTable").innerHTML = tableHtml;
-
-    // 重新掛事件
-    document.getElementById("storeHeader").addEventListener("click", () => {
-      sortByStoreAsc = !sortByStoreAsc;
-      const sorted = [...rowsData].sort((a, b) => 
-        sortByStoreAsc ? a[0].localeCompare(b[0]) : b[0].localeCompare(a[0])
-      );
-      renderTable(sorted);
-    });
-    document.getElementById("amountHeader").addEventListener("click", () => {
-      sortByAmountAsc = !sortByAmountAsc;
-      const sorted = [...rowsData].sort((a, b) => 
-        sortByAmountAsc ? a[1] - b[1] : b[1] - a[1]
-      );
-      renderTable(sorted);
-    });
+// ✅ 排序函式
+function sortTable(column) {
+  if (currentSort.column === column) {
+    currentSort.asc = !currentSort.asc; // 第二次點 → 反轉
+  } else {
+    currentSort.column = column;
+    currentSort.asc = true;
   }
 
-  // 初始渲染（依金額由大到小）
-  renderTable([...rowsData].sort((a, b) => b[1] - a[1]));
+  // 更新箭頭
+  document.getElementById("storeSortIcon").textContent = "↕️";
+  document.getElementById("amountSortIcon").textContent = "↕️";
+  const icon = currentSort.asc ? "⬆️" : "⬇️";
+  document.getElementById(column + "SortIcon").textContent = icon;
+
+  // 排序處理
+  let sorted = [...window.storeData];
+  if (column === "store") {
+    sorted.sort((a, b) =>
+      currentSort.asc ? a.store.localeCompare(b.store) : b.store.localeCompare(a.store)
+    );
+  } else if (column === "amount") {
+    sorted.sort((a, b) =>
+      currentSort.asc ? a.amount - b.amount : b.amount - a.amount
+    );
+  }
+
+  renderStoreTable(sorted);
 }
+
+// 🔹 假設這是後端回來的本月 json.categories 結果
+// 例：json.categories = { "全家": 120, "美廉社": 500, "7-11": 300 }
+function handleMonthlyData(json) {
+  if (json.categories) {
+    // 轉成陣列
+    window.storeData = Object.entries(json.categories).map(([store, amount]) => ({
+      store,
+      amount
+    }));
+
+    // 預設依金額降冪排序
+    window.storeData.sort((a, b) => b.amount - a.amount);
+    renderStoreTable(window.storeData);
+  }
+}
+
+// 🔹 測試用：模擬呼叫 API 回來的資料
+handleMonthlyData({
+  categories: { "全家": 120, "美廉社": 500, "7-11": 300 }
+});
+</script>
+
 
     
     // 再去畫圓餅圖 (一定要放在 innerHTML 之後)
@@ -725,6 +738,7 @@ if (command === "本月店家" && json.stores) {
   </script>
 </body>
 </html>
+
 
 
 
