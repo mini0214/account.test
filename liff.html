@@ -393,105 +393,105 @@
 <div id="queryResult"></div>
 
 <script>
-// 👉 本月店家
-if (command === "本月店家" && json.stores) {
-  let html = `
-    <div style="border:2px solid #2196F3; padding:10px; margin-top:15px; border-radius:8px; background:#f0f8ff;">
-      <h4 style="margin:0 0 10px 0;">📋 本月店家統計</h4>
-      <table id="storeTable" style="width:100%; border-collapse:collapse;">
-        <thead>
-          <tr>
-            <th onclick="sortStoreTable('store')" style="cursor:pointer;">店家方式 <span id="storeSortIcon">↕️</span></th>
-            <th onclick="sortStoreTable('amount')" style="cursor:pointer;">金額 <span id="amountSortIcon">↕️</span></th>
-            <th>占比</th>
-          </tr>
-        </thead>
-        <tbody>
+// 👉 本月付款
+if (command === "本月付款" && json.payments) {
+  html += `
+    <div style="border:2px solid #4CAF50; padding:10px; margin-top:15px; border-radius:8px; background:#f9fff5;">
+      <h4 style="margin:0 0 10px 0;">💳 本月付款方式統計</h4>
+      <canvas id="payChart" width="300" height="300"></canvas>
+      <table style="margin-top:10px; width:100%; border-collapse:collapse;">
+        <tr><th>付款方式</th><th>金額</th><th>占比</th></tr>
   `;
 
-  for (const [store, amt] of Object.entries(json.stores)) {
+  for (const [pay, amt] of Object.entries(json.payments)) {
     const percent = ((amt / json.total) * 100).toFixed(1);
-    html += `<tr><td>${store}</td><td>${Number(amt).toLocaleString()}</td><td>${percent}%</td></tr>`;
+    html += `<tr><td>${pay}</td><td>${Number(amt).toLocaleString()}</td><td>${percent}%</td></tr>`;
   }
 
   html += `
-        </tbody>
       </table>
+      <div class="total">📌 本月總額：${Number(json.total || 0).toLocaleString()} 元（共 ${Object.keys(json.payments).length} 種付款方式）</div>
     </div>
-    <canvas id="storeChart" width="300" height="300" style="margin-top:20px;"></canvas>
-    <div class="total">📌 本月總額：${Number(json.total || 0).toLocaleString()} 元（共 ${Object.keys(json.stores).length} 種店家方式）</div>
+  `;
+}
+
+// 👉 本月明細
+if (command === "本月" && json.rows && json.rows.length > 0) {
+  // 依日期排序
+  json.rows.sort((a, b) => {
+    const da = a[4] ? new Date(a[4]) : new Date(0);
+    const db = b[4] ? new Date(b[4]) : new Date(0);
+    return da - db;
+  });
+
+  html += `
+    <div style="border:2px solid #2196F3; padding:10px; margin-top:15px; border-radius:8px; background:#f0f8ff;">
+      <h4 style="margin:0 0 10px 0;">📑 本月明細</h4>
+      <table style="width:100%; border-collapse:collapse;">
+        <tr>
+          <th>日期</th><th>金額</th><th>分類</th><th>付款方式</th><th>店家</th><th>備註</th>
+        </tr>
   `;
 
-  // 將結果寫入網頁
-  document.getElementById("queryResult").innerHTML = html;
+  json.rows.forEach(r => {
+    let dateStr = "";
+    if (r[4]) {
+      const d = new Date(r[4]);
+      dateStr = d.toLocaleDateString("zh-TW", {
+        timeZone: "Asia/Taipei",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      });
+    }
+    html += `
+      <tr>
+        <td>${dateStr}</td>
+        <td>${Number(r[5] || 0).toLocaleString()}</td>
+        <td>${r[6] || ""}</td>
+        <td>${r[7] || ""}</td>
+        <td>${r[8] || ""}</td>
+        <td>${r[9] || ""}</td>
+      </tr>
+    `;
+  });
 
-  // 生成圓餅圖
-  const ctx = document.getElementById('storeChart').getContext('2d');
-  if (window.storeChart) window.storeChart.destroy(); // 避免重複
-  window.storeChart = new Chart(ctx, {
-    type: 'pie',
+  html += `
+      </table>
+      <div class="total">📌 本月總筆數：${json.rows.length} 筆，總金額 ${Number(json.total || 0).toLocaleString()} 元</div>
+    </div>
+  `;
+}
+
+// 👉 渲染 HTML
+document.getElementById("queryResult").innerHTML = html;
+
+// 👉 畫付款圓餅圖 (一定要放在 innerHTML 之後)
+if (command === "本月付款" && json.payments) {
+  const ctx = document.getElementById("payChart").getContext("2d");
+  if (window.payChart) window.payChart.destroy(); // 避免重複
+  window.payChart = new Chart(ctx, {
+    type: "pie",
     data: {
-      labels: Object.keys(json.stores),
+      labels: Object.keys(json.payments),
       datasets: [{
-        data: Object.values(json.stores),
-        backgroundColor: ['#FF9800','#2196F3','#4CAF50','#9C27B0','#00BCD4','#FF6384'],
+        data: Object.values(json.payments),
+        backgroundColor: [
+          "#4CAF50", "#2196F3", "#FF9800", "#E91E63",
+          "#9C27B0", "#00BCD4", "#8BC34A", "#FFC107",
+          "#FF5722", "#795548"
+        ]
       }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: "bottom" }
+      }
     }
   });
-
-  // 將資料存到全域，給排序用
-  window.storeData = Object.entries(json.stores).map(([store, amount]) => ({
-    store,
-    amount,
-    percent: ((amount / json.total) * 100).toFixed(1)
-  }));
 }
 
-// ✅ 排序功能
-let currentSort = { column: null, asc: true };
-
-function sortStoreTable(column) {
-  if (!window.storeData) return;
-  if (currentSort.column === column) {
-    currentSort.asc = !currentSort.asc;
-  } else {
-    currentSort.column = column;
-    currentSort.asc = true;
-  }
-
-  // 更新箭頭
-  document.getElementById("storeSortIcon").textContent = "↕️";
-  document.getElementById("amountSortIcon").textContent = "↕️";
-  const icon = currentSort.asc ? "⬆️" : "⬇️";
-  document.getElementById(column + "SortIcon").textContent = icon;
-
-  // 排序
-  let sorted = [...window.storeData];
-  if (column === "store") {
-    sorted.sort((a, b) =>
-      currentSort.asc ? a.store.localeCompare(b.store) : b.store.localeCompare(a.store)
-    );
-  } else if (column === "amount") {
-    sorted.sort((a, b) =>
-      currentSort.asc ? a.amount - b.amount : b.amount - a.amount
-    );
-  }
-
-  // 重新渲染表格
-  const tbody = document.querySelector("#storeTable tbody");
-  tbody.innerHTML = "";
-  sorted.forEach(row => {
-    tbody.innerHTML += `<tr><td>${row.store}</td><td>${Number(row.amount).toLocaleString()}</td><td>${row.percent}%</td></tr>`;
-  });
-
-  // 重新繪製圓餅圖
-  if (window.storeChart) {
-    window.storeChart.data.labels = sorted.map(r => r.store);
-    window.storeChart.data.datasets[0].data = sorted.map(r => r.amount);
-    window.storeChart.update();
-  }
-}
-</script>
 
     
     // 再去畫圓餅圖 (一定要放在 innerHTML 之後)
@@ -763,6 +763,7 @@ function sortStoreTable(column) {
   </script>
 </body>
 </html>
+
 
 
 
