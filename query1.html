@@ -221,109 +221,6 @@
 </head>
 <body>
 
-  <h2 id="title">非記不可.[<span id="version"></span>]</h2>
-
-  <!-- 登錄表單 -->
-  <form id="expenseForm">
-    
-    <div class="form-row">
-      <label for="store">日期：</label>
-      <input type="date" id="date" placeholder="選填">
-    </div>    
-  
-    <div class="form-row">
-      <label for="store">店家：</label>
-      <input type="text" id="store" placeholder="選填">
-    </div>
-
-    <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
-      <button type="button" id="btnIncome" class="toggle-btn">收入</button>
-      <button type="button" id="btnPayout" class="toggle-btn active">支出</button>
-    
-      <input type="number" id="income" placeholder="請輸入收入金額" style="width:550px; color:blue; display:none;" step="0.01">
-      <input type="number" id="payout" placeholder="請輸入支出金額" style="width:550px; color:red; display:inline-block;" step="0.01">
-    </div>   
-    
-    <script>
-      const btnIncome = document.getElementById("btnIncome");
-      const btnPayout = document.getElementById("btnPayout");
-      const income = document.getElementById("income");
-      const payout = document.getElementById("payout");
-    
-      function resetButtons() {
-        btnIncome.classList.remove("active");
-        btnPayout.classList.remove("active");
-      }
-    
-      btnIncome.addEventListener("click", () => {
-        resetButtons();
-        btnIncome.classList.add("active");
-    
-        income.style.display = "inline-block";
-        income.value = "";
-        payout.style.display = "none";
-        payout.value = "";
-      });
-    
-      btnPayout.addEventListener("click", () => {
-        resetButtons();
-        btnPayout.classList.add("active");
-    
-        payout.style.display = "inline-block";
-        payout.value = "";
-        income.style.display = "none";
-        income.value = "";
-      });
-    </script>      
-
-    <div class="form-block">
-      <label for="currency">幣別：</label>
-      <select id="currency" required>
-        <option value="">請選擇幣別</option>
-        <option value="1">台幣:1</option>
-        <option value="20">澳幣:20</option>
-      </select>
-    </div>
-  
-    <div class="form-row">
-      <label for="payment">付款：</label>
-      <select id="payment" required>
-        <option value="">請選擇付款</option>
-        <option value="現金">現金</option>
-        <option value="信用卡">信用卡</option>
-        <option value="LINE Pay">LINE Pay</option>
-        <option value="銀行轉帳">銀行轉帳</option>
-      </select>
-    </div>
-
-    <div class="form-block">
-      <label for="type">分類：</label>
-      <select id="type" required>
-        <option value="">請選擇分類</option>
-        <option value="食">食</option>
-        <option value="衣">衣</option>
-        <option value="住">住</option>
-        <option value="行">行</option>
-        <option value="育">育</option>
-        <option value="樂">樂</option>
-        <option value="其他">其他</option>
-        <option value="收入">收入</option>   
-      </select>
-    </div>
-
-    <div class="form-row">
-      <label for="store">附註：</label>
-      <input type="text" id="note" placeholder="選填">
-    </div>
-
-    <div class="form-row">
-      <label for="store">備註：</label>
-      <input type="text" id="memo" placeholder="選填">
-    </div>
-
-    <button type="submit">送出</button>
-  </form>
-
  <!-- 查詢區塊 -->
 <h3>非看不可</h3>
 <button id="queryMonthBtn">📊 查詢本月</button>
@@ -617,69 +514,11 @@
       await liff.init({ liffId: LIFF_ID });
       if (!liff.isLoggedIn()) liff.login();
 
-      // 預設日期為今天
-      document.getElementById("date").valueAsDate = new Date();
-    }
-    main();
 
-    document.getElementById("expenseForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const date = document.getElementById("date").value;
-      const store = document.getElementById("store").value;
-      const income = document.getElementById("income").value;
-      const payout = document.getElementById("payout").value;
-      const payment = document.getElementById("payment").value;
-      const currency = document.getElementById("currency").value;
-      const type = document.getElementById("type").value;
-      const note = document.getElementById("note").value;
-      const memo = document.getElementById("memo").value;
-
-      const profile = await liff.getProfile();
-      
-      const now = new Date();
-      const taiwanTime = new Date(now.getTime() + (8 * 60 * 60 * 1000))
-        .toISOString()
-        .replace("T", " ")
-        .split(".")[0]; 
-      
-      const payload = {
-        version: VERSION,
-        userId: profile.userId,
-        displayName: profile.displayName,
-        inputDate: date,
-        store: store,
-        income: income,
-        payout: payout,
-        currency: currency,
-        amount: Math.round((income-payout)*currency),
-        payment: payment,
-        type: type,
-        note: note,
-        memo: memo,
-        createdAt: taiwanTime
-      };
-
-      const apiUrl = API_URL; 
-      try {
-        const res = await fetch(apiUrl, {
-          method: "POST",
-          body: JSON.stringify(payload)
-        });
-
-        const result = await res.json();
-        alert("✅ 已送出！");
-
-        document.getElementById("expenseForm").reset();
-        document.getElementById("date").valueAsDate = new Date();
-
-      } catch(err) {
-        alert("❌ 送出失敗：" + err.message);
-      }
-    });
   </script>
 </body>
 </html>
+
 
 
 
