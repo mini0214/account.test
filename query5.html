@@ -25,10 +25,8 @@
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbzp7z2jx-chJ15TGqCNhDuOaJrV92CEGYU-6XrA_qdIjeEg2lFmKwmPZcjfnBthcndbJw/exec";
-
 let chartInstance = null;
 
-// 主查詢函式
 async function fetchData(type) {
   document.getElementById("result").innerHTML = "查詢中...";
   document.getElementById("chart").style.display = "none";
@@ -38,12 +36,13 @@ async function fetchData(type) {
     const data = await res.json();
     if (!data || data.length === 0) throw new Error("沒有資料");
 
-    renderTable(type, data);
-
     if (type === "month") {
-      renderBarChart(data); // 日期 vs 金額
+      const summarized = summarizeByDate(data);   // 日期彙總
+      renderTable(summarized);
+      renderBarChart(summarized);
     } else {
-      renderPieChart(type, data); // 其他用圓餅圖
+      renderTable(data); // 其他顯示原始資料
+      renderPieChart(type, data);
     }
 
   } catch (err) {
@@ -52,8 +51,23 @@ async function fetchData(type) {
   }
 }
 
-// 表格渲染 + 排序
-function renderTable(type, data) {
+// 本月：日期彙總
+function summarizeByDate(data) {
+  const totals = {};
+  data.forEach(row => {
+    const date = row["日期"];
+    const amount = Number(row["金額"]);
+    totals[date] = (totals[date] || 0) + amount;
+  });
+
+  return Object.keys(totals).sort().map(d => ({
+    "日期": d,
+    "金額": totals[d]
+  }));
+}
+
+// 繪製表格
+function renderTable(data) {
   let html = "<table><thead><tr>";
   const keys = Object.keys(data[0]);
   keys.forEach(k => { html += `<th onclick="sortTable(this)">${k}</th>`; });
@@ -69,22 +83,14 @@ function renderTable(type, data) {
   document.getElementById("result").innerHTML = html;
 }
 
-// 長條圖（日期彙總）
+// 長條圖
 function renderBarChart(data) {
-  const dailyTotals = {};
-  data.forEach(row => {
-    const date = row["日期"];
-    const amount = Number(row["金額"]);
-    dailyTotals[date] = (dailyTotals[date] || 0) + amount;
-  });
-
-  const labels = Object.keys(dailyTotals).sort();
-  const values = labels.map(d => dailyTotals[d]);
-
+  const labels = data.map(row => row["日期"]);
+  const values = data.map(row => row["金額"]);
   drawChart("bar", labels, values, "日期 vs 金額");
 }
 
-// 圓餅圖（分類 / 付款 / 店家）
+// 圓餅圖
 function renderPieChart(type, data) {
   const keyMap = {
     category: "分類方式",
@@ -102,11 +108,10 @@ function renderPieChart(type, data) {
 
   const labels = Object.keys(totals);
   const values = labels.map(l => totals[l]);
-
   drawChart("pie", labels, values, `${key} vs 金額`);
 }
 
-// 繪製 Chart.js 圖表
+// 繪圖共用
 function drawChart(type, labels, values, title) {
   const ctx = document.getElementById("chart").getContext("2d");
   if (chartInstance) chartInstance.destroy();
@@ -132,7 +137,7 @@ function drawChart(type, labels, values, title) {
   document.getElementById("chart").style.display = "block";
 }
 
-// 簡單表格排序
+// 表格排序
 function sortTable(th) {
   const table = th.closest("table");
   const tbody = table.querySelector("tbody");
