@@ -43,7 +43,7 @@ async function main() {
 }
 main();
 
-// 四個按鈕事件
+// 按鈕事件
 document.getElementById("queryMonthBtn").addEventListener("click", () => sendQuery("本月"));
 document.getElementById("queryMonthtypeBtn").addEventListener("click", () => sendQuery("本月分類"));
 document.getElementById("queryMonthPayBtn").addEventListener("click", () => sendQuery("本月付款"));
@@ -64,12 +64,22 @@ async function sendQuery(command){
     const container = document.getElementById("queryResult");
     container.innerHTML = ""; // 清空舊結果
 
-    // 動態建立表格
-    let html = "";
+    // 動態建立 canvas
+    function createCanvas(id, width=400, height=300){
+      const old = document.getElementById(id);
+      if(old) old.remove();
+      const canvas = document.createElement("canvas");
+      canvas.id = id;
+      canvas.width = width;
+      canvas.height = height;
+      container.appendChild(canvas);
+      return canvas;
+    }
 
-    // 本月明細
+    // 本月明細表格 + 長條圖
     if(command === "本月" && json.rows){
-      html += `<table><tr><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>幣別</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th></tr>`;
+      // 表格
+      let html = `<table><tr><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>幣別</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th></tr>`;
       json.rows.forEach(r => {
         const dateStr = r[4] ? new Date(r[4]).toLocaleDateString("zh-TW") : "";
         html += `<tr>
@@ -86,69 +96,49 @@ async function sendQuery(command){
         </tr>`;
       });
       html += `</table>`;
-      html += `<div class="total">📌 本月總額：${Number(json.total || 0).toLocaleString()} 元</div>`;
+      container.innerHTML = html;
+
+      // 長條圖
+      if(json.categories){
+        const ctx = createCanvas("barChart").getContext("2d");
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: Object.keys(json.categories),
+            datasets: [{
+              label: '金額',
+              data: Object.values(json.categories),
+              backgroundColor: '#36A2EB'
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } }
+          }
+        });
+        container.innerHTML += `<div class="total">📌 本月總額：${Number(json.total || 0).toLocaleString()} 元</div>`;
+      }
     }
 
-    // 本月分類
+    // 本月分類圓餅圖
     if(command === "本月分類" && json.categories){
-      html += `<table><tr><th>分類方式</th><th>金額</th><th>占比</th></tr>`;
-      for(const [cat, amt] of Object.entries(json.categories)){
-        const percent = ((amt/json.total)*100).toFixed(1);
-        html += `<tr><td>${cat}</td><td>${Number(amt).toLocaleString()}</td><td>${percent}%</td></tr>`;
-      }
-      html += `</table><div class="total">📌 本月總額：${Number(json.total || 0).toLocaleString()} 元</div>`;
-    }
-
-    // 本月付款
-    if(command === "本月付款" && json.payments){
-      html += `<table><tr><th>付款方式</th><th>金額</th><th>占比</th></tr>`;
-      for(const [pay, amt] of Object.entries(json.payments)){
-        const percent = ((amt/json.total)*100).toFixed(1);
-        html += `<tr><td>${pay}</td><td>${Number(amt).toLocaleString()}</td><td>${percent}%</td></tr>`;
-      }
-      html += `</table><div class="total">📌 本月總額：${Number(json.total || 0).toLocaleString()} 元</div>`;
-    }
-
-    // 本月店家
-    if(command === "本月店家" && json.stores){
-      html += `<table><tr><th>店家</th><th>金額</th><th>占比</th></tr>`;
-      for(const [store, amt] of Object.entries(json.stores)){
-        const percent = ((amt/json.total)*100).toFixed(1);
-        html += `<tr><td>${store}</td><td>${Number(amt).toLocaleString()}</td><td>${percent}%</td></tr>`;
-      }
-      html += `</table><div class="total">📌 本月總額：${Number(json.total || 0).toLocaleString()} 元</div>`;
-    }
-
-    container.innerHTML = html;
-
-    // 動態建立 canvas 並畫圖
-    function createCanvas(id, width=400, height=300){
-      const old = document.getElementById(id);
-      if(old) old.remove();
-      const canvas = document.createElement("canvas");
-      canvas.id = id;
-      canvas.width = width;
-      canvas.height = height;
-      container.appendChild(canvas);
-      return canvas;
-    }
-
-    // 畫圖
-    if(json.categories){
       const ctx = createCanvas("typeChart").getContext("2d");
       new Chart(ctx, { type:'pie', data:{ labels:Object.keys(json.categories), datasets:[{ data:Object.values(json.categories), backgroundColor:['#FF6384','#36A2EB','#FFCE56','#4CAF50','#FF9800','#9C27B0','#00BCD4'] }] } });
+      container.innerHTML += `<div class="total">📌 本月總額：${Number(json.total || 0).toLocaleString()} 元</div>`;
     }
-    if(json.payments){
+
+    // 本月付款圓餅圖
+    if(command === "本月付款" && json.payments){
       const ctx = createCanvas("payChart",300,300).getContext("2d");
       new Chart(ctx, { type:'pie', data:{ labels:Object.keys(json.payments), datasets:[{ data:Object.values(json.payments), backgroundColor:['#FF9800','#2196F3','#4CAF50','#9C27B0','#00BCD4','#FF6384'] }] } });
+      container.innerHTML += `<div class="total">📌 本月總額：${Number(json.total || 0).toLocaleString()} 元</div>`;
     }
-    if(json.stores){
+
+    // 本月店家圓餅圖
+    if(command === "本月店家" && json.stores){
       const ctx = createCanvas("storeChart",300,300).getContext("2d");
       new Chart(ctx, { type:'pie', data:{ labels:Object.keys(json.stores), datasets:[{ data:Object.values(json.stores), backgroundColor:['#FF9800','#2196F3','#4CAF50','#9C27B0','#00BCD4','#FF6384'] }] } });
-    }
-    if(command === "本月" && json.categories){
-      const ctx = createCanvas("barChart").getContext("2d");
-      new Chart(ctx, { type:'bar', data:{ labels:Object.keys(json.categories), datasets:[{ label:'金額', data:Object.values(json.categories), backgroundColor:'#36A2EB' }] } });
+      container.innerHTML += `<div class="total">📌 本月總額：${Number(json.total || 0).toLocaleString()} 元</div>`;
     }
 
   } catch(err){
