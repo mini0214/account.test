@@ -5,6 +5,7 @@
   <title>零用金查詢</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
     body { font-family: Arial, sans-serif; padding: 30px; }
     h3 { font-size: 40px; text-align: center; margin-bottom: 30px; }
@@ -14,7 +15,7 @@
     th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
     th { background-color: #f2f2f2; }
     .total { font-size: 28px; font-weight: bold; color: #d9534f; margin-top: 10px; }
-    canvas { margin-top: 20px; }
+    canvas { margin-top: 20px; display: block; }
   </style>
 </head>
 <body>
@@ -35,66 +36,65 @@ const API_URL = "https://script.google.com/macros/s/AKfycbzp7z2jx-chJ15TGqCNhDuO
 
 document.getElementById("version").textContent = VERSION;
 
+// LIFF 初始化
 async function main() {
   await liff.init({ liffId: LIFF_ID });
   if (!liff.isLoggedIn()) liff.login();
 }
 main();
 
+// 按鈕事件
 document.getElementById("queryMonthBtn").addEventListener("click", () => sendQuery("本月"));
 document.getElementById("queryMonthtypeBtn").addEventListener("click", () => sendQuery("本月分類"));
 document.getElementById("queryMonthPayBtn").addEventListener("click", () => sendQuery("本月付款"));
 document.getElementById("queryMonthstoreBtn").addEventListener("click", () => sendQuery("本月店家"));
 
+// 生成 canvas
+function createCanvas(id, width=400, height=300){
+  const container = document.getElementById("queryResult");
+  const old = document.getElementById(id);
+  if(old) old.remove();
+  const canvas = document.createElement("canvas");
+  canvas.id = id;
+  canvas.width = width;
+  canvas.height = height;
+  container.appendChild(canvas);
+  return canvas;
+}
+
+// 查詢函數
 async function sendQuery(command){
-  const body = { type: "query", command: command, version: VERSION };
-  try {
-    const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(body) });
+  const container = document.getElementById("queryResult");
+  container.innerHTML = "<p>讀取中...</p>";
+  const url = `${API_URL}?type=query&command=${encodeURIComponent(command)}&version=${VERSION}`;
+  
+  try{
+    const res = await fetch(url);
     const json = await res.json();
-    const container = document.getElementById("queryResult");
-    container.innerHTML = ""; // 清空舊結果
-
-    if (!json.ok) {
-      container.innerHTML = `<p style="color:red">❌ 查詢失敗</p>`;
-      return;
-    }
-
-    // 建立 canvas 元素
-    function createCanvas(id,w=400,h=300){
-      const old = document.getElementById(id);
-      if(old) old.remove();
-      const canvas = document.createElement("canvas");
-      canvas.id = id;
-      canvas.width = w;
-      canvas.height = h;
-      container.appendChild(canvas);
-      return canvas;
-    }
-
+    if(!json.ok){ container.innerHTML="<p style='color:red'>❌ 查詢失敗</p>"; return; }
+    
+    container.innerHTML = ""; // 清空 container
     let html = "";
 
-    // 「本月」明細表格
+    // 表格生成
     if(command==="本月" && json.rows){
-      html += `<table><tr><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>幣別</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th></tr>`;
+      html += `<table><tr>
+        <th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>幣別</th>
+        <th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th>
+      </tr>`;
       json.rows.forEach(r=>{
         const dateStr = r[4]?new Date(r[4]).toLocaleDateString("zh-TW"):"";
         html += `<tr>
-          <td>${dateStr}</td>
-          <td>${r[8]}</td>
-          <td>${Number(r[11]).toLocaleString()}</td>
-          <td>${Number(r[12]).toLocaleString()}</td>
-          <td>${r[13]}</td>
-          <td>${Number(r[5]).toLocaleString()}</td>
-          <td>${r[7]}</td>
-          <td>${r[6]}</td>
-          <td>${r[9]}</td>
-          <td>${r[10]}</td>
+          <td>${dateStr}</td><td>${r[8]}</td><td>${Number(r[11]).toLocaleString()}</td>
+          <td>${Number(r[12]).toLocaleString()}</td><td>${r[13]}</td><td>${Number(r[5]).toLocaleString()}</td>
+          <td>${r[7]}</td><td>${r[6]}</td><td>${r[9]}</td><td>${r[10]}</td>
         </tr>`;
       });
       html += `</table>`;
+      html += `<div class="total">📌 本月總額：${Number(json.total||0).toLocaleString()} 元</div>`;
       container.innerHTML = html;
 
-      // 用分類統計生成長條圖
+      // 長條圖（分類統計）
       if(json.categories){
         const ctx = createCanvas("barChart").getContext("2d");
         new Chart(ctx,{
@@ -106,20 +106,25 @@ async function sendQuery(command){
           options:{responsive:true, plugins:{legend:{display:false}}}
         });
       }
-
-      container.innerHTML += `<div class="total">📌 本月總額：${Number(json.total||0).toLocaleString()} 元</div>`;
+      return;
     }
 
-    // 其他三個查詢表格 + 圓餅圖
-    const pieData = command==="本月分類"?json.categories:command==="本月付款"?json.payments:command==="本月店家"?json.stores:null;
+    // 其他三個查詢：表格 + 圓餅圖
+    let pieData = null;
+    let title = "";
+    if(command==="本月分類"){ pieData=json.categories; title="⭕ 本月分類統計"; }
+    if(command==="本月付款"){ pieData=json.payments; title="💳 本月付款統計"; }
+    if(command==="本月店家"){ pieData=json.stores; title="📋 本月店家統計"; }
+
     if(pieData){
-      // 表格
+      html += `<h4>${title}</h4>`;
       html += `<table><tr><th>項目</th><th>金額</th><th>占比</th></tr>`;
-      for(const [key, val] of Object.entries(pieData)){
-        const percent = ((val/json.total)*100).toFixed(1);
-        html += `<tr><td>${key}</td><td>${Number(val).toLocaleString()}</td><td>${percent}%</td></tr>`;
+      for(const [k,v] of Object.entries(pieData)){
+        const percent = ((v/json.total)*100).toFixed(1);
+        html += `<tr><td>${k}</td><td>${Number(v).toLocaleString()}</td><td>${percent}%</td></tr>`;
       }
       html += `</table>`;
+      html += `<div class="total">📌 本月總額：${Number(json.total||0).toLocaleString()} 元</div>`;
       container.innerHTML = html;
 
       // 圓餅圖
@@ -127,20 +132,21 @@ async function sendQuery(command){
       new Chart(ctx,{
         type:'pie',
         data:{
-          labels:Object.keys(pieData),
-          datasets:[{data:Object.values(pieData),
-            backgroundColor:['#FF6384','#36A2EB','#FFCE56','#4CAF50','#FF9800','#9C27B0','#00BCD4','#2196F3','#8BC34A','#FFC107'] }]
+          labels: Object.keys(pieData),
+          datasets:[{
+            data: Object.values(pieData),
+            backgroundColor:['#FF6384','#36A2EB','#FFCE56','#4CAF50','#FF9800','#9C27B0','#00BCD4','#2196F3','#8BC34A','#FFC107']
+          }]
         },
-        options:{responsive:true}
+        options:{responsive:true, plugins:{legend:{position:'bottom'}}}
       });
-
-      container.innerHTML += `<div class="total">📌 本月總額：${Number(json.total||0).toLocaleString()} 元</div>`;
     }
 
-  } catch(err){
-    document.getElementById("queryResult").innerHTML = `<p style="color:red">❌ 查詢失敗：${err.message}</p>`;
+  }catch(err){
+    container.innerHTML = `<p style="color:red">❌ 查詢失敗：${err.message}</p>`;
   }
 }
 </script>
+
 </body>
 </html>
