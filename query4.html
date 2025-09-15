@@ -129,4 +129,51 @@ async function sendQuery(command){
         if (command === "本月" && json.categories) {
             new Chart(document.getElementById('typeChart').getContext('2d'), {
                 type:'bar',
-                data:{ labels:Object.keys(json.categories), datasets:[{ data:Object.values(json.categories
+                data:{ labels:Object.keys(json.categories), datasets:[{ data:Object.values(json.categories), backgroundColor:'#36A2EB' }] }
+            });
+        }
+        if (command === "本月分類" && json.categories) {
+            new Chart(document.getElementById('typeChart').getContext('2d'), {
+                type:'pie',
+                data:{ labels:Object.keys(json.categories), datasets:[{ data:Object.values(json.categories), backgroundColor:['#FF6384','#36A2EB','#FFCE56','#4CAF50','#FF9800','#9C27B0','#00BCD4'] }] }
+            });
+        }
+        if (command === "本月付款" && json.payments) {
+            new Chart(document.getElementById('payChart').getContext('2d'), {
+                type:'pie',
+                data:{ labels:Object.keys(json.payments), datasets:[{ data:Object.values(json.payments), backgroundColor:['#FF9800','#2196F3','#4CAF50','#9C27B0','#00BCD4','#FF6384'] }] }
+            });
+        }
+        if (command === "本月店家" && json.stores) {
+            new Chart(document.getElementById('storeChart').getContext('2d'), {
+                type:'pie',
+                data:{ labels:Object.keys(json.stores), datasets:[{ data:Object.values(json.stores), backgroundColor:['#FF9800','#2196F3','#4CAF50','#9C27B0','#00BCD4','#FF6384'] }] }
+            });
+        }
+
+        // ---------------- 簡單表格排序 ----------------
+        const tables = document.querySelectorAll('#dataTable');
+        tables.forEach(table => {
+            table.querySelectorAll('th').forEach((th,index)=>{
+                th.addEventListener('click', ()=>{
+                    const type = th.getAttribute('data-sort');
+                    const rows = Array.from(table.rows).slice(1);
+                    rows.sort((a,b)=>{
+                        let valA = a.cells[index].textContent;
+                        let valB = b.cells[index].textContent;
+                        if(type==='number'){ valA=parseFloat(valA.replace(/,/g,'')); valB=parseFloat(valB.replace(/,/g,'')); }
+                        return valA>valB?1:-1;
+                    });
+                    rows.forEach(r=>table.appendChild(r));
+                });
+            });
+        });
+
+    } catch(err){
+        console.error(err);
+        document.getElementById("queryResult").innerHTML = `<p style="color:red">❌ 查詢失敗：${err.message}</p>`;
+    }
+}
+</script>
+</body>
+</html>
