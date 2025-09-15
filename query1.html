@@ -14,6 +14,7 @@
     th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
     th { background-color: #f2f2f2; }
     .total { font-size: 28px; font-weight: bold; color: #d9534f; margin-top: 10px; }
+    canvas { margin-top: 20px; }
   </style>
 </head>
 <body>
@@ -25,7 +26,13 @@
 <button id="queryMonthtypeBtn">⭕ 查詢本月分類</button>
 <button id="queryMonthstoreBtn">📋 查詢本月店家</button>
 
-<div id="queryResult"></div>
+<div id="queryResult">
+  <!-- 先放置空 canvas -->
+  <canvas id="typeChart" width="400" height="400"></canvas>
+  <canvas id="payChart" width="300" height="300"></canvas>
+  <canvas id="storeChart" width="300" height="300"></canvas>
+  <canvas id="barChart" width="400" height="300"></canvas>
+</div>
 
 <script>
 const LIFF_ID = "2008096451-jPJ50MOY";
@@ -47,7 +54,7 @@ document.getElementById("queryMonthstoreBtn").addEventListener("click", () => se
 
 async function sendQuery(command){
   const body = { type: "query", command: command, version: VERSION };
-  
+
   try {
     const res = await fetch(API_URL, {
       method: "POST",
@@ -82,6 +89,21 @@ async function sendQuery(command){
       });
       html += `</table>`;
       html += `<div class="total">📌 本月總額：${Number(json.total || 0).toLocaleString()} 元</div>`;
+
+      // 畫長條圖（分類金額）
+      if (json.categories) {
+        const ctxBar = document.getElementById('barChart');
+        if(ctxBar) {
+          new Chart(ctxBar.getContext('2d'), {
+            type: 'bar',
+            data: {
+              labels: Object.keys(json.categories),
+              datasets: [{ label: '金額', data: Object.values(json.categories), backgroundColor: '#36A2EB' }]
+            },
+            options: { responsive:true, plugins:{ legend:{ display:false } } }
+          });
+        }
+      }
     }
 
     // 本月分類
@@ -93,12 +115,9 @@ async function sendQuery(command){
         html += `<tr><td>${cat}</td><td>${Number(amt).toLocaleString()}</td><td>${percent}%</td></tr>`;
       }
       html += `</table>`;
-      html += `<canvas id="typeChart" width="400" height="400" style="margin-top:20px;"></canvas>`;
       html += `<div class="total">📌 本月總額：${Number(json.total || 0).toLocaleString()} 元</div>`;
-      new Chart(document.getElementById('typeChart').getContext('2d'), {
-        type: 'pie',
-        data: { labels: Object.keys(json.categories), datasets: [{ data: Object.values(json.categories), backgroundColor:['#FF6384','#36A2EB','#FFCE56','#4CAF50','#FF9800','#9C27B0','#00BCD4'] }] }
-      });
+      const ctx = document.getElementById('typeChart');
+      if(ctx) new Chart(ctx.getContext('2d'), { type:'pie', data:{ labels:Object.keys(json.categories), datasets:[{ data:Object.values(json.categories), backgroundColor:['#FF6384','#36A2EB','#FFCE56','#4CAF50','#FF9800','#9C27B0','#00BCD4'] }] } });
     }
 
     // 本月付款
@@ -110,12 +129,9 @@ async function sendQuery(command){
         html += `<tr><td>${pay}</td><td>${Number(amt).toLocaleString()}</td><td>${percent}%</td></tr>`;
       }
       html += `</table>`;
-      html += `<canvas id="payChart" width="300" height="300" style="margin-top:20px;"></canvas>`;
       html += `<div class="total">📌 本月總額：${Number(json.total || 0).toLocaleString()} 元</div>`;
-      new Chart(document.getElementById('payChart').getContext('2d'), {
-        type: 'pie',
-        data: { labels: Object.keys(json.payments), datasets: [{ data: Object.values(json.payments), backgroundColor:['#FF9800','#2196F3','#4CAF50','#9C27B0','#00BCD4','#FF6384'] }] }
-      });
+      const ctx = document.getElementById('payChart');
+      if(ctx) new Chart(ctx.getContext('2d'), { type:'pie', data:{ labels:Object.keys(json.payments), datasets:[{ data:Object.values(json.payments), backgroundColor:['#FF9800','#2196F3','#4CAF50','#9C27B0','#00BCD4','#FF6384'] }] } });
     }
 
     // 本月店家
@@ -127,12 +143,9 @@ async function sendQuery(command){
         html += `<tr><td>${store}</td><td>${Number(amt).toLocaleString()}</td><td>${percent}%</td></tr>`;
       }
       html += `</table>`;
-      html += `<canvas id="storeChart" width="300" height="300" style="margin-top:20px;"></canvas>`;
       html += `<div class="total">📌 本月總額：${Number(json.total || 0).toLocaleString()} 元</div>`;
-      new Chart(document.getElementById('storeChart').getContext('2d'), {
-        type: 'pie',
-        data: { labels: Object.keys(json.stores), datasets: [{ data: Object.values(json.stores), backgroundColor:['#FF9800','#2196F3','#4CAF50','#9C27B0','#00BCD4','#FF6384'] }] }
-      });
+      const ctx = document.getElementById('storeChart');
+      if(ctx) new Chart(ctx.getContext('2d'), { type:'pie', data:{ labels:Object.keys(json.stores), datasets:[{ data:Object.values(json.stores), backgroundColor:['#FF9800','#2196F3','#4CAF50','#9C27B0','#00BCD4','#FF6384'] }] } });
     }
 
     document.getElementById("queryResult").innerHTML = html;
@@ -142,5 +155,6 @@ async function sendQuery(command){
   }
 }
 </script>
+
 </body>
 </html>
