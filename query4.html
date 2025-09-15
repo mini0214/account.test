@@ -16,6 +16,7 @@
     th.sort-asc::after { content: " ▲"; }
     th.sort-desc::after { content: " ▼"; }
     .total { font-size: 28px; font-weight: bold; color: #d9534f; margin-top: 10px; }
+    canvas { margin-top: 30px; max-width: 800px; }
   </style>
 </head>
 <body>
@@ -28,13 +29,16 @@
 <button id="queryMonthstoreBtn">📋 查詢本月店家</button>
 
 <div id="queryResult"></div>
+<canvas id="chart"></canvas>
 
 <script>
 const LIFF_ID = "2008096451-jPJ50MOY";
-const VERSION = "T3";
+const VERSION = "T4"; // 更新版本號
 const API_URL = "https://script.google.com/macros/s/AKfycbzp7z2jx-chJ15TGqCNhDuOaJrV92CEGYU-6XrA_qdIjeEg2lFmKwmPZcjfnBthcndbJw/exec";
 
 document.getElementById("version").textContent = VERSION;
+
+let currentChart = null;
 
 async function main() {
   await liff.init({ liffId: LIFF_ID });
@@ -162,8 +166,57 @@ async function sendQuery(command){
     const dataTable = document.getElementById("dataTable");
     if (dataTable) makeTableSortable(dataTable);
 
+    // ✅ 畫圖
+    drawChart(command, json);
+
   } catch(err) {
     document.getElementById("queryResult").innerHTML = `<p style="color:red">❌ 查詢失敗：${err.message}</p>`;
+  }
+}
+
+/* 🔹 Chart.js 畫圖 */
+function drawChart(command, json) {
+  if (currentChart) currentChart.destroy();
+  const ctx = document.getElementById("chart").getContext("2d");
+
+  if (command === "本月" && json.rows) {
+    const labels = json.rows.map(r => new Date(r[4]).toLocaleDateString("zh-TW"));
+    const values = json.rows.map(r => Number(r[5]) || 0);
+    currentChart = new Chart(ctx, {
+      type: "bar",
+      data: { labels, datasets: [{ label: "每日支出", data: values, backgroundColor: "rgba(54, 162, 235, 0.6)" }] },
+      options: { responsive: true }
+    });
+  }
+
+  if (command === "本月分類" && json.categories) {
+    const labels = Object.keys(json.categories);
+    const values = Object.values(json.categories);
+    currentChart = new Chart(ctx, {
+      type: "pie",
+      data: { labels, datasets: [{ data: values }] },
+      options: { responsive: true }
+    });
+  }
+
+  if (command === "本月付款" && json.payments) {
+    const labels = Object.keys(json.payments);
+    const values = Object.values(json.payments);
+    currentChart = new Chart(ctx, {
+      type: "pie",
+      data: { labels, datasets: [{ data: values }] },
+      options: { responsive: true }
+    });
+  }
+
+  if (command === "本月店家" && json.stores) {
+    const labels = Object.keys(json.stores);
+    const values = Object.values(json.stores);
+    currentChart = new Chart(ctx, {
+      type: "pie",
+      data: { labels, datasets: [{ data: values }] },
+      options: { responsive: true }
+    });
   }
 }
 </script>
