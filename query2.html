@@ -60,7 +60,7 @@ async function sendQuery(command){
     }
 
     // 建立 canvas 元素
-    function createCanvas(id, w=400,h=300){
+    function createCanvas(id,w=400,h=300){
       const old = document.getElementById(id);
       if(old) old.remove();
       const canvas = document.createElement("canvas");
@@ -73,8 +73,8 @@ async function sendQuery(command){
 
     let html = "";
 
-    // 生成表格
-    if(json.rows){
+    // 「本月」明細表格
+    if(command==="本月" && json.rows){
       html += `<table><tr><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>幣別</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th></tr>`;
       json.rows.forEach(r=>{
         const dateStr = r[4]?new Date(r[4]).toLocaleDateString("zh-TW"):"";
@@ -92,37 +92,48 @@ async function sendQuery(command){
         </tr>`;
       });
       html += `</table>`;
-    }
+      container.innerHTML = html;
 
-    container.innerHTML = html;
+      // 用分類統計生成長條圖
+      if(json.categories){
+        const ctx = createCanvas("barChart").getContext("2d");
+        new Chart(ctx,{
+          type:'bar',
+          data:{
+            labels: Object.keys(json.categories),
+            datasets:[{label:'金額', data:Object.values(json.categories), backgroundColor:'#36A2EB'}]
+          },
+          options:{responsive:true, plugins:{legend:{display:false}}}
+        });
+      }
 
-    // 「本月」長條圖
-    if(command==="本月" && json.categories){
-      const ctx = createCanvas("barChart").getContext("2d");
-      new Chart(ctx,{
-        type:'bar',
-        data:{
-          labels: Object.keys(json.categories),
-          datasets:[{label:'金額', data:Object.values(json.categories), backgroundColor:'#36A2EB'}]
-        },
-        options:{responsive:true, plugins:{legend:{display:false}}}
-      });
       container.innerHTML += `<div class="total">📌 本月總額：${Number(json.total||0).toLocaleString()} 元</div>`;
     }
 
-    // 其他三個查詢：圓餅圖
+    // 其他三個查詢表格 + 圓餅圖
     const pieData = command==="本月分類"?json.categories:command==="本月付款"?json.payments:command==="本月店家"?json.stores:null;
     if(pieData){
+      // 表格
+      html += `<table><tr><th>項目</th><th>金額</th><th>占比</th></tr>`;
+      for(const [key, val] of Object.entries(pieData)){
+        const percent = ((val/json.total)*100).toFixed(1);
+        html += `<tr><td>${key}</td><td>${Number(val).toLocaleString()}</td><td>${percent}%</td></tr>`;
+      }
+      html += `</table>`;
+      container.innerHTML = html;
+
+      // 圓餅圖
       const ctx = createCanvas("pieChart").getContext("2d");
       new Chart(ctx,{
         type:'pie',
         data:{
-          labels: Object.keys(pieData),
+          labels:Object.keys(pieData),
           datasets:[{data:Object.values(pieData),
-                     backgroundColor:['#FF6384','#36A2EB','#FFCE56','#4CAF50','#FF9800','#9C27B0','#00BCD4','#2196F3','#8BC34A','#FFC107'] }]
+            backgroundColor:['#FF6384','#36A2EB','#FFCE56','#4CAF50','#FF9800','#9C27B0','#00BCD4','#2196F3','#8BC34A','#FFC107'] }]
         },
         options:{responsive:true}
       });
+
       container.innerHTML += `<div class="total">📌 本月總額：${Number(json.total||0).toLocaleString()} 元</div>`;
     }
 
