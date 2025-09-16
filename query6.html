@@ -232,12 +232,16 @@ function renderResult(command, json) {
     });
   
     html += `</table>`;
-    html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${count} 種店家）</div>`;
+    html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${count} 筆店家）</div>`;
     renderChart("pie", labels, values);
   }
 
   document.getElementById("queryResult").innerHTML = html;
 }
+
+// 表格排序
+const dataTable = document.getElementById("dataTable");
+if (dataTable) makeTableSortable(dataTable);
 
 // 畫圖
 function renderChart(type, labels, values) {
@@ -253,3 +257,4 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
+
