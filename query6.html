@@ -77,6 +77,33 @@ document.getElementById("queryMonthTypeBtn").addEventListener("click", () => sen
 document.getElementById("queryMonthPayBtn").addEventListener("click", () => sendQuery("付款"));
 document.getElementById("queryMonthStoreBtn").addEventListener("click", () => sendQuery("店家"));
 
+/* 通用表格排序 */
+function makeTableSortable(table) {
+  const headers = table.querySelectorAll("th");
+  headers.forEach((th, colIndex) => {
+    th.addEventListener("click", () => {
+      const tbody = table.querySelector("tbody") || table;
+      const rows = Array.from(tbody.querySelectorAll("tr")).slice(1);
+      const isNumeric = rows.every(r => !isNaN(r.cells[colIndex].innerText.replace(/,/g, "")));
+      const currentOrder = th.classList.contains("sort-asc") ? "asc" : th.classList.contains("sort-desc") ? "desc" : null;
+      headers.forEach(h => h.classList.remove("sort-asc", "sort-desc"));
+      const newOrder = currentOrder === "asc" ? "desc" : "asc";
+      th.classList.add(newOrder === "asc" ? "sort-asc" : "sort-desc");
+      rows.sort((a, b) => {
+        let aText = a.cells[colIndex].innerText.trim();
+        let bText = b.cells[colIndex].innerText.trim();
+        if (isNumeric) {
+          aText = parseFloat(aText.replace(/,/g, "")) || 0;
+          bText = parseFloat(bText.replace(/,/g, "")) || 0;
+        }
+        if (newOrder === "asc") return aText > bText ? 1 : -1;
+        else return aText < bText ? 1 : -1;
+      });
+      rows.forEach(r => tbody.appendChild(r));
+    });
+  });
+}
+
 // 發送查詢
 async function sendQuery(command) {
   const startDate = document.getElementById("startDate").value;
@@ -189,3 +216,4 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
+
