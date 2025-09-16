@@ -167,11 +167,23 @@ function renderResult(command, json) {
   if (command === "分類" && json.categories) {
     const labels = Object.keys(json.categories);
     const values = Object.values(json.categories);
+    const total = values.reduce((a,b)=>a+b,0);
+    const count = values.length; // 筆數 = 有幾個分類
+    
     html += `<h4>⭕ 分類統計</h4>`;
-    html += `<table id="dataTable"><tr><th>分類方式</th><th>金額</th></tr>`;
-    labels.forEach((l,i)=> html += `<tr><td>${l}</td><td>${values[i].toLocaleString()}</td></tr>`);
+    html += `<table id="dataTable"><tr><th>分類方式</th><th>金額</th></tr>占比</th></tr>`;
+    
+    labels.forEach((l,i)=> {
+      const percent = ((values[i] / total) * 100).toFixed(1); // 占比計算
+      html += `<tr>
+                 <td>${l}</td>
+                 <td>${values[i].toLocaleString()}</td>
+                 <td>${percent}%</td>
+               </tr>`;
+    });
+  
     html += `</table>`;
-    html += `<div class="total">📌 總額：${values.reduce((a,b)=>a+b,0).toLocaleString()} 元</div>`;
+    html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${count} 筆）</div>`;
     renderChart("pie", labels, values);
   }
 
@@ -216,4 +228,5 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
+
 
