@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>零用金查詢</title>
+  <title>零用金支出帳簿</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
@@ -22,7 +22,7 @@
 </head>
 <body>
 
-<h3>零用金查詢 [<span id="version"></span>]</h3>
+<h3>非看不可.[<span id="version"></span>]</h3>
 
 <div class="date-inputs">
   開始日期：<input type="date" id="startDate">
@@ -41,8 +41,8 @@
 
 <script>
 const LIFF_ID = "2008096451-jPJ50MOY";
-const VERSION = "T8";
-const API_URL = "https://script.google.com/macros/s/AKfycbzskg0UlDZxKOA2PlwNUC975qzy_JCZXDI62PrgwK0t6wm6GmLDBVWZraVLlAkheoCmrQ/exec"; // 改成你的GAS網址
+const VERSION = "T9";
+const API_URL = "https://script.google.com/macros/s/AKfycbwQ1t5wHfjAqrtH0_ijNNWtlE5Q0R-g8fwb5htWQoCXKXxSukVX9qVnrfuyoXOyKkGXdw/exec"; // 改成你的GAS網址
 
 let chartInstance = null;
 
@@ -72,10 +72,10 @@ function toInputDate(d) {
 }
 
 // 按鈕事件
-document.getElementById("queryMonthBtn").addEventListener("click", () => sendQuery("本月"));
-document.getElementById("queryMonthTypeBtn").addEventListener("click", () => sendQuery("本月分類"));
-document.getElementById("queryMonthPayBtn").addEventListener("click", () => sendQuery("本月付款"));
-document.getElementById("queryMonthStoreBtn").addEventListener("click", () => sendQuery("本月店家"));
+document.getElementById("queryMonthBtn").addEventListener("click", () => sendQuery("明細"));
+document.getElementById("queryMonthTypeBtn").addEventListener("click", () => sendQuery("分類"));
+document.getElementById("queryMonthPayBtn").addEventListener("click", () => sendQuery("付款"));
+document.getElementById("queryMonthStoreBtn").addEventListener("click", () => sendQuery("店家"));
 
 // 發送查詢
 async function sendQuery(command) {
@@ -117,7 +117,7 @@ async function sendQuery(command) {
 function renderResult(command, json) {
   let html = "";
 
-  if (command === "本月" && json.rows) {
+  if (command === "明細" && json.rows) {
     html += `<table id="dataTable"><tr>
       <th>日期</th><th>店家</th><th>收入</th><th>支出</th>
       <th>幣別</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th>
@@ -136,11 +136,11 @@ function renderResult(command, json) {
                 json.rows.map(r => Number(r[5]) || 0));
   }
 
-  // 本月分類
-  if (command === "本月分類" && json.categories) {
+  // 分類
+  if (command === "分類" && json.categories) {
     const labels = Object.keys(json.categories);
     const values = Object.values(json.categories);
-    html += `<h4>⭕ 本月分類統計</h4>`;
+    html += `<h4>⭕ 分類統計</h4>`;
     html += `<table id="dataTable"><tr><th>分類方式</th><th>金額</th></tr>`;
     labels.forEach((l,i)=> html += `<tr><td>${l}</td><td>${values[i].toLocaleString()}</td></tr>`);
     html += `</table>`;
@@ -148,11 +148,11 @@ function renderResult(command, json) {
     renderChart("pie", labels, values);
   }
 
-  // 本月付款
-  if (command === "本月付款" && json.payments) {
+  // 付款
+  if (command === "付款" && json.payments) {
     const labels = Object.keys(json.payments);
     const values = Object.values(json.payments);
-    html += `<h4>💳 本月付款統計</h4>`;
+    html += `<h4>💳 付款統計</h4>`;
     html += `<table id="dataTable"><tr><th>付款方式</th><th>金額</th></tr>`;
     labels.forEach((l,i)=> html += `<tr><td>${l}</td><td>${values[i].toLocaleString()}</td></tr>`);
     html += `</table>`;
@@ -160,11 +160,11 @@ function renderResult(command, json) {
     renderChart("pie", labels, values);
   }
 
-  // 本月店家
-  if (command === "本月店家" && json.stores) {
+  // 店家
+  if (command === "店家" && json.stores) {
     const labels = Object.keys(json.stores);
     const values = Object.values(json.stores);
-    html += `<h4>📋 本月店家統計</h4>`;
+    html += `<h4>📋 店家統計</h4>`;
     html += `<table id="dataTable"><tr><th>店家</th><th>金額</th></tr>`;
     labels.forEach((l,i)=> html += `<tr><td>${l}</td><td>${values[i].toLocaleString()}</td></tr>`);
     html += `</table>`;
@@ -189,10 +189,3 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
-
-
-
-
-
-
-
