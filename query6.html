@@ -78,7 +78,7 @@
       updateDateLabel(start, end);
 
       try {
-        const res = await fetch(GAS_URL, {
+        const res = await fetch(API_URL, {
           method: "POST",
           body: JSON.stringify({
             type: "query",
@@ -186,4 +186,5 @@
   </script>
 </body>
 </html>
+
 
