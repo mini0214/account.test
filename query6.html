@@ -24,7 +24,7 @@
 <h3>零用金查詢 [<span id="version"></span>]</h3>
 
 <div class="date-inputs">
-  開始日期：<input type="date" id="starDate">
+  開始日期：<input type="date" id="startDate">
   結束日期：<input type="date" id="endDate">
 </div>
 
@@ -58,9 +58,9 @@ main();
 // 設定預設日期為本月月初與月底
 function setDefaultDateRange() {
   const now = new Date();
-  const star = new Date(now.getFullYear(), now.getMonth(), 1);
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
   const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  document.getElementById("starDate").value = toInputDate(star);
+  document.getElementById("startDate").value = toInputDate(start);
   document.getElementById("endDate").value = toInputDate(end);
 }
 
@@ -78,9 +78,9 @@ document.getElementById("queryMonthStoreBtn").addEventListener("click", () => se
 
 // 發送查詢
 async function sendQuery(command) {
-  const starDate = document.getElementById("starDate").value;
+  const startDate = document.getElementById("startDate").value;
   const endDate = document.getElementById("endDate").value;
-  if (!starDate || !endDate) {
+  if (!startDate || !endDate) {
     alert("請選擇開始與結束日期");
     return;
   }
@@ -89,7 +89,7 @@ async function sendQuery(command) {
     type: "query",
     command: command,
     version: VERSION,
-    starDate: starDate,
+    startDate: startDate,
     endDate: endDate
   };
 
@@ -185,6 +185,7 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
+
 
 
 
