@@ -29,10 +29,10 @@
 </div>
 
 <div style="text-align:center">
-  <button id="queryMonthBtn">📊 查詢本月</button>
-  <button id="queryMonthPayBtn">💳 查詢本月付款</button>
-  <button id="queryMonthTypeBtn">⭕ 查詢本月分類</button>
-  <button id="queryMonthStoreBtn">📋 查詢本月店家</button>
+  <button id="queryMonthBtn">📊 查詢明細</button>
+  <button id="queryMonthPayBtn">💳 查詢付款</button>
+  <button id="queryMonthTypeBtn">⭕ 查詢分類</button>
+  <button id="queryMonthStoreBtn">📋 查詢店家</button>
 </div>
 
 <div id="queryResult"></div>
@@ -96,6 +96,7 @@ async function sendQuery(command) {
   try {
     const res = await fetch(API_URL, {
       method: "POST",
+      headers: { "Content-Type": "application/json" }, // 🔹加上 header
       body: JSON.stringify(body)
     });
     const json = await res.json();
@@ -185,6 +186,7 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
+
 
 
 
