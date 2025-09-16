@@ -35,7 +35,11 @@
   <canvas id="chartCanvas"></canvas>
 
   <script>
-    const GAS_URL = "你的GAS網址"; // ⚠️ 換成你的 GAS 部署網址
+    const LIFF_ID = "2008096451-jPJ50MOY"; 
+    const VERSION = "T8"; 
+    const API_URL = "https://script.google.com/macros/s/AKfycbzskg0UlDZxKOA2PlwNUC975qzy_JCZXDI62PrgwK0t6wm6GmLDBVWZraVLlAkheoCmrQ/exec"; 
+    
+    document.getElementById("version").textContent = VERSION;
 
     // 預設本月的日期區間
     function getDefaultDateRange() {
@@ -182,3 +186,4 @@
   </script>
 </body>
 </html>
+
