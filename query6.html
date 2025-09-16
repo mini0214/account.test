@@ -1,147 +1,114 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html>
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <title>零用金支出帳簿</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
-    .controls { margin-bottom: 20px; }
+    button { margin: 5px; padding: 5px 10px; }
     table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-    th { background: #f0f0f0; }
-    canvas { margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    th { background-color: #f2f2f2; }
+    .chart-container { width: 100%; margin-top: 30px; }
   </style>
 </head>
 <body>
-  <h2>零用金支出查詢</h2>
+  <h2>零用金支出帳簿</h2>
 
-  <div class="controls">
-    <label>開始日期：
-      <input type="date" id="startDate">
-    </label>
-    <label>結束日期：
-      <input type="date" id="endDate">
-    </label>
-    <button onclick="queryData('本月')">查詢本月</button>
-    <button onclick="queryData('本月分類')">查詢分類</button>
-    <button onclick="queryData('本月付款')">查詢付款</button>
-    <button onclick="queryData('本月店家')">查詢店家</button>
+  <label>開始日期: <input type="date" id="startDate"></label>
+  <label>結束日期: <input type="date" id="endDate"></label>
+  <br><br>
+
+  <button onclick="fetchData('month')">查詢本月</button>
+  <button onclick="fetchData('pay')">查詢本月付款</button>
+  <button onclick="fetchData('category')">查詢本月分類</button>
+  <button onclick="fetchData('store')">查詢本月店家</button>
+
+  <div id="table-container"></div>
+  <div class="chart-container">
+    <canvas id="chartCanvas"></canvas>
   </div>
 
-  <div id="result"></div>
-  <canvas id="chart"></canvas>
-
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbyfGl3Jhw6iO0-RH_z7hPwxqhKdRswZyMlvNZcWaFYRXVSSvaKlYT2Rs7mambS1BmYqtg/exec"; // 換成你的 GAS 網址
-    let chartInstance = null;
+    // ✅ 頁面載入時自動設定日期為本月 1 日 ~ 本月最後一天
+    window.onload = function() {
+      let today = new Date();
+      let firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+      let lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-    // ✅ 自動帶入本月日期區間
-    document.addEventListener("DOMContentLoaded", () => {
-      const today = new Date();
-      const start = new Date(today.getFullYear(), today.getMonth(), 1);       // 本月第一天
-      const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);     // 本月最後一天
+      document.getElementById("startDate").value = firstDay.toISOString().split('T')[0];
+      document.getElementById("endDate").value = lastDay.toISOString().split('T')[0];
+    };
 
-      function formatDate(d) {
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, "0");
-        const day = String(d.getDate()).padStart(2, "0");
-        return `${y}-${m}-${day}`;
-      }
-
-      document.getElementById("startDate").value = formatDate(start);
-      document.getElementById("endDate").value = formatDate(end);
-    });
-
-    // ✅ 查詢函式
-    async function queryData(command) {
+    // ✅ 查詢 GAS 資料
+    async function fetchData(type) {
       const startDate = document.getElementById("startDate").value;
       const endDate = document.getElementById("endDate").value;
 
-      const payload = {
-        type: "query",
-        command: command,
-        startDate: startDate,
-        endDate: endDate
-      };
+      let url = "https://script.google.com/macros/s/AKfycbzskg0UlDZxKOA2PlwNUC975qzy_JCZXDI62PrgwK0t6wm6GmLDBVWZraVLlAkheoCmrQ/exec"
+              + "?action=" + type
+              + "&startDate=" + startDate
+              + "&endDate=" + endDate;
 
       try {
-        const res = await fetch(API_URL, {
-          method: "POST",
-          body: JSON.stringify(payload),
-          headers: { "Content-Type": "application/json" }
-        });
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("HTTP 錯誤 " + response.status);
+        const data = await response.json();
 
-        const data = await res.json();
-        console.log("查詢結果：", data);
-        renderResult(data);
-
-      } catch (err) {
-        document.getElementById("result").innerHTML = `<p style="color:red;">查詢失敗：${err.message}</p>`;
+        renderTable(data);
+        renderChart(data, type);
+      } catch (error) {
+        document.getElementById("table-container").innerHTML = "❌ 查詢失敗：" + error.message;
       }
     }
 
-    // ✅ 顯示結果（表格 + 圖表）
-    function renderResult(data) {
-      const resultDiv = document.getElementById("result");
-      resultDiv.innerHTML = "";
-
-      if (!data.ok) {
-        resultDiv.innerHTML = `<p style="color:red;">錯誤：${data.error}</p>`;
+    // ✅ 產生表格
+    function renderTable(data) {
+      if (!data || data.length === 0) {
+        document.getElementById("table-container").innerHTML = "<p>查無資料</p>";
         return;
       }
 
-      // 顯示表格（若有 rows）
-      if (data.rows) {
-        let html = "<table><tr>";
-        const header = ["日期", "金額", "分類", "付款方式", "店家", "備註"];
-        html += header.map(h => `<th>${h}</th>`).join("") + "</tr>";
+      let table = "<table><tr>";
+      Object.keys(data[0]).forEach(col => table += "<th>" + col + "</th>");
+      table += "</tr>";
 
-        data.rows.forEach(r => {
-          html += `<tr>
-            <td>${r[4]}</td>
-            <td>${r[5]}</td>
-            <td>${r[6]}</td>
-            <td>${r[7]}</td>
-            <td>${r[8]}</td>
-            <td>${r[9]}</td>
-          </tr>`;
-        });
-        html += "</table>";
-        resultDiv.innerHTML = html;
-      }
+      data.forEach(row => {
+        table += "<tr>";
+        Object.values(row).forEach(val => table += "<td>" + val + "</td>");
+        table += "</tr>";
+      });
+      table += "</table>";
 
-      // 顯示圖表（依不同查詢）
-      let labels = [];
-      let values = [];
-      if (data.categories) {
-        labels = Object.keys(data.categories);
-        values = Object.values(data.categories);
-      } else if (data.payments) {
-        labels = Object.keys(data.payments);
-        values = Object.values(data.payments);
-      } else if (data.stores) {
-        labels = Object.keys(data.stores);
-        values = Object.values(data.stores);
-      } else if (data.dates) {
-        labels = Object.keys(data.dates);
-        values = Object.values(data.dates);
-      }
+      document.getElementById("table-container").innerHTML = table;
+    }
 
-      if (labels.length > 0) {
-        const ctx = document.getElementById("chart").getContext("2d");
-        if (chartInstance) chartInstance.destroy();
-        chartInstance = new Chart(ctx, {
-          type: "bar",
-          data: {
-            labels: labels,
-            datasets: [{
-              label: "金額",
-              data: values
-            }]
-          }
-        });
-      }
+    // ✅ 繪製圖表
+    let chart;
+    function renderChart(data, type) {
+      if (chart) chart.destroy();
+
+      let labels = data.map(row => Object.values(row)[0]); 
+      let values = data.map(row => Number(Object.values(row)[1]) || 0);
+
+      let labelName = "金額";
+      if (type === "pay") labelName = "付款方式";
+      if (type === "category") labelName = "分類";
+      if (type === "store") labelName = "店家";
+
+      chart = new Chart(document.getElementById("chartCanvas"), {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: labelName,
+            data: values,
+            backgroundColor: "rgba(75, 192, 192, 0.6)"
+          }]
+        },
+        options: { responsive: true, scales: { y: { beginAtZero: true } } }
+      });
     }
   </script>
 </body>
