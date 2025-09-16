@@ -7,15 +7,14 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body { font-family: Arial, sans-serif; padding: 30px; }
-    h3 { font-size: 40px; text-align: center; margin-bottom: 10px; }
-    #dateRange { font-size: 24px; text-align: center; margin-bottom: 20px; }
-    button { font-size: 28px; padding: 10px 20px; margin: 5px; border-radius: 8px; cursor: pointer; }
+    h3 { font-size: 36px; text-align: center; margin-bottom: 15px; }
+    .date-inputs { text-align: center; margin-bottom: 20px; font-size: 20px; }
+    .date-inputs input { margin: 0 10px; font-size: 18px; padding: 5px; }
+    button { font-size: 26px; padding: 10px 20px; margin: 5px; border-radius: 8px; cursor: pointer; }
     #queryResult { margin-top: 20px; }
     table { border-collapse: collapse; width: 100%; margin-top: 15px; font-size: 18px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; cursor: pointer; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
     th { background-color: #f2f2f2; }
-    th.sort-asc::after { content: " ▲"; }
-    th.sort-desc::after { content: " ▼"; }
     .total { font-size: 22px; font-weight: bold; color: #d9534f; margin-top: 10px; }
     canvas { margin-top: 20px; max-width: 800px; }
   </style>
@@ -23,12 +22,18 @@
 <body>
 
 <h3>零用金查詢 [<span id="version"></span>]</h3>
-<div id="dateRange">📅 查詢區間：<span id="startDateLabel"></span> ~ <span id="endDateLabel"></span></div>
 
-<button id="queryMonthBtn">📊 查詢本月</button>
-<button id="queryMonthPayBtn">💳 查詢本月付款</button>
-<button id="queryMonthTypeBtn">⭕ 查詢本月分類</button>
-<button id="queryMonthStoreBtn">📋 查詢本月店家</button>
+<div class="date-inputs">
+  開始日期：<input type="date" id="startDate">
+  結束日期：<input type="date" id="endDate">
+</div>
+
+<div style="text-align:center">
+  <button id="queryMonthBtn">📊 查詢本月</button>
+  <button id="queryMonthPayBtn">💳 查詢本月付款</button>
+  <button id="queryMonthTypeBtn">⭕ 查詢本月分類</button>
+  <button id="queryMonthStoreBtn">📋 查詢本月店家</button>
+</div>
 
 <div id="queryResult"></div>
 <canvas id="chartCanvas"></canvas>
@@ -38,7 +43,6 @@ const LIFF_ID = "2008096451-jPJ50MOY";
 const VERSION = "T4";
 const API_URL = "https://script.google.com/macros/s/YOUR_GAS_ID/exec"; // 改成你的GAS網址
 
-let startDate, endDate;
 let chartInstance = null;
 
 document.getElementById("version").textContent = VERSION;
@@ -51,22 +55,22 @@ async function main() {
 }
 main();
 
-// 設定每月 1 號到月底
+// 設定預設日期為本月月初與月底
 function setDefaultDateRange() {
   const now = new Date();
-  startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-  endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0); // 月底
-  document.getElementById("startDateLabel").textContent = formatDate(startDate);
-  document.getElementById("endDateLabel").textContent = formatDate(endDate);
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  document.getElementById("startDate").value = toInputDate(start);
+  document.getElementById("endDate").value = toInputDate(end);
 }
 
-function formatDate(d) {
+function toInputDate(d) {
   const m = (d.getMonth() + 1).toString().padStart(2, "0");
   const day = d.getDate().toString().padStart(2, "0");
-  return `${d.getFullYear()}/${m}/${day}`;
+  return `${d.getFullYear()}-${m}-${day}`;
 }
 
-// 查詢按鈕事件
+// 按鈕事件
 document.getElementById("queryMonthBtn").addEventListener("click", () => sendQuery("本月"));
 document.getElementById("queryMonthTypeBtn").addEventListener("click", () => sendQuery("本月分類"));
 document.getElementById("queryMonthPayBtn").addEventListener("click", () => sendQuery("本月付款"));
@@ -74,12 +78,19 @@ document.getElementById("queryMonthStoreBtn").addEventListener("click", () => se
 
 // 發送查詢
 async function sendQuery(command) {
+  const startDate = document.getElementById("startDate").value;
+  const endDate = document.getElementById("endDate").value;
+  if (!startDate || !endDate) {
+    alert("請選擇開始與結束日期");
+    return;
+  }
+
   const body = {
     type: "query",
     command: command,
     version: VERSION,
-    startDate: formatDate(startDate),
-    endDate: formatDate(endDate)
+    startDate: startDate,
+    endDate: endDate
   };
 
   try {
@@ -98,7 +109,7 @@ async function sendQuery(command) {
   }
 }
 
-// 顯示結果表格 & 圖表
+// 顯示結果表格與圖表
 function renderResult(command, json) {
   let html = "";
 
@@ -116,11 +127,12 @@ function renderResult(command, json) {
       </tr>`;
     });
     html += `</table>`;
-    html += `<div class="total">📌 本月總額：${Number(json.total||0).toLocaleString()} 元（共 ${json.rows.length} 筆）</div>`;
+    html += `<div class="total">📌 總額：${Number(json.total||0).toLocaleString()} 元（共 ${json.rows.length} 筆）</div>`;
     renderChart("bar", json.rows.map(r => new Date(r[4]).toLocaleDateString("zh-TW")),
                 json.rows.map(r => Number(r[5]) || 0));
   }
 
+  // 本月分類
   if (command === "本月分類" && json.categories) {
     const labels = Object.keys(json.categories);
     const values = Object.values(json.categories);
@@ -128,10 +140,11 @@ function renderResult(command, json) {
     html += `<table id="dataTable"><tr><th>分類方式</th><th>金額</th></tr>`;
     labels.forEach((l,i)=> html += `<tr><td>${l}</td><td>${values[i].toLocaleString()}</td></tr>`);
     html += `</table>`;
-    html += `<div class="total">📌 本月總額：${values.reduce((a,b)=>a+b,0).toLocaleString()} 元</div>`;
+    html += `<div class="total">📌 總額：${values.reduce((a,b)=>a+b,0).toLocaleString()} 元</div>`;
     renderChart("pie", labels, values);
   }
 
+  // 本月付款
   if (command === "本月付款" && json.payments) {
     const labels = Object.keys(json.payments);
     const values = Object.values(json.payments);
@@ -139,10 +152,11 @@ function renderResult(command, json) {
     html += `<table id="dataTable"><tr><th>付款方式</th><th>金額</th></tr>`;
     labels.forEach((l,i)=> html += `<tr><td>${l}</td><td>${values[i].toLocaleString()}</td></tr>`);
     html += `</table>`;
-    html += `<div class="total">📌 本月總額：${values.reduce((a,b)=>a+b,0).toLocaleString()} 元</div>`;
+    html += `<div class="total">📌 總額：${values.reduce((a,b)=>a+b,0).toLocaleString()} 元</div>`;
     renderChart("pie", labels, values);
   }
 
+  // 本月店家
   if (command === "本月店家" && json.stores) {
     const labels = Object.keys(json.stores);
     const values = Object.values(json.stores);
@@ -150,7 +164,7 @@ function renderResult(command, json) {
     html += `<table id="dataTable"><tr><th>店家</th><th>金額</th></tr>`;
     labels.forEach((l,i)=> html += `<tr><td>${l}</td><td>${values[i].toLocaleString()}</td></tr>`);
     html += `</table>`;
-    html += `<div class="total">📌 本月總額：${values.reduce((a,b)=>a+b,0).toLocaleString()} 元</div>`;
+    html += `<div class="total">📌 總額：${values.reduce((a,b)=>a+b,0).toLocaleString()} 元</div>`;
     renderChart("pie", labels, values);
   }
 
