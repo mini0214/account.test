@@ -2,239 +2,183 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>零用金查詢</title>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <title>零用金支出查詢</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; padding: 30px; }
-    h3 { font-size: 40px; text-align: center; margin-bottom: 30px; }
-    button { font-size: 30px; padding: 15px 25px; margin: 5px; border-radius: 8px; cursor: pointer; }
-    #queryResult { margin-top: 30px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 15px; font-size: 20px; }
-    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; cursor: pointer; }
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h2 { margin-top: 30px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
     th { background-color: #f2f2f2; }
-    th.sort-asc::after { content: " ▲"; }
-    th.sort-desc::after { content: " ▼"; }
-    .total { font-size: 28px; font-weight: bold; color: #d9534f; margin-top: 10px; }
-    .date-range { font-size: 22px; font-weight: bold; margin: 15px 0; color: #5a5a5a; }
-    canvas { margin-top: 30px; max-width: 800px; }
+    .date-range { margin: 15px 0; font-weight: bold; color: #333; }
+    .buttons { margin-bottom: 20px; }
+    button { margin-right: 10px; padding: 8px 12px; }
+    canvas { margin-top: 20px; }
   </style>
 </head>
 <body>
+  <h1>💰 零用金支出查詢</h1>
 
-<h3>零用金查詢 [<span id="version"></span>]</h3>
+  <!-- 日期區間顯示 -->
+  <div class="date-range" id="dateRangeLabel">📅 查詢區間：</div>
 
-<button id="queryMonthBtn">📊 查詢本月</button>
-<button id="queryMonthPayBtn">💳 查詢本月付款</button>
-<button id="queryMonthtypeBtn">⭕ 查詢本月分類</button>
-<button id="queryMonthstoreBtn">📋 查詢本月店家</button>
+  <!-- 查詢按鈕 -->
+  <div class="buttons">
+    <button onclick="queryData('本月')">查詢本月</button>
+    <button onclick="queryData('本月付款')">查詢本月付款</button>
+    <button onclick="queryData('本月分類')">查詢本月分類</button>
+    <button onclick="queryData('本月店家')">查詢本月店家</button>
+  </div>
 
-<div id="queryResult"></div>
-<canvas id="chart"></canvas>
+  <!-- 查詢結果 -->
+  <div id="result"></div>
+  <canvas id="chartCanvas"></canvas>
 
-<script>
-const LIFF_ID = "2008096451-jPJ50MOY";
-const VERSION = "T8"; 
-const API_URL = "https://script.google.com/macros/s/AKfycbzskg0UlDZxKOA2PlwNUC975qzy_JCZXDI62PrgwK0t6wm6GmLDBVWZraVLlAkheoCmrQ/exec";
+  <script>
+    const GAS_URL = "你的GAS網址"; // ⚠️ 換成你的 GAS 部署網址
 
-document.getElementById("version").textContent = VERSION;
+    // 預設本月的日期區間
+    function getDefaultDateRange() {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = today.getMonth(); // 0-based
 
-let currentChart = null;
-let startDate, endDate;
+      // 月初
+      const startDate = new Date(year, month, 1);
+      // 月底（下一個月的0號就是這個月最後一天）
+      const endDate = new Date(year, month + 1, 0);
 
-async function main() {
-  await liff.init({ liffId: LIFF_ID });
-  if (!liff.isLoggedIn()) liff.login();
+      return {
+        start: formatDate(startDate),
+        end: formatDate(endDate)
+      };
+    }
 
-  // 預設查詢區間：本月1號 ~ 本月最後一天
-  const today = new Date();
-  startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-  endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-}
-main();
+    // 格式化 yyyy/MM/dd
+    function formatDate(d) {
+      const y = d.getFullYear();
+      const m = ("0" + (d.getMonth() + 1)).slice(-2);
+      const day = ("0" + d.getDate()).slice(-2);
+      return `${y}/${m}/${day}`;
+    }
 
-document.getElementById("queryMonthBtn").addEventListener("click", () => sendQuery("本月"));
-document.getElementById("queryMonthtypeBtn").addEventListener("click", () => sendQuery("本月分類"));
-document.getElementById("queryMonthPayBtn").addEventListener("click", () => sendQuery("本月付款"));
-document.getElementById("queryMonthstoreBtn").addEventListener("click", () => sendQuery("本月店家"));
+    // 更新畫面上的查詢區間標籤
+    function updateDateLabel(start, end) {
+      document.getElementById("dateRangeLabel").innerText =
+        `📅 查詢區間：${start} ~ ${end}`;
+    }
 
-/* 日期格式 yyyy/MM/dd */
-function formatDate(d) {
-  return d.getFullYear() + "/" +
-         String(d.getMonth() + 1).padStart(2, "0") + "/" +
-         String(d.getDate()).padStart(2, "0");
-}
+    // 查詢資料
+    async function queryData(command) {
+      const { start, end } = getDefaultDateRange();
+      updateDateLabel(start, end);
 
-/* 通用表格排序 */
-function makeTableSortable(table) {
-  const headers = table.querySelectorAll("th");
-  headers.forEach((th, colIndex) => {
-    th.addEventListener("click", () => {
-      const tbody = table.querySelector("tbody") || table;
-      const rows = Array.from(tbody.querySelectorAll("tr")).slice(1);
-      const isNumeric = rows.every(r => !isNaN(r.cells[colIndex].innerText.replace(/,/g, "")));
-      const currentOrder = th.classList.contains("sort-asc") ? "asc" : th.classList.contains("sort-desc") ? "desc" : null;
-      headers.forEach(h => h.classList.remove("sort-asc", "sort-desc"));
-      const newOrder = currentOrder === "asc" ? "desc" : "asc";
-      th.classList.add(newOrder === "asc" ? "sort-asc" : "sort-desc");
-      rows.sort((a, b) => {
-        let aText = a.cells[colIndex].innerText.trim();
-        let bText = b.cells[colIndex].innerText.trim();
-        if (isNumeric) {
-          aText = parseFloat(aText.replace(/,/g, "")) || 0;
-          bText = parseFloat(bText.replace(/,/g, "")) || 0;
+      try {
+        const res = await fetch(GAS_URL, {
+          method: "POST",
+          body: JSON.stringify({
+            type: "query",
+            command: command,
+            startDate: start,
+            endDate: end
+          })
+        });
+
+        const data = await res.json();
+        if (!data.ok) {
+          document.getElementById("result").innerHTML = "❌ 查詢失敗";
+          return;
         }
-        if (newOrder === "asc") return aText > bText ? 1 : -1;
-        else return aText < bText ? 1 : -1;
-      });
-      rows.forEach(r => tbody.appendChild(r));
-    });
-  });
-}
 
-async function sendQuery(command){
-  const body = { 
-    type: "query", 
-    command: command, 
-    version: VERSION, 
-    startDate: formatDate(startDate), 
-    endDate: formatDate(endDate) 
-  };
-
-  try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify(body)
-    });
-    const json = await res.json();
-
-    if (!json.ok) {
-      document.getElementById("queryResult").innerHTML = `<p style="color:red">❌ 查詢失敗</p>`;
-      return;
-    }
-
-    let html = "";
-    // 顯示查詢區間
-    html += `<div class="date-range">📅 查詢區間：${formatDate(startDate)} ~ ${formatDate(endDate)}</div>`;
-
-    // 本月明細
-    if (command === "本月" && json.rows) {
-      html += `<table id="dataTable"><tr>
-        <th>日期</th><th>店家</th><th>收入</th><th>支出</th>
-        <th>幣別</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th>
-      </tr>`;
-      json.rows.forEach(r => {
-        const dateStr = r[4] ? new Date(r[4]).toLocaleDateString("zh-TW") : "";
-        html += `<tr>
-          <td>${dateStr}</td>
-          <td>${r[8]}</td>
-          <td>${Number(r[11]).toLocaleString()}</td>
-          <td>${Number(r[12]).toLocaleString()}</td>
-          <td>${r[13]}</td>
-          <td>${Number(r[5]).toLocaleString()}</td>
-          <td>${r[7]}</td>
-          <td>${r[6]}</td>
-          <td>${r[9]}</td>
-          <td>${r[10]}</td>
-        </tr>`;
-      });
-      html += `</table>`;
-      html += `<div class="total">📌 本月總額：${Number(json.total || 0).toLocaleString()} 元（共 ${json.rows.length} 筆）</div>`;
-    }
-
-    // 本月分類
-    if (command === "本月分類" && json.categories) {
-      html += `<h4>⭕ 本月分類統計</h4>`;
-      html += `<table id="dataTable"><tr><th>分類方式</th><th>金額</th><th>占比</th></tr>`;
-      for (const [cat, amt] of Object.entries(json.categories)) {
-        const percent = ((amt / json.total) * 100).toFixed(1);
-        html += `<tr><td>${cat}</td><td>${Number(amt).toLocaleString()}</td><td>${percent}%</td></tr>`;
+        renderResult(data);
+      } catch (err) {
+        document.getElementById("result").innerHTML = "❌ 查詢失敗：" + err;
       }
-      html += `</table>`;
     }
 
-    // 本月付款
-    if (command === "本月付款" && json.payments) {
-      html += `<h4>💳 本月付款統計</h4>`;
-      html += `<table id="dataTable"><tr><th>付款方式</th><th>金額</th><th>占比</th></tr>`;
-      for (const [pay, amt] of Object.entries(json.payments)) {
-        const percent = ((amt / json.total) * 100).toFixed(1);
-        html += `<tr><td>${pay}</td><td>${Number(amt).toLocaleString()}</td><td>${percent}%</td></tr>`;
+    // 顯示查詢結果（表格 + 圖表）
+    function renderResult(data) {
+      const resultDiv = document.getElementById("result");
+      resultDiv.innerHTML = "";
+      let labels = [];
+      let values = [];
+      let chartType = "bar";
+
+      // 本月 → 顯示明細表 + 日期長條圖
+      if (data.command === "本月") {
+        let html = `<h2>📋 明細表 (共 ${data.count} 筆，總金額 ${data.total})</h2>`;
+        html += "<table><tr><th>日期</th><th>金額</th><th>分類</th><th>付款方式</th><th>店家</th></tr>";
+        data.rows.forEach(r => {
+          html += `<tr><td>${r[4]}</td><td>${r[5]}</td><td>${r[6]}</td><td>${r[7]}</td><td>${r[8]}</td></tr>`;
+        });
+        html += "</table>";
+        resultDiv.innerHTML = html;
+
+        labels = Object.keys(data.dates);
+        values = Object.values(data.dates);
+        chartType = "bar";
       }
-      html += `</table>`;
-    }
 
-    // 本月店家
-    if (command === "本月店家" && json.stores) {
-      html += `<h4>📋 本月店家統計</h4>`;
-      html += `<table id="dataTable"><tr><th>店家</th><th>金額</th><th>占比</th></tr>`;
-      for (const [store, amt] of Object.entries(json.stores)) {
-        const percent = ((amt / json.total) * 100).toFixed(1);
-        html += `<tr><td>${store}</td><td>${Number(amt).toLocaleString()}</td><td>${percent}%</td></tr>`;
+      // 本月分類 → 圓餅圖
+      if (data.command === "本月分類") {
+        resultDiv.innerHTML = "<h2>📊 分類統計</h2>";
+        labels = Object.keys(data.categories);
+        values = Object.values(data.categories);
+        chartType = "pie";
       }
-      html += `</table>`;
+
+      // 本月付款 → 圓餅圖
+      if (data.command === "本月付款") {
+        resultDiv.innerHTML = "<h2>💳 付款方式統計</h2>";
+        labels = Object.keys(data.payments);
+        values = Object.values(data.payments);
+        chartType = "pie";
+      }
+
+      // 本月店家 → 長條圖
+      if (data.command === "本月店家") {
+        resultDiv.innerHTML = "<h2>🏬 店家統計</h2>";
+        labels = Object.keys(data.shops);
+        values = Object.values(data.shops);
+        chartType = "bar";
+      }
+
+      renderChart(labels, values, chartType);
     }
-
-    document.getElementById("queryResult").innerHTML = html;
-
-    // 表格排序
-    const dataTable = document.getElementById("dataTable");
-    if (dataTable) makeTableSortable(dataTable);
 
     // 畫圖
-    drawChart(command, json);
-
-  } catch(err) {
-    document.getElementById("queryResult").innerHTML = `<p style="color:red">❌ 查詢失敗：${err.message}</p>`;
-  }
-}
-
-/* Chart.js 畫圖 */
-function drawChart(command, json) {
-  if (currentChart) currentChart.destroy();
-  const ctx = document.getElementById("chart").getContext("2d");
-
-  if (command === "本月" && json.rows) {
-    const dailyTotals = {};
-    json.rows.forEach(r => {
-      const dateStr = r[4] ? new Date(r[4]).toLocaleDateString("zh-TW") : "";
-      const amount = Number(r[5]) || 0;
-      dailyTotals[dateStr] = (dailyTotals[dateStr] || 0) + amount;
-    });
-
-    const labels = Object.keys(dailyTotals).sort((a,b)=>new Date(a)-new Date(b));
-    const values = labels.map(d => dailyTotals[d]);
-
-    currentChart = new Chart(ctx, {
-      type: "bar",
-      data: { labels, datasets: [{ label: "每日支出加總", data: values, backgroundColor: "rgba(54, 162, 235, 0.6)" }] },
-      options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: { x: { title: { display: true, text: "日期" } }, y: { title: { display: true, text: "金額" }, beginAtZero: true } }
+    let chartInstance = null;
+    function renderChart(labels, values, type) {
+      const ctx = document.getElementById("chartCanvas").getContext("2d");
+      if (chartInstance) {
+        chartInstance.destroy();
       }
-    });
-  }
+      chartInstance = new Chart(ctx, {
+        type: type,
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "金額",
+            data: values,
+            backgroundColor: type === "bar"
+              ? "rgba(54, 162, 235, 0.6)"
+              : [
+                  "rgba(255, 99, 132, 0.6)",
+                  "rgba(54, 162, 235, 0.6)",
+                  "rgba(255, 206, 86, 0.6)",
+                  "rgba(75, 192, 192, 0.6)",
+                  "rgba(153, 102, 255, 0.6)",
+                  "rgba(255, 159, 64, 0.6)"
+                ]
+          }]
+        }
+      });
+    }
 
-  if (command === "本月分類" && json.categories) {
-    const labels = Object.keys(json.categories);
-    const values = Object.values(json.categories);
-    currentChart = new Chart(ctx, { type: "pie", data: { labels, datasets: [{ data: values }] }, options: { responsive: true } });
-  }
-
-  if (command === "本月付款" && json.payments) {
-    const labels = Object.keys(json.payments);
-    const values = Object.values(json.payments);
-    currentChart = new Chart(ctx, { type: "pie", data: { labels, datasets: [{ data: values }] }, options: { responsive: true } });
-  }
-
-  if (command === "本月店家" && json.stores) {
-    const labels = Object.keys(json.stores);
-    const values = Object.values(json.stores);
-    currentChart = new Chart(ctx, { type: "pie", data: { labels, datasets: [{ data: values }] }, options: { responsive: true } });
-  }
-}
-</script>
-
+    // 一進頁面就預設查詢「本月」
+    window.onload = () => {
+      queryData("本月");
+    };
+  </script>
 </body>
 </html>
