@@ -40,7 +40,7 @@
 
 <script>
 const LIFF_ID = "2008096451-jPJ50MOY";
-const VERSION = "T6"; 
+const VERSION = "T7"; 
 const API_URL = "https://script.google.com/macros/s/AKfycbyfGl3Jhw6iO0-RH_z7hPwxqhKdRswZyMlvNZcWaFYRXVSSvaKlYT2Rs7mambS1BmYqtg/exec";
 
 document.getElementById("version").textContent = VERSION;
@@ -53,12 +53,15 @@ async function main() {
 }
 main();
 
-// 設定本月第一天、最後一天
-const today = new Date();
-const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-document.getElementById("startDate").valueAsDate = firstDay;
-document.getElementById("endDate").valueAsDate = lastDay;
+// ✅ 設定本月第一天、最後一天（避免時區偏差）
+window.onload = function() {
+  const today = new Date();
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+  document.getElementById("startDate").value = firstDay.toISOString().split("T")[0];
+  document.getElementById("endDate").value = lastDay.toISOString().split("T")[0];
+};
 
 // 綁定按鈕
 document.getElementById("queryMonthBtn").addEventListener("click", () => sendQuery("本月"));
@@ -102,6 +105,7 @@ async function sendQuery(command) {
   try {
     const res = await fetch(API_URL, {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
     });
     const json = await res.json();
@@ -112,7 +116,7 @@ async function sendQuery(command) {
 
     let html = "";
 
-    // 明細（只有「本月」才顯示表格）
+    // 本月 → 明細表格
     if (command === "本月" && json.rows) {
       html += `<table id="dataTable"><tr>
         <th>日期</th><th>店家</th><th>收入</th><th>支出</th>
@@ -137,9 +141,15 @@ async function sendQuery(command) {
       html += `<div class="total">📌 總額：${Number(json.total || 0).toLocaleString()} 元（共 ${json.rows.length} 筆）</div>`;
     }
 
-    // 其他查詢（分類/付款/店家）→ 只顯示總額與圖表
-    if (command !== "本月") {
-      html += `<div class="total">📌 總額：${Number(json.total || 0).toLocaleString()} 元</div>`;
+    // 其他查詢（分類 / 付款 / 店家） → 表格 + 總額
+    if (command === "本月分類" && json.categories) {
+      html += genSummaryTable("分類", json.categories);
+    }
+    if (command === "本月付款" && json.payments) {
+      html += genSummaryTable("付款方式", json.payments);
+    }
+    if (command === "本月店家" && json.stores) {
+      html += genSummaryTable("店家", json.stores);
     }
 
     document.getElementById("queryResult").innerHTML = html;
@@ -155,6 +165,18 @@ async function sendQuery(command) {
   } catch(err) {
     document.getElementById("queryResult").innerHTML = `<p style="color:red">❌ 查詢失敗：${err.message}</p>`;
   }
+}
+
+// 生成統計表格
+function genSummaryTable(title, obj) {
+  let html = `<table><tr><th>${title}</th><th>金額</th></tr>`;
+  let total = 0;
+  Object.keys(obj).forEach(k => {
+    total += obj[k];
+    html += `<tr><td>${k}</td><td>${Number(obj[k]).toLocaleString()}</td></tr>`;
+  });
+  html += `</table><div class="total">📌 總額：${total.toLocaleString()} 元</div>`;
+  return html;
 }
 
 // 長條圖：日期彙總
@@ -188,5 +210,3 @@ function drawPieChart(obj) {
 
 </body>
 </html>
-
-
