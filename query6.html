@@ -144,6 +144,8 @@ async function sendQuery(command) {
 function renderResult(command, json) {
   let html = "";
 
+  html += `<h4>📊 查詢明細</h4>`;
+  
   if (command === "明細" && json.rows) {
     html += `<table id="dataTable"><tr>
       <th>日期</th><th>店家</th><th>收入</th><th>支出</th>
@@ -171,7 +173,7 @@ function renderResult(command, json) {
     const count = values.length; // 筆數 = 有幾個分類
     
     html += `<h4>⭕ 分類統計</h4>`;
-    html += `<table id="dataTable"><tr><th>分類方式</th><th>金額</th></tr>占比</th></tr>`;
+    html += `<table id="dataTable"><tr><th>分類方式</th><th>金額</th><th>占比</th></tr>`;
     
     labels.forEach((l,i)=> {
       const percent = ((values[i] / total) * 100).toFixed(1); // 占比計算
@@ -183,7 +185,7 @@ function renderResult(command, json) {
     });
   
     html += `</table>`;
-    html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${count} 筆）</div>`;
+    html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${count} 筆分類）</div>`;
     renderChart("pie", labels, values);
   }
 
@@ -228,5 +230,6 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
+
 
 
