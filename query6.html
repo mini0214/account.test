@@ -96,7 +96,6 @@ async function sendQuery(command) {
   try {
     const res = await fetch(API_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" }, // 🔹加上 header
       body: JSON.stringify(body)
     });
     const json = await res.json();
@@ -186,6 +185,7 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
+
 
 
 
