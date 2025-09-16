@@ -184,7 +184,7 @@ function renderResult(command, json) {
     });
   
     html += `</table>`;
-    html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${count} 筆分類）</div>`;
+    html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${count} 種分類）</div>`;
     renderChart("pie", labels, values);
   }
 
@@ -208,7 +208,7 @@ function renderResult(command, json) {
     });
   
     html += `</table>`;
-    html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${count} 筆分類）</div>`;
+    html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${count} 種付款）</div>`;
     renderChart("pie", labels, values);
   }
 
@@ -216,11 +216,23 @@ function renderResult(command, json) {
   if (command === "店家" && json.stores) {
     const labels = Object.keys(json.stores);
     const values = Object.values(json.stores);
+    const total = values.reduce((a,b)=>a+b,0);
+    const count = values.length; // 筆數 = 有幾個
+    
     html += `<h4>📋 店家統計</h4>`;
     html += `<table id="dataTable"><tr><th>店家</th><th>金額</th><th>占比</th></tr>`;
-    labels.forEach((l,i)=> html += `<tr><td>${l}</td><td>${values[i].toLocaleString()}</td></tr>`);
+    
+    labels.forEach((l,i)=> {
+      const percent = ((values[i] / total) * 100).toFixed(1); // 占比計算
+      html += `<tr>
+                 <td>${l}</td>
+                 <td>${values[i].toLocaleString()}</td>
+                 <td>${percent}%</td>
+               </tr>`;
+    });
+  
     html += `</table>`;
-    html += `<div class="total">📌 總額：${values.reduce((a,b)=>a+b,0).toLocaleString()} 元</div>`;
+    html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${count} 種店家）</div>`;
     renderChart("pie", labels, values);
   }
 
@@ -241,7 +253,3 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
-
-
-
-
