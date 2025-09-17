@@ -237,11 +237,11 @@ function renderResult(command, json) {
   }
 
   document.getElementById("queryResult").innerHTML = html;
-}
 
-// 表格排序
-const dataTable = document.getElementById("dataTable");
-if (dataTable) makeTableSortable(dataTable);
+  // 表格排序
+  const dataTable = document.getElementById("dataTable");
+  if (dataTable) makeTableSortable(dataTable);
+  }
 
 // 畫圖
 function renderChart(type, labels, values) {
@@ -257,4 +257,5 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
+
 
