@@ -81,16 +81,31 @@ document.getElementById("queryMonthStoreBtn").addEventListener("click", () => se
 function makeTableSortable(table) {
   const headers = table.querySelectorAll("th");
   headers.forEach((th, colIndex) => {
+    th.style.cursor = "pointer"; // 滑鼠移過去有手指
     th.addEventListener("click", () => {
       const rows = Array.from(table.querySelectorAll("tr")).slice(1); // 第一列是表頭
       const isNumeric = rows.every(r => !isNaN(r.cells[colIndex].innerText.replace(/,/g, "")));
 
-      const currentOrder = th.classList.contains("sort-asc") ? "asc" : 
-                           th.classList.contains("sort-desc") ? "desc" : null;
-      headers.forEach(h => h.classList.remove("sort-asc", "sort-desc"));
-      const newOrder = currentOrder === "asc" ? "desc" : "asc";
-      th.classList.add(newOrder === "asc" ? "sort-asc" : "sort-desc");
+      // 🔹先清掉所有排序符號
+      headers.forEach(h => {
+        h.classList.remove("sort-asc", "sort-desc");
+        h.innerHTML = h.innerHTML.replace(/[\u25B2\u25BC]/g, ""); // ▲▼
+      });
 
+      const currentOrder = th.dataset.order || null;
+      const newOrder = currentOrder === "asc" ? "desc" : "asc";
+      th.dataset.order = newOrder;
+
+      // 🔹加上符號
+      if (newOrder === "asc") {
+        th.classList.add("sort-asc");
+        th.innerHTML += " ▲";
+      } else {
+        th.classList.add("sort-desc");
+        th.innerHTML += " ▼";
+      }
+      
+      // 🔹排序
       rows.sort((a, b) => {
         let aText = a.cells[colIndex].innerText.trim();
         let bText = b.cells[colIndex].innerText.trim();
@@ -98,8 +113,11 @@ function makeTableSortable(table) {
           aText = parseFloat(aText.replace(/,/g, "")) || 0;
           bText = parseFloat(bText.replace(/,/g, "")) || 0;
         }
-        return newOrder === "asc" ? aText > bText ? 1 : -1 : aText < bText ? 1 : -1;
+        if (newOrder === "asc") return aText > bText ? 1 : -1;
+        else return aText < bText ? 1 : -1;
       });
+      
+      // 🔹把排序後的列放回表格
       rows.forEach(r => table.appendChild(r));
     });
   });
@@ -258,6 +276,7 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
+
 
 
 
