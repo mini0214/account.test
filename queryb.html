@@ -84,44 +84,52 @@ document.getElementById("queryMonthTypeBtn").addEventListener("click", () => sen
 document.getElementById("queryMonthPayBtn").addEventListener("click", () => sendQuery("付款"));
 document.getElementById("queryMonthStoreBtn").addEventListener("click", () => sendQuery("店家"));
 
+/* 解析儲存格文字成數字或文字 */
+function parseCellValue(text) {
+  let v = text.replace(/,/g, "").trim();
+  if (v.endsWith("%")) {
+    return parseFloat(v.replace("%", "")) || 0;
+  }
+  if (!isNaN(v) && v !== "") {
+    return parseFloat(v);
+  }
+  return v.toLowerCase(); // 文字比對
+}
+  
 /* 通用表格排序 */
 function makeTableSortable(table) {
   const headers = table.querySelectorAll("th");
   headers.forEach((th, colIndex) => {
-    th.style.cursor = "pointer"; // 滑鼠移過去有手指
     th.addEventListener("click", () => {
       const rows = Array.from(table.querySelectorAll("tr")).slice(1); // 第一列是表頭
-      const isNumeric = rows.every(r => !isNaN(r.cells[colIndex].innerText.replace(/,/g, "")));
 
-      // 🔹先清掉所有排序符號
+      // 清掉其他表頭符號
       headers.forEach(h => {
-        h.classList.remove("sort-asc", "sort-desc");
-        h.innerHTML = h.innerHTML.replace(/[\u25B2\u25BC]/g, ""); // ▲▼
+        if (h !== th) {
+          h.dataset.order = "";
+          h.innerHTML = h.innerHTML.replace(/[\u25B2\u25BC]/g, "");
+        }
       });
-
-      const currentOrder = th.dataset.order || null;
+      
+      const currentOrder = th.dataset.order || "none";
       const newOrder = currentOrder === "asc" ? "desc" : "asc";
       th.dataset.order = newOrder;
 
       // 🔹加上符號
-      if (newOrder === "asc") {
-        th.classList.add("sort-asc");
-        th.innerHTML += " ▲";
-      } else {
-        th.classList.add("sort-desc");
-        th.innerHTML += " ▼";
-      }
+      th.innerHTML = th.innerHTML.replace(/[\u25B2\u25BC]/g, "");
+      th.innerHTML += newOrder === "asc" ? " ▲" : " ▼";
       
       // 🔹排序
       rows.sort((a, b) => {
-        let aText = a.cells[colIndex].innerText.trim();
-        let bText = b.cells[colIndex].innerText.trim();
-        if (isNumeric) {
-          aText = parseFloat(aText.replace(/,/g, "")) || 0;
-          bText = parseFloat(bText.replace(/,/g, "")) || 0;
+        let aVal = parseCellValue(a.cells[colIndex].innerText);
+        let bVal = parseCellValue(b.cells[colIndex].innerText);
+
+        if (typeof aVal === "number" && typeof bVal === "number") {
+          return newOrder === "asc" ? aVal - bVal : bVal - aVal;
         }
-        if (newOrder === "asc") return aText > bText ? 1 : -1;
-        else return aText < bText ? 1 : -1;
+        return newOrder === "asc"
+          ? aVal.localeCompare(bVal, "zh-Hant")
+          : bVal.localeCompare(aVal, "zh-Hant");
       });
       
       // 🔹把排序後的列放回表格
@@ -314,5 +322,6 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
+
 
 
