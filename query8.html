@@ -83,6 +83,13 @@ document.getElementById("queryMonthTypeBtn").addEventListener("click", () => sen
 document.getElementById("queryMonthPayBtn").addEventListener("click", () => sendQuery("付款"));
 document.getElementById("queryMonthStoreBtn").addEventListener("click", () => sendQuery("店家"));
 
+/* 數字/百分比通用解析 */
+function parseCellValue(cellText) {
+  // 去掉逗號和百分比
+  let v = cellText.replace(/,/g, "").replace("%", "");
+  return isNaN(v) ? cellText : parseFloat(v);
+}
+  
 /* 通用表格排序 */
 function makeTableSortable(table) {
   const headers = table.querySelectorAll("th");
@@ -270,6 +277,9 @@ function renderResult(command, json) {
 
   document.getElementById("queryResult").innerHTML = html;
 
+  // 掛上排序
+  makeTableSortable(document.getElementById("dataTable"));
+
   // 表格排序
   const dataTable = document.getElementById("dataTable");
   if (dataTable) makeTableSortable(dataTable);
@@ -289,6 +299,7 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
+
 
 
 
