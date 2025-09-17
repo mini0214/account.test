@@ -7,13 +7,14 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
   <style>
-    body { font-family: Arial, sans-serif; padding: 30px; }
+    body { font-family: Arial, sans-serif; padding: 50px; }
     h3 { font-size: 50px; text-align: center; margin-bottom: 50px; }
     .date-inputs { font-size: 50px; text-align: center; margin-bottom: 20px;  }
     .date-inputs input { font-size: 50px; margin: 0 10px;  padding: 5px; }
+    h4 { font-size: 28px; text-align: center; margin-bottom: 20px; }
     button { font-size: 40px; padding: 10px 20px; margin: 5px; border-radius: 8px; cursor: pointer; }
     #queryResult { margin-top: 20px; }
-    h4 { font-size: 22px }
+    h5 { font-size: 22px }
     table { font-size: 28px; border-collapse: collapse; width: 100%; margin-top: 15px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
     th { background-color: #f2f2f2; }
@@ -30,6 +31,8 @@
   開始日期：<input type="date" id="startDate"><br>
   結束日期：<input type="date" id="endDate">
 </div>
+
+<h4>選擇您想要看的鈕</h4>
 
 <div style="text-align:center">
   <button id="queryMonthBtn">📊 明細</button>
@@ -114,7 +117,7 @@ function renderResult(command, json) {
   let html = "";
 
   if (command === "明細" && json.rows) {
-    html += `<h4>📊 查詢明細;標題按下即可排序</h4>`;
+    html += `<h5>📊 查詢明細;標題按下即可排序</h5>`;
     html += `<table id="dataTable">
               <tr>
                 <th>日期</th>
@@ -265,6 +268,7 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
+
 
 
 
