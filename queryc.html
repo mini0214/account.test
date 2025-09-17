@@ -16,15 +16,9 @@
     table { border-collapse: collapse; width: 100%; margin-top: 15px; font-size: 18px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
     th { background-color: #f2f2f2; }
+    .numeric { text-align: right; }
     .total { font-size: 22px; font-weight: bold; color: #d9534f; margin-top: 10px; }
     canvas { margin-top: 20px; max-width: 800px; }
-    
-    /* 數字欄位靠右 ... */  
-    #dataTable th.numeric,
-    #dataTable td.numeric {
-      text-align: right;
-    }
-
   </style>
 </head>
 <body>
@@ -52,7 +46,6 @@ const VERSION = "T9";
 const API_URL = "https://script.google.com/macros/s/AKfycbwQ1t5wHfjAqrtH0_ijNNWtlE5Q0R-g8fwb5htWQoCXKXxSukVX9qVnrfuyoXOyKkGXdw/exec"; // 改成你的GAS網址
 
 let chartInstance = null;
-
 document.getElementById("version").textContent = VERSION;
 
 // 初始化 LIFF
@@ -84,60 +77,6 @@ document.getElementById("queryMonthTypeBtn").addEventListener("click", () => sen
 document.getElementById("queryMonthPayBtn").addEventListener("click", () => sendQuery("付款"));
 document.getElementById("queryMonthStoreBtn").addEventListener("click", () => sendQuery("店家"));
 
-/* 解析儲存格文字成數字或文字 */
-function parseCellValue(text) {
-  let v = text.replace(/,/g, "").trim();
-  if (v.endsWith("%")) {
-    return parseFloat(v.replace("%", "")) || 0;
-  }
-  if (!isNaN(v) && v !== "") {
-    return parseFloat(v);
-  }
-  return v.toLowerCase(); // 文字比對
-}
-  
-/* 通用表格排序 */
-function makeTableSortable(table) {
-  const headers = table.querySelectorAll("th");
-  headers.forEach((th, colIndex) => {
-    th.addEventListener("click", () => {
-      const rows = Array.from(table.querySelectorAll("tr")).slice(1); // 第一列是表頭
-
-      // 清掉其他表頭符號
-      headers.forEach(h => {
-        if (h !== th) {
-          h.dataset.order = "";
-          h.innerHTML = h.innerHTML.replace(/[\u25B2\u25BC]/g, "");
-        }
-      });
-      
-      const currentOrder = th.dataset.order || "none";
-      const newOrder = currentOrder === "asc" ? "desc" : "asc";
-      th.dataset.order = newOrder;
-
-      // 🔹加上符號
-      th.innerHTML = th.innerHTML.replace(/[\u25B2\u25BC]/g, "");
-      th.innerHTML += newOrder === "asc" ? " ▲" : " ▼";
-      
-      // 🔹排序
-      rows.sort((a, b) => {
-        let aVal = parseCellValue(a.cells[colIndex].innerText);
-        let bVal = parseCellValue(b.cells[colIndex].innerText);
-
-        if (typeof aVal === "number" && typeof bVal === "number") {
-          return newOrder === "asc" ? aVal - bVal : bVal - aVal;
-        }
-        return newOrder === "asc"
-          ? aVal.localeCompare(bVal, "zh-Hant")
-          : bVal.localeCompare(aVal, "zh-Hant");
-      });
-      
-      // 🔹把排序後的列放回表格
-      rows.forEach(r => table.appendChild(r));
-    });
-  });
-}
-  
 // 發送查詢
 async function sendQuery(command) {
   const startDate = document.getElementById("startDate").value;
@@ -152,22 +91,17 @@ async function sendQuery(command) {
     type: "query",
     command: command,
     version: VERSION,
-    startDate: startDate + " 00:00:00",  // 🔹強制從當日零點開始
-    endDate: endDate + " 23:59:59"       // 🔹強制到當日最後一秒
+    startDate: startDate + " 00:00:00",
+    endDate: endDate + " 23:59:59"
   };
 
   try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify(body)
-    });
-    
+    const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(body) });
     const json = await res.json();
     if (!json.ok) {
       document.getElementById("queryResult").innerHTML = `<p style="color:red">❌ 查詢失敗</p>`;
       return;
     }
-    
     renderResult(command, json);
   } catch (err) {
     document.getElementById("queryResult").innerHTML = `<p style="color:red">❌ 查詢失敗：${err.message}</p>`;
@@ -177,7 +111,7 @@ async function sendQuery(command) {
 // 顯示結果表格與圖表
 function renderResult(command, json) {
   let html = "";
- 
+
   if (command === "明細" && json.rows) {
     html += `<h4>📊 查詢明細</h4>`;
     html += `<table id="dataTable">
@@ -210,144 +144,123 @@ function renderResult(command, json) {
     });
     html += `</table>`;
     html += `<div class="total">📌 總額：${Number(json.total||0).toLocaleString()} 元（共 ${json.rows.length} 筆）</div>`;
-    
-    // 🔹依日期彙總長條圖
-    const dailyMap = {};
+
+    // 長條圖依日期彙總
+    const dateSum = {};
     json.rows.forEach(r => {
-      if (!r[4]) return;
-      // 轉成 YYYY-MM-DD
-      const d = new Date(r[4]);
-      const dateStr = d.getFullYear() + "-" +
-                      String(d.getMonth() + 1).padStart(2, "0") + "-" +
-                      String(d.getDate()).padStart(2, "0");
-      const amount = Number(r[5]) || 0;
-      dailyMap[dateStr] = (dailyMap[dateStr] || 0) + amount;
+      const d = new Date(r[4]).toLocaleDateString("zh-TW");
+      dateSum[d] = (dateSum[d] || 0) + Number(r[5]);
     });
-    
-    // 🔹轉成陣列並依日期排序
-    const dailyArr = Object.entries(dailyMap)
-                           .sort((a,b) => new Date(a[0]) - new Date(b[0]));
-    
-    // 🔹分離 labels & values
-    const dates = dailyArr.map(e => e[0]);
-    const sums  = dailyArr.map(e => e[1]);
-    
-    renderChart("bar", dates, sums);
-
+    const sortedDates = Object.keys(dateSum).sort((a,b)=> new Date(a)-new Date(b));
+    const sumValues = sortedDates.map(d=> dateSum[d]);
+    renderChart("bar", sortedDates, sumValues);
   }
 
-  // 分類
-  if (command === "分類" && json.categories) {
-    const labels = Object.keys(json.categories);
-    const values = Object.values(json.categories);
-    const total = values.reduce((a,b)=>a+b,0);
-    const count = values.length; // 筆數 = 有幾個
-    
-    html += `<h4>⭕ 分類統計</h4>`;
-    html += `<table id="dataTable">
-                <tr>
-                  <th>分類方式</th>
-                  <th class="numeric">金額</th>
-                  <th class="numeric">占比</th>
-                </tr>`;
-    
-    labels.forEach((l,i)=> {
-      const percent = ((values[i] / total) * 100).toFixed(1); // 占比計算
-      html += `<tr>
-                 <td>${l}</td>
-                 <td class="numeric">${values[i].toLocaleString()}</td>
-                 <td class="numeric">${percent}%</td>
-               </tr>`;
-    });
-  
-    html += `</table>`;
-    html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${count} 種分類）</div>`;
-    renderChart("pie", labels, values);
-  }
+  // 分類、付款、店家
+  const sections = [
+    { cmd: "分類", data: json.categories, title: "⭕ 分類統計" },
+    { cmd: "付款", data: json.payments, title: "💳 付款統計" },
+    { cmd: "店家", data: json.stores, title: "📋 店家統計" }
+  ];
 
-  // 付款
-  if (command === "付款" && json.payments) {
-    const labels = Object.keys(json.payments);
-    const values = Object.values(json.payments);
-    const total = values.reduce((a,b)=>a+b,0);
-    const count = values.length; // 筆數 = 有幾個
-    
-    html += `<h4>💳 付款統計</h4>`;
-    html += `<table id="dataTable">
-              <tr>
-                <th>付款方式</th>
-                <th class="numeric">金額</th>
-                <th class="numeric">占比</th>
-              </tr>`;
-    
-    labels.forEach((l,i)=> {
-      const percent = ((values[i] / total) * 100).toFixed(1); // 占比計算
-      html += `<tr>
-                 <td>${l}</td>
-                 <td class="numeric">${values[i].toLocaleString()}</td>
-                 <td class="numeric">${percent}%</td>
-               </tr>`;
-    });
-  
-    html += `</table>`;
-    html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${count} 種付款）</div>`;
-    renderChart("pie", labels, values);
-  }
+  sections.forEach(sec => {
+    if (command === sec.cmd && sec.data) {
+      const labels = Object.keys(sec.data);
+      const values = Object.values(sec.data);
+      const total = values.reduce((a,b)=>a+b,0);
+      const count = values.length;
 
-  // 店家
-  if (command === "店家" && json.stores) {
-    const labels = Object.keys(json.stores);
-    const values = Object.values(json.stores);
-    const total = values.reduce((a,b)=>a+b,0);
-    const count = values.length; // 筆數 = 有幾個
-    
-    html += `<h4>📋 店家統計</h4>`;
-    html += `<table id="dataTable">
-              <tr>
-                <th>店家</th>
-                <th class="numeric">金額</th>
-                <th class="numeric">占比</th>
-              </tr>`;
-    
-    labels.forEach((l,i)=> {
-      const percent = ((values[i] / total) * 100).toFixed(1); // 占比計算
-      html += `<tr>
-                 <td>${l}</td>
-                 <td class="numeric">${values[i].toLocaleString()}</td>
-                 <td class="numeric">${percent}%</td>
-               </tr>`;
-    });
-  
-    html += `</table>`;
-    html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${count} 筆店家）</div>`;
-    renderChart("pie", labels, values);
-  }
+      html += `<h4>${sec.title}</h4>`;
+      html += `<table id="dataTable">
+                 <tr>
+                   <th>${sec.cmd==="店家"?"店家":sec.cmd==="付款"?"付款方式":"分類方式"}</th>
+                   <th class="numeric">金額</th>
+                   <th class="numeric">占比</th>
+                 </tr>`;
+
+      labels.forEach((l,i)=>{
+        const percent = ((values[i]/total)*100).toFixed(1);
+        html += `<tr>
+                   <td>${l}</td>
+                   <td class="numeric">${values[i].toLocaleString()}</td>
+                   <td class="numeric">${percent}%</td>
+                 </tr>`;
+      });
+
+      html += `</table>`;
+      html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${count} 筆）</div>`;
+      renderChart("pie", labels, values);
+    }
+  });
 
   document.getElementById("queryResult").innerHTML = html;
 
   // 表格排序
   const dataTable = document.getElementById("dataTable");
   if (dataTable) makeTableSortable(dataTable);
-  }
+}
+
+// 通用表格排序（支援數字/百分比）
+function makeTableSortable(table) {
+  const headers = table.querySelectorAll("th");
+  headers.forEach((th, colIndex)=>{
+    th.style.cursor = "pointer";
+    th.addEventListener("click", ()=>{
+      const rows = Array.from(table.querySelectorAll("tr")).slice(1);
+      const currentOrder = th.dataset.order || null;
+      const newOrder = currentOrder === "asc" ? "desc" : "asc";
+      th.dataset.order = newOrder;
+
+      headers.forEach(h=>{
+        h.classList.remove("sort-asc","sort-desc");
+        h.innerHTML = h.innerHTML.replace(/[\u25B2\u25BC]/g,"");
+      });
+      th.classList.add(newOrder==="asc"?"sort-asc":"sort-desc");
+      th.innerHTML += newOrder==="asc"?" ▲":" ▼";
+
+      rows.sort((a,b)=>{
+        let aVal = parseCellValue(a.cells[colIndex].innerText);
+        let bVal = parseCellValue(b.cells[colIndex].innerText);
+        if (newOrder==="asc") return aVal>bVal?1:-1;
+        else return aVal<bVal?1:-1;
+      });
+      rows.forEach(r=>table.appendChild(r));
+    });
+  });
+}
+
+// 將欄位文字轉為可比較值
+function parseCellValue(txt) {
+  let v = txt.replace(/,/g,"").replace("%","");
+  return isNaN(v)?txt:parseFloat(v);
+}
 
 // 畫圖
 function renderChart(type, labels, values) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
   if (chartInstance) chartInstance.destroy();
-  chartInstance = new Chart(ctx, {
+
+  let backgroundColors = [];
+  if (type === "pie") {
+    backgroundColors = labels.map((_,i)=> `hsl(${i*360/labels.length},70%,60%)`);
+  } else {
+    backgroundColors = "rgba(54, 162, 235, 0.6)";
+  }
+
+  chartInstance = new Chart(ctx,{
     type: type,
-    data: { labels: labels, datasets: [{ label: "金額", data: values, backgroundColor: "rgba(54, 162, 235, 0.6)" }] },
-    options: { responsive: true }
+    data: {
+      labels: labels,
+      datasets:[{
+        label:"金額",
+        data: values,
+        backgroundColor: backgroundColors
+      }]
+    },
+    options: { responsive:true }
   });
 }
 </script>
 
 </body>
 </html>
-
-
-
-
-
-
-
