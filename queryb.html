@@ -214,11 +214,26 @@ function renderResult(command, json) {
     // 🔹依日期彙總長條圖
     const dailyMap = {};
     json.rows.forEach(r => {
-      const dateStr = r[4] ? new Date(r[4]).toLocaleDateString("zh-TW") : "";
+      if (!r[4]) return;
+      // 轉成 YYYY-MM-DD
+      const d = new Date(r[4]);
+      const dateStr = d.getFullYear() + "-" +
+                      String(d.getMonth() + 1).padStart(2, "0") + "-" +
+                      String(d.getDate()).padStart(2, "0");
       const amount = Number(r[5]) || 0;
       dailyMap[dateStr] = (dailyMap[dateStr] || 0) + amount;
     });
-    renderChart("bar", Object.keys(dailyMap), Object.values(dailyMap));
+    
+    // 🔹轉成陣列並依日期排序
+    const dailyArr = Object.entries(dailyMap)
+                           .sort((a,b) => new Date(a[0]) - new Date(b[0]));
+    
+    // 🔹分離 labels & values
+    const dates = dailyArr.map(e => e[0]);
+    const sums  = dailyArr.map(e => e[1]);
+    
+    renderChart("bar", dates, sums);
+
   }
 
   // 分類
@@ -329,6 +344,7 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
+
 
 
 
