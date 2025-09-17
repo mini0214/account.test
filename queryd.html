@@ -11,7 +11,7 @@
     h3 { font-size: 50px; text-align: center; margin-bottom: 50px; }
     .date-inputs { font-size: 50px; text-align: center; margin-bottom: 20px;  }
     .date-inputs input { font-size: 50px; margin: 0 10px;  padding: 5px; }
-    button { font-size: 36px; padding: 10px 20px; margin: 5px; border-radius: 8px; cursor: pointer; }
+    button { font-size: 50px; padding: 10px 20px; margin: 5px; border-radius: 8px; cursor: pointer; }
     #queryResult { margin-top: 20px; }
     table { font-size: 18px; border-collapse: collapse; width: 100%; margin-top: 15px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
@@ -31,10 +31,10 @@
 </div>
 
 <div style="text-align:center">
-  <button id="queryMonthBtn">📊 查詢明細</button>
-  <button id="queryMonthPayBtn">💳 查詢付款</button>
-  <button id="queryMonthTypeBtn">⭕ 查詢分類</button>
-  <button id="queryMonthStoreBtn">📋 查詢店家</button>
+  <button id="queryMonthBtn">📊 明細</button>
+  <button id="queryMonthPayBtn">💳 付款</button>
+  <button id="queryMonthTypeBtn">⭕ 分類</button>
+  <button id="queryMonthStoreBtn">📋 店家</button>
 </div>
 
 <div id="queryResult"></div>
@@ -113,7 +113,7 @@ function renderResult(command, json) {
   let html = "";
 
   if (command === "明細" && json.rows) {
-    html += `<h4>📊 查詢明細</h4>`;
+    html += `<h4>📊 查詢明細;標題按下即可排序</h4>`;
     html += `<table id="dataTable">
               <tr>
                 <th>日期</th>
@@ -158,9 +158,9 @@ function renderResult(command, json) {
 
   // 分類、付款、店家
   const sections = [
-    { cmd: "分類", data: json.categories, title: "⭕ 分類統計" },
-    { cmd: "付款", data: json.payments, title: "💳 付款統計" },
-    { cmd: "店家", data: json.stores, title: "📋 店家統計" }
+    { cmd: "分類", data: json.categories, title: "⭕ 分類統計;標題按下即可排序" },
+    { cmd: "付款", data: json.payments, title: "💳 付款統計;標題按下即可排序" },
+    { cmd: "店家", data: json.stores, title: "📋 店家統計;標題按下即可排序" }
   ];
 
   sections.forEach(sec => {
@@ -264,6 +264,7 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
+
 
 
 
