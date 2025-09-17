@@ -178,9 +178,16 @@ function renderResult(command, json) {
     json.rows.forEach(r => {
       const dateStr = r[4] ? new Date(r[4]).toLocaleDateString("zh-TW") : "";
       html += `<tr>
-        <td>${dateStr}</td><td>${r[8]}</td><td>${Number(r[11]).toLocaleString()}</td>
-        <td>${Number(r[12]).toLocaleString()}</td><td>${r[13]}</td><td>${Number(r[5]).toLocaleString()}</td>
-        <td>${r[7]}</td><td>${r[6]}</td><td>${r[9]}</td><td>${r[10]}</td>
+                <td>${dateStr}</td>
+                <td>${r[8]}</td>
+                <td class="numeric">${Number(r[11]).toLocaleString()}</td>
+                <td class="numeric">${Number(r[12]).toLocaleString()}</td>
+                <td>${r[13]}</td>
+                <td class="numeric">${Number(r[5]).toLocaleString()}</td>
+                <td>${r[7]}</td>
+                <td>${r[6]}</td>
+                <td>${r[9]}</td>
+                <td>${r[10]}</td>
       </tr>`;
     });
     html += `</table>`;
@@ -203,8 +210,8 @@ function renderResult(command, json) {
       const percent = ((values[i] / total) * 100).toFixed(1); // 占比計算
       html += `<tr>
                  <td>${l}</td>
-                 <td>${values[i].toLocaleString()}</td>
-                 <td>${percent}%</td>
+                 <td class="numeric">${values[i].toLocaleString()}</td>
+                 <td class="numeric">${percent}%</td>
                </tr>`;
     });
   
@@ -227,8 +234,8 @@ function renderResult(command, json) {
       const percent = ((values[i] / total) * 100).toFixed(1); // 占比計算
       html += `<tr>
                  <td>${l}</td>
-                 <td>${values[i].toLocaleString()}</td>
-                 <td>${percent}%</td>
+                 <td class="numeric">${values[i].toLocaleString()}</td>
+                 <td class="numeric">${percent}%</td>
                </tr>`;
     });
   
@@ -251,8 +258,8 @@ function renderResult(command, json) {
       const percent = ((values[i] / total) * 100).toFixed(1); // 占比計算
       html += `<tr>
                  <td>${l}</td>
-                 <td>${values[i].toLocaleString()}</td>
-                 <td>${percent}%</td>
+                 <td class="numeric">${values[i].toLocaleString()}</td>
+                 <td class="numeric">${percent}%</td>
                </tr>`;
     });
   
@@ -282,6 +289,7 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
+
 
 
 
