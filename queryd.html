@@ -1,40 +1,42 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>零用金支出帳簿</title>
+  <meta charset="utf-8" />
+  <title>零用金查詢</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  
   <style>
-    body { font-family: Arial, sans-serif; padding: 30px; }
-    h3 { font-size: 36px; text-align: center; margin-bottom: 15px; }
-    .date-inputs { text-align: center; margin-bottom: 20px; font-size: 20px; }
-    .date-inputs input { margin: 0 10px; font-size: 18px; padding: 5px; }
-    button { font-size: 26px; padding: 10px 20px; margin: 5px; border-radius: 8px; cursor: pointer; }
-    #queryResult { margin-top: 20px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 15px; font-size: 18px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-    th { background-color: #f2f2f2; }
-    .numeric { text-align: right; }    /* 數字欄位靠右 ... */  
-    .total { font-size: 22px; font-weight: bold; color: #d9534f; margin-top: 10px; }
-    canvas { margin-top: 20px; max-width: 800px; }   
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    h3 { text-align:center; font-size: 24px; margin-bottom: 10px; }
+    .date-inputs { text-align:center; margin-bottom: 12px; }
+    .date-inputs input { margin: 0 6px; padding:6px; font-size:14px; }
+    .buttons { text-align:center; margin-bottom: 14px; }
+    button { font-size:16px; padding:8px 14px; margin:6px; border-radius:6px; cursor:pointer; }
+    #queryResult { margin-top: 12px; }
+    table { border-collapse: collapse; width:100%; margin-top:10px; font-size:14px; }
+    th, td { border:1px solid #ddd; padding:8px; text-align:center; }
+    th { background:#f2f2f2; user-select:none; }
+    th.sort-asc::after { content:" ▲"; }
+    th.sort-desc::after { content:" ▼"; }
+    .numeric { text-align:right; }
+    .total { margin-top:10px; font-weight:bold; color:#d9534f; }
+    canvas { display:block; margin:18px auto; max-width:900px; }
   </style>
 </head>
 <body>
 
-<h3>非看不可.[<span id="version"></span>]</h3>
+<h3>非看不可. [<span id="version"></span>]</h3>
 
 <div class="date-inputs">
   開始日期：<input type="date" id="startDate">
   結束日期：<input type="date" id="endDate">
 </div>
 
-<div style="text-align:center">
-  <button id="queryMonthBtn">📊 查詢明細</button>
-  <button id="queryMonthPayBtn">💳 查詢付款</button>
-  <button id="queryMonthTypeBtn">⭕ 查詢分類</button>
-  <button id="queryMonthStoreBtn">📋 查詢店家</button>
+<div class="buttons">
+  <button id="queryDetailBtn">📊 查詢明細</button>
+  <button id="queryPayBtn">💳 查詢付款</button>
+  <button id="queryCatBtn">⭕ 查詢分類</button>
+  <button id="queryStoreBtn">📋 查詢店家</button>
 </div>
 
 <div id="queryResult"></div>
@@ -43,225 +45,329 @@
 <script>
 const LIFF_ID = "2008096451-jPJ50MOY";
 const VERSION = "T9";
-const API_URL = "https://script.google.com/macros/s/AKfycbwQ1t5wHfjAqrtH0_ijNNWtlE5Q0R-g8fwb5htWQoCXKXxSukVX9qVnrfuyoXOyKkGXdw/exec"; // 改成你的GAS網址
+const API_URL = "https://script.google.com/macros/s/AKfycbwQ1t5wHfjAqrtH0_ijNNWtlE5Q0R-g8fwb5htWQoCXKXxSukVX9qVnrfuyoXOyKkGXdw/exec"; // <- 換成你的 GAS
 
 let chartInstance = null;
 document.getElementById("version").textContent = VERSION;
 
-// 初始化 LIFF
-async function main() {
-  await liff.init({ liffId: LIFF_ID });
-  if (!liff.isLoggedIn()) liff.login();
+// init liff + default dates
+async function main(){
+  try{
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isLoggedIn()) liff.login();
+  }catch(e){
+    // 若 LIFF 初始化失敗也不要阻斷功能（方便測試）
+    console.warn("LIFF init failed:", e);
+  }
   setDefaultDateRange();
 }
 main();
 
-// 設定預設日期為本月月初與月底
-function setDefaultDateRange() {
+function setDefaultDateRange(){
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const end = new Date(now.getFullYear(), now.getMonth()+1, 0);
   document.getElementById("startDate").value = toInputDate(start);
   document.getElementById("endDate").value = toInputDate(end);
 }
-
-function toInputDate(d) {
-  const m = (d.getMonth() + 1).toString().padStart(2, "0");
-  const day = d.getDate().toString().padStart(2, "0");
-  return `${d.getFullYear()}-${m}-${day}`;
+function toInputDate(d){
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const dd = String(d.getDate()).padStart(2,"0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
 }
 
-// 按鈕事件
-document.getElementById("queryMonthBtn").addEventListener("click", () => sendQuery("明細"));
-document.getElementById("queryMonthTypeBtn").addEventListener("click", () => sendQuery("分類"));
-document.getElementById("queryMonthPayBtn").addEventListener("click", () => sendQuery("付款"));
-document.getElementById("queryMonthStoreBtn").addEventListener("click", () => sendQuery("店家"));
+// 綁定按鈕
+document.getElementById("queryDetailBtn").addEventListener("click", () => sendQuery("明細"));
+document.getElementById("queryPayBtn").addEventListener("click", () => sendQuery("付款"));
+document.getElementById("queryCatBtn").addEventListener("click", () => sendQuery("分類"));
+document.getElementById("queryStoreBtn").addEventListener("click", () => sendQuery("店家"));
 
-// 發送查詢
-async function sendQuery(command) {
-  const startDate = document.getElementById("startDate").value;
-  const endDate = document.getElementById("endDate").value;
-  
-  if (!startDate || !endDate) {
-    alert("請選擇開始與結束日期");
-    return;
-  }
+// ---------- 輔助：解析 cell 文字成可比較值 ----------
+function parseDateString(str){
+  if (!str) return null;
+  str = str.trim();
+  // 常見格式：YYYY-MM-DD 或 YYYY/MM/DD
+  let m = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  // M/D/YYYY or M/D/YY
+  m = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m) return new Date(Number(m[3]), Number(m[1]) - 1, Number(m[2]));
+  // try Date.parse fallback
+  const t = Date.parse(str);
+  if (!isNaN(t)) return new Date(t);
+  return null;
+}
+
+function parseCellValue(text){
+  if (text === null || text === undefined) return { type:'string', value: '' };
+  let s = String(text).trim();
+  if (s === '') return { type:'string', value: '' };
+
+  // 百分比 e.g. "12.3%"
+  const pct = s.match(/^(-?[\d,]+(?:\.\d+)?)\s*%$/);
+  if (pct) return { type:'number', value: parseFloat(pct[1].replace(/,/g,'')) };
+
+  // 數字（含千分位 comma）
+  const num = s.match(/^(-?[\d,]+(?:\.\d+)?)$/);
+  if (num) return { type:'number', value: parseFloat(num[1].replace(/,/g,'')) };
+
+  // 嘗試解析日期
+  const d = parseDateString(s);
+  if (d) return { type:'date', value: d.getTime() };
+
+  // 文字（中文/英文） - 保留原始字串
+  return { type:'string', value: s };
+}
+
+// ---------- 可排序表格函式 ----------
+function makeTableSortable(table){
+  const headers = Array.from(table.querySelectorAll("th"));
+  headers.forEach((th, colIndex) => {
+    th.style.cursor = "pointer";
+    // initialize dataset.order to none
+    if (!th.dataset.order) th.dataset.order = "none";
+
+    th.addEventListener("click", () => {
+      const tbody = table.tBodies && table.tBodies[0] ? table.tBodies[0] : table;
+      const rows = Array.from(tbody.querySelectorAll("tr")).slice(1); // skip header row
+
+      // Detect column type by scanning first non-empty cell
+      let detected = null;
+      for (const r of rows){
+        const cellText = (r.cells[colIndex] && r.cells[colIndex].textContent) ? r.cells[colIndex].textContent.trim() : "";
+        if (cellText !== ""){
+          detected = parseCellValue(cellText);
+          break;
+        }
+      }
+      // default to string
+      const colType = detected ? detected.type : "string";
+
+      // clear indicators on all headers
+      headers.forEach(h => { h.classList.remove("sort-asc","sort-desc"); h.dataset.order = "none"; });
+
+      // toggle order
+      const current = th.dataset.order === "asc" ? "asc" : (th.dataset.order === "desc" ? "desc" : null);
+      const order = current === "asc" ? "desc" : "asc";
+      th.dataset.order = order;
+      th.classList.add(order === "asc" ? "sort-asc" : "sort-desc");
+
+      rows.sort((ra, rb) => {
+        const aRaw = (ra.cells[colIndex] && ra.cells[colIndex].textContent) ? ra.cells[colIndex].textContent.trim() : "";
+        const bRaw = (rb.cells[colIndex] && rb.cells[colIndex].textContent) ? rb.cells[colIndex].textContent.trim() : "";
+
+        const a = parseCellValue(aRaw);
+        const b = parseCellValue(bRaw);
+
+        let cmp = 0;
+        if (colType === 'number' || a.type === 'number' || b.type === 'number'){
+          const va = (a.type === 'number') ? a.value : (parseCellValue(aRaw).type === 'number' ? parseCellValue(aRaw).value : 0);
+          const vb = (b.type === 'number') ? b.value : (parseCellValue(bRaw).type === 'number' ? parseCellValue(bRaw).value : 0);
+          cmp = va - vb;
+        } else if (colType === 'date' || a.type === 'date' || b.type === 'date'){
+          const va = (a.type === 'date') ? a.value : (parseCellValue(aRaw).type === 'date' ? parseCellValue(aRaw).value : 0);
+          const vb = (b.type === 'date') ? b.value : (parseCellValue(bRaw).type === 'date' ? parseCellValue(bRaw).value : 0);
+          cmp = va - vb;
+        } else {
+          // string compare with locale (handles Chinese + numeric parts)
+          cmp = String(a.value).localeCompare(String(b.value), 'zh-Hant-TW', { numeric: true, sensitivity: 'base' });
+        }
+
+        return (order === 'asc') ? cmp : -cmp;
+      });
+
+      // re-append rows in sorted order
+      rows.forEach(r => tbody.appendChild(r));
+    });
+  });
+}
+
+// ---------- 查詢與 render ----------
+async function sendQuery(command){
+  const s = document.getElementById("startDate").value;
+  const e = document.getElementById("endDate").value;
+  if (!s || !e){ alert("請先選擇起訖日期"); return; }
 
   const body = {
     type: "query",
     command: command,
     version: VERSION,
-    startDate: startDate + " 00:00:00",
-    endDate: endDate + " 23:59:59"
+    startDate: s + (s.includes(" ") ? "" : " 00:00:00"),
+    endDate: e + (e.includes(" ") ? "" : " 23:59:59")
   };
 
   try {
-    const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(body) });
+    const res = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify(body)
+      // 注意：不要額外加 Content-Type header（你之前提到加 header 會出現 Failed to fetch）
+    });
     const json = await res.json();
     if (!json.ok) {
-      document.getElementById("queryResult").innerHTML = `<p style="color:red">❌ 查詢失敗</p>`;
+      document.getElementById("queryResult").innerHTML = `<p style="color:red">❌ 查詢失敗（伺服器回應）</p>`;
       return;
     }
-    renderResult(command, json);
+    renderResult(command, json, s, e);
   } catch (err) {
     document.getElementById("queryResult").innerHTML = `<p style="color:red">❌ 查詢失敗：${err.message}</p>`;
   }
 }
 
-// 顯示結果表格與圖表
-function renderResult(command, json) {
-  let html = "";
+function renderResult(command, json, startDateText, endDateText){
+  let html = `<div style="text-align:center; margin-bottom:6px;">📅 查詢區間： ${startDateText} ~ ${endDateText}</div>`;
 
-  if (command === "明細" && json.rows) {
-    html += `<h4>📊 查詢明細</h4>`;
-    html += `<table id="dataTable">
-              <tr>
-                <th>日期</th>
-                <th>店家</th>
-                <th class="numeric">收入</th>
-                <th class="numeric">支出</th>
-                <th>幣別</th>
-                <th class="numeric">金額</th>
-                <th>付款</th>
-                <th>分類</th>
-                <th>附註</th>
-                <th>備註</th>
-              </tr>`;
+  if (command === "明細" && json.rows){
+    html += `<h4>📊 明細</h4>`;
+    html += `<table id="dataTable"><tr>
+      <th>日期</th>
+      <th>店家</th>
+      <th class="numeric">收入</th>
+      <th class="numeric">支出</th>
+      <th>幣別</th>
+      <th class="numeric">金額</th>
+      <th>付款</th>
+      <th>分類</th>
+      <th>附註</th>
+      <th>備註</th>
+    </tr>`;
     json.rows.forEach(r => {
       const dateStr = r[4] ? new Date(r[4]).toLocaleDateString("zh-TW") : "";
       html += `<tr>
-                <td>${dateStr}</td>
-                <td>${r[8]}</td>
-                <td class="numeric">${Number(r[11]).toLocaleString()}</td>
-                <td class="numeric">${Number(r[12]).toLocaleString()}</td>
-                <td>${r[13]}</td>
-                <td class="numeric">${Number(r[5]).toLocaleString()}</td>
-                <td>${r[7]}</td>
-                <td>${r[6]}</td>
-                <td>${r[9]}</td>
-                <td>${r[10]}</td>
+        <td>${dateStr}</td>
+        <td>${escapeHtml(r[8]||"")}</td>
+        <td class="numeric">${Number(r[11]||0).toLocaleString()}</td>
+        <td class="numeric">${Number(r[12]||0).toLocaleString()}</td>
+        <td>${escapeHtml(r[13]||"")}</td>
+        <td class="numeric">${Number(r[5]||0).toLocaleString()}</td>
+        <td>${escapeHtml(r[7]||"")}</td>
+        <td>${escapeHtml(r[6]||"")}</td>
+        <td>${escapeHtml(r[9]||"")}</td>
+        <td>${escapeHtml(r[10]||"")}</td>
       </tr>`;
     });
     html += `</table>`;
     html += `<div class="total">📌 總額：${Number(json.total||0).toLocaleString()} 元（共 ${json.rows.length} 筆）</div>`;
 
-    // 長條圖依日期彙總
-    const dateSum = {};
+    // bar chart: 日期彙總（把同一天合併）
+    const dailyMap = {};
     json.rows.forEach(r => {
-      const d = new Date(r[4]).toLocaleDateString("zh-TW");
-      dateSum[d] = (dateSum[d] || 0) + Number(r[5]);
+      const dObj = parseDateString(String(r[4]||"")) || new Date(String(r[4]||""));
+      const key = dObj instanceof Date && !isNaN(dObj) ? `${dObj.getFullYear()}-${String(dObj.getMonth()+1).padStart(2,'0')}-${String(dObj.getDate()).padStart(2,'0')}` : String(r[4]||"");
+      dailyMap[key] = (dailyMap[key] || 0) + (Number(r[5]) || 0);
     });
-    const sortedDates = Object.keys(dateSum).sort((a,b)=> new Date(a)-new Date(b));
-    const sumValues = sortedDates.map(d=> dateSum[d]);
-    renderChart("bar", sortedDates, sumValues);
+    // sort keys by date
+    const dailyKeys = Object.keys(dailyMap).sort((a,b) => {
+      const da = new Date(a); const db = new Date(b);
+      return da - db;
+    });
+    const dailyLabels = dailyKeys.map(k => {
+      const d = new Date(k);
+      if (!isNaN(d)) return d.toLocaleDateString("zh-TW");
+      return k;
+    });
+    const dailyValues = dailyKeys.map(k => dailyMap[k]);
+
+    renderChart("bar", dailyLabels, dailyValues);
   }
 
-  // 分類、付款、店家
-  const sections = [
-    { cmd: "分類", data: json.categories, title: "⭕ 分類統計" },
-    { cmd: "付款", data: json.payments, title: "💳 付款統計" },
-    { cmd: "店家", data: json.stores, title: "📋 店家統計" }
-  ];
+  // 分類
+  if (command === "分類" && json.categories){
+    const labels = Object.keys(json.categories);
+    const values = labels.map(l => json.categories[l]);
+    const total = values.reduce((a,b)=>a+b,0);
+    html += `<h4>⭕ 分類統計</h4>`;
+    html += `<table id="dataTable"><tr><th>分類方式</th><th class="numeric">金額</th><th class="numeric">占比</th></tr>`;
+    labels.forEach((lab,i) => {
+      const v = values[i];
+      const pct = total ? ((v/total)*100).toFixed(1) : "0.0";
+      html += `<tr><td>${escapeHtml(lab)}</td><td class="numeric">${v.toLocaleString()}</td><td class="numeric">${pct}%</td></tr>`;
+    });
+    html += `</table>`;
+    html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${labels.length} 種分類）</div>`;
+    renderChart("pie", labels, values);
+  }
 
-  sections.forEach(sec => {
-    if (command === sec.cmd && sec.data) {
-      const labels = Object.keys(sec.data);
-      const values = Object.values(sec.data);
-      const total = values.reduce((a,b)=>a+b,0);
-      const count = values.length;
+  // 付款
+  if (command === "付款" && json.payments){
+    const labels = Object.keys(json.payments);
+    const values = labels.map(l => json.payments[l]);
+    const total = values.reduce((a,b)=>a+b,0);
+    html += `<h4>💳 付款統計</h4>`;
+    html += `<table id="dataTable"><tr><th>付款方式</th><th class="numeric">金額</th><th class="numeric">占比</th></tr>`;
+    labels.forEach((lab,i) => {
+      const v = values[i];
+      const pct = total ? ((v/total)*100).toFixed(1) : "0.0";
+      html += `<tr><td>${escapeHtml(lab)}</td><td class="numeric">${v.toLocaleString()}</td><td class="numeric">${pct}%</td></tr>`;
+    });
+    html += `</table>`;
+    html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${labels.length} 種付款）</div>`;
+    renderChart("pie", labels, values);
+  }
 
-      html += `<h4>${sec.title}</h4>`;
-      html += `<table id="dataTable">
-                 <tr>
-                   <th>${sec.cmd==="店家"?"店家":sec.cmd==="付款"?"付款方式":"分類方式"}</th>
-                   <th class="numeric">金額</th>
-                   <th class="numeric">占比</th>
-                 </tr>`;
-
-      labels.forEach((l,i)=>{
-        const percent = ((values[i]/total)*100).toFixed(1);
-        html += `<tr>
-                   <td>${l}</td>
-                   <td class="numeric">${values[i].toLocaleString()}</td>
-                   <td class="numeric">${percent}%</td>
-                 </tr>`;
-      });
-
-      html += `</table>`;
-      html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${count} 筆）</div>`;
-      renderChart("pie", labels, values);
-    }
-  });
+  // 店家
+  if (command === "店家" && (json.stores || json.shops)){
+    // some GAS versions return 'stores' or 'shops' — safe fallback
+    const shopsObj = json.stores || json.shops || {};
+    const labels = Object.keys(shopsObj);
+    const values = labels.map(l => shopsObj[l]);
+    const total = values.reduce((a,b)=>a+b,0);
+    html += `<h4>📋 店家統計</h4>`;
+    html += `<table id="dataTable"><tr><th>店家</th><th class="numeric">金額</th><th class="numeric">占比</th></tr>`;
+    labels.forEach((lab,i) => {
+      const v = values[i];
+      const pct = total ? ((v/total)*100).toFixed(1) : "0.0";
+      html += `<tr><td>${escapeHtml(lab)}</td><td class="numeric">${v.toLocaleString()}</td><td class="numeric">${pct}%</td></tr>`;
+    });
+    html += `</table>`;
+    html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${labels.length} 筆店家）</div>`;
+    renderChart("pie", labels, values);
+  }
 
   document.getElementById("queryResult").innerHTML = html;
 
-  // 表格排序
-  const dataTable = document.getElementById("dataTable");
-  if (dataTable) makeTableSortable(dataTable);
+  // attach sorting to newly created table (if exists)
+  const tableEl = document.getElementById("dataTable");
+  if (tableEl) makeTableSortable(tableEl);
 }
 
-// 通用表格排序（支援數字/百分比）
-function makeTableSortable(table) {
-  const headers = table.querySelectorAll("th");
-  headers.forEach((th, colIndex)=>{
-    th.style.cursor = "pointer";
-    th.addEventListener("click", ()=>{
-      const rows = Array.from(table.querySelectorAll("tr")).slice(1);
-      const currentOrder = th.dataset.order || null;
-      const newOrder = currentOrder === "asc" ? "desc" : "asc";
-      th.dataset.order = newOrder;
+// safe escape
+function escapeHtml(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
-      headers.forEach(h=>{
-        h.classList.remove("sort-asc","sort-desc");
-        h.innerHTML = h.innerHTML.replace(/[\u25B2\u25BC]/g,"");
-      });
-      th.classList.add(newOrder==="asc"?"sort-asc":"sort-desc");
-      th.innerHTML += newOrder==="asc"?" ▲":" ▼";
-
-      rows.sort((a,b)=>{
-        let aVal = parseCellValue(a.cells[colIndex].innerText);
-        let bVal = parseCellValue(b.cells[colIndex].innerText);
-        if (newOrder==="asc") return aVal>bVal?1:-1;
-        else return aVal<bVal?1:-1;
-      });
-      rows.forEach(r=>table.appendChild(r));
-    });
-  });
+// ---------- 圖表 ----------
+// 自動產多色（pie）
+function generateColors(n){
+  const cols = [];
+  for (let i=0;i<n;i++){
+    const hue = Math.round((i * 360 / n) % 360);
+    cols.push(`hsl(${hue},70%,60%)`);
+  }
+  return cols;
 }
 
-// 將欄位文字轉為可比較值
-function parseCellValue(txt) {
-  let v = txt.replace(/,/g,"").replace("%","");
-  return isNaN(v)?txt:parseFloat(v);
-}
-
-// 畫圖
-function renderChart(type, labels, values) {
+function renderChart(type, labels, values){
   const ctx = document.getElementById("chartCanvas").getContext("2d");
   if (chartInstance) chartInstance.destroy();
-
-  let backgroundColors = [];
-  if (type === "pie") {
-    backgroundColors = labels.map((_,i)=> `hsl(${i*360/labels.length},70%,60%)`);
-  } else {
-    backgroundColors = "rgba(54, 162, 235, 0.6)";
-  }
-
-  chartInstance = new Chart(ctx,{
-    type: type,
-    data: {
-      labels: labels,
-      datasets:[{
-        label:"金額",
-        data: values,
-        backgroundColor: backgroundColors
-      }]
-    },
-    options: { responsive:true }
-  });
+  const dataset = {
+    labels,
+    datasets: [{
+      label: "金額",
+      data: values,
+      backgroundColor: (type === 'pie') ? generateColors(values.length) : "rgba(54,162,235,0.6)",
+      borderColor: (type === 'pie') ? undefined : "rgba(54,162,235,1)",
+      borderWidth: (type === 'pie') ? 0 : 1
+    }]
+  };
+  const options = {
+    responsive: true,
+    plugins: { legend: { position: (type === 'pie' ? 'bottom' : 'top') } },
+    scales: (type === 'bar') ? {
+      x: { title: { display:true, text: '日期' } },
+      y: { title: { display:true, text: '金額' }, beginAtZero:true }
+    } : {}
+  };
+  chartInstance = new Chart(ctx, { type, data: dataset, options });
 }
 </script>
 
 </body>
 </html>
-
