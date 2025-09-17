@@ -14,7 +14,7 @@
     h4 { font-size: 28px; text-align: center; margin-bottom: 20px; }
     button { font-size: 40px; padding: 10px 20px; margin: 5px; border-radius: 8px; cursor: pointer; }
     #queryResult { margin-top: 20px; }
-    h5 { font-size: 22px }
+    h5 { font-size: 28px }
     table { font-size: 28px; border-collapse: collapse; width: 100%; margin-top: 15px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
     th { background-color: #f2f2f2; }
@@ -174,7 +174,7 @@ function renderResult(command, json) {
       const total = values.reduce((a,b)=>a+b,0);
       const count = values.length;
 
-      html += `<h4>${sec.title}</h4>`;
+      html += `<h5>${sec.title}</h5>`;
       html += `<table id="dataTable">
                  <tr>
                    <th>${sec.cmd==="店家"?"店家":sec.cmd==="付款"?"付款方式":"分類方式"}</th>
@@ -268,6 +268,7 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
+
 
 
 
