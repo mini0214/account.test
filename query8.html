@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>零用金支出帳簿</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <style>
+    body { font-family: Arial, sans-serif; padding: 30px; }
+    h3 { font-size: 36px; text-align: center; margin-bottom: 15px; }
+    .date-inputs { text-align: center; margin-bottom: 20px; font-size: 20px; }
+    .date-inputs input { margin: 0 10px; font-size: 18px; padding: 5px; }
+    button { font-size: 26px; padding: 10px 20px; margin: 5px; border-radius: 8px; cursor: pointer; }
+    #queryResult { margin-top: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 15px; font-size: 18px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    th { background-color: #f2f2f2; }
+    .total { font-size: 22px; font-weight: bold; color: #d9534f; margin-top: 10px; }
+    canvas { margin-top: 20px; max-width: 800px; }
+  </style>
+</head>
+<body>
+
+<h3>非看不可.[<span id="version"></span>]</h3>
+
+<div class="date-inputs">
+  開始日期：<input type="date" id="startDate">
+  結束日期：<input type="date" id="endDate">
+</div>
+
+<div style="text-align:center">
+  <button id="queryMonthBtn">📊 查詢明細</button>
+  <button id="queryMonthPayBtn">💳 查詢付款</button>
+  <button id="queryMonthTypeBtn">⭕ 查詢分類</button>
+  <button id="queryMonthStoreBtn">📋 查詢店家</button>
+</div>
+
+<div id="queryResult"></div>
+<canvas id="chartCanvas"></canvas>
+
+<script>
+const LIFF_ID = "2008096451-jPJ50MOY";
+const VERSION = "T9";
+const API_URL = "https://script.google.com/macros/s/AKfycbwQ1t5wHfjAqrtH0_ijNNWtlE5Q0R-g8fwb5htWQoCXKXxSukVX9qVnrfuyoXOyKkGXdw/exec"; // 改成你的GAS網址
+
+let chartInstance = null;
+
+document.getElementById("version").textContent = VERSION;
+
+// 初始化 LIFF
+async function main() {
+  await liff.init({ liffId: LIFF_ID });
+  if (!liff.isLoggedIn()) liff.login();
+  setDefaultDateRange();
+}
+main();
+
+// 設定預設日期為本月月初與月底
+function setDefaultDateRange() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  document.getElementById("startDate").value = toInputDate(start);
+  document.getElementById("endDate").value = toInputDate(end);
+}
+
+function toInputDate(d) {
+  const m = (d.getMonth() + 1).toString().padStart(2, "0");
+  const day = d.getDate().toString().padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
+// 按鈕事件
+document.getElementById("queryMonthBtn").addEventListener("click", () => sendQuery("明細"));
+document.getElementById("queryMonthTypeBtn").addEventListener("click", () => sendQuery("分類"));
+document.getElementById("queryMonthPayBtn").addEventListener("click", () => sendQuery("付款"));
+document.getElementById("queryMonthStoreBtn").addEventListener("click", () => sendQuery("店家"));
+
+/* 通用表格排序 */
+function makeTableSortable(table) {
+  const headers = table.querySelectorAll("th");
+  headers.forEach((th, colIndex) => {
+    th.addEventListener("click", () => {
+      const tbody = table.querySelector("tbody") || table;
+      const rows = Array.from(tbody.querySelectorAll("tr")).slice(1);
+      const isNumeric = rows.every(r => !isNaN(r.cells[colIndex].innerText.replace(/,/g, "")));
+      const currentOrder = th.classList.contains("sort-asc") ? "asc" : th.classList.contains("sort-desc") ? "desc" : null;
+      headers.forEach(h => h.classList.remove("sort-asc", "sort-desc"));
+      const newOrder = currentOrder === "asc" ? "desc" : "asc";
+      th.classList.add(newOrder === "asc" ? "sort-asc" : "sort-desc");
+      rows.sort((a, b) => {
+        let aText = a.cells[colIndex].innerText.trim();
+        let bText = b.cells[colIndex].innerText.trim();
+        if (isNumeric) {
+          aText = parseFloat(aText.replace(/,/g, "")) || 0;
+          bText = parseFloat(bText.replace(/,/g, "")) || 0;
+        }
+        if (newOrder === "asc") return aText > bText ? 1 : -1;
+        else return aText < bText ? 1 : -1;
+      });
+      rows.forEach(r => tbody.appendChild(r));
+    });
+  });
+}
+
+// 發送查詢
+async function sendQuery(command) {
+  const startDate = document.getElementById("startDate").value;
+  const endDate = document.getElementById("endDate").value;
+  
+  if (!startDate || !endDate) {
+    alert("請選擇開始與結束日期");
+    return;
+  }
+
+  const body = {
+    type: "query",
+    command: command,
+    version: VERSION,
+    startDate: startDate + " 00:00:00",  // 🔹強制從當日零點開始
+    endDate: endDate + " 23:59:59"       // 🔹強制到當日最後一秒
+  };
+
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify(body)
+    });
+    
+    const json = await res.json();
+    if (!json.ok) {
+      document.getElementById("queryResult").innerHTML = `<p style="color:red">❌ 查詢失敗</p>`;
+      return;
+    }
+    
+    renderResult(command, json);
+  } catch (err) {
+    document.getElementById("queryResult").innerHTML = `<p style="color:red">❌ 查詢失敗：${err.message}</p>`;
+  }
+}
+
+// 顯示結果表格與圖表
+function renderResult(command, json) {
+  let html = "";
+ 
+  if (command === "明細" && json.rows) {
+    html += `<h4>📊 查詢明細</h4>`;
+    html += `<table id="dataTable"><tr>
+      <th>日期</th><th>店家</th><th>收入</th><th>支出</th>
+      <th>幣別</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th>
+    </tr>`;
+    json.rows.forEach(r => {
+      const dateStr = r[4] ? new Date(r[4]).toLocaleDateString("zh-TW") : "";
+      html += `<tr>
+        <td>${dateStr}</td><td>${r[8]}</td><td>${Number(r[11]).toLocaleString()}</td>
+        <td>${Number(r[12]).toLocaleString()}</td><td>${r[13]}</td><td>${Number(r[5]).toLocaleString()}</td>
+        <td>${r[7]}</td><td>${r[6]}</td><td>${r[9]}</td><td>${r[10]}</td>
+      </tr>`;
+    });
+    html += `</table>`;
+    html += `<div class="total">📌 總額：${Number(json.total||0).toLocaleString()} 元（共 ${json.rows.length} 筆）</div>`;
+    renderChart("bar", json.rows.map(r => new Date(r[4]).toLocaleDateString("zh-TW")),
+                json.rows.map(r => Number(r[5]) || 0));
+  }
+
+  // 分類
+  if (command === "分類" && json.categories) {
+    const labels = Object.keys(json.categories);
+    const values = Object.values(json.categories);
+    const total = values.reduce((a,b)=>a+b,0);
+    const count = values.length; // 筆數 = 有幾個
+    
+    html += `<h4>⭕ 分類統計</h4>`;
+    html += `<table id="dataTable"><tr><th>分類方式</th><th>金額</th><th>占比</th></tr>`;
+    
+    labels.forEach((l,i)=> {
+      const percent = ((values[i] / total) * 100).toFixed(1); // 占比計算
+      html += `<tr>
+                 <td>${l}</td>
+                 <td>${values[i].toLocaleString()}</td>
+                 <td>${percent}%</td>
+               </tr>`;
+    });
+  
+    html += `</table>`;
+    html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${count} 種分類）</div>`;
+    renderChart("pie", labels, values);
+  }
+
+  // 付款
+  if (command === "付款" && json.payments) {
+    const labels = Object.keys(json.payments);
+    const values = Object.values(json.payments);
+    const total = values.reduce((a,b)=>a+b,0);
+    const count = values.length; // 筆數 = 有幾個
+    
+    html += `<h4>💳 付款統計</h4>`;
+    html += `<table id="dataTable"><tr><th>付款方式</th><th>金額</th><th>占比</th></tr>`;
+    
+    labels.forEach((l,i)=> {
+      const percent = ((values[i] / total) * 100).toFixed(1); // 占比計算
+      html += `<tr>
+                 <td>${l}</td>
+                 <td>${values[i].toLocaleString()}</td>
+                 <td>${percent}%</td>
+               </tr>`;
+    });
+  
+    html += `</table>`;
+    html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${count} 種付款）</div>`;
+    renderChart("pie", labels, values);
+  }
+
+  // 店家
+  if (command === "店家" && json.stores) {
+    const labels = Object.keys(json.stores);
+    const values = Object.values(json.stores);
+    const total = values.reduce((a,b)=>a+b,0);
+    const count = values.length; // 筆數 = 有幾個
+    
+    html += `<h4>📋 店家統計</h4>`;
+    html += `<table id="dataTable"><tr><th>店家</th><th>金額</th><th>占比</th></tr>`;
+    
+    labels.forEach((l,i)=> {
+      const percent = ((values[i] / total) * 100).toFixed(1); // 占比計算
+      html += `<tr>
+                 <td>${l}</td>
+                 <td>${values[i].toLocaleString()}</td>
+                 <td>${percent}%</td>
+               </tr>`;
+    });
+  
+    html += `</table>`;
+    html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${count} 筆店家）</div>`;
+    renderChart("pie", labels, values);
+  }
+
+  document.getElementById("queryResult").innerHTML = html;
+
+  // 表格排序
+  const dataTable = document.getElementById("dataTable");
+  if (dataTable) makeTableSortable(dataTable);
+  }
+
+// 畫圖
+function renderChart(type, labels, values) {
+  const ctx = document.getElementById("chartCanvas").getContext("2d");
+  if (chartInstance) chartInstance.destroy();
+  chartInstance = new Chart(ctx, {
+    type: type,
+    data: { labels: labels, datasets: [{ label: "金額", data: values, backgroundColor: "rgba(54, 162, 235, 0.6)" }] },
+    options: { responsive: true }
+  });
+}
+</script>
+
+</body>
+</html>
+
+
