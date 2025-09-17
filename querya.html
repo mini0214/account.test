@@ -3,133 +3,87 @@
 <head>
   <meta charset="utf-8">
   <title>零用金支出帳簿</title>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  
   <style>
-    body { font-family: Arial, sans-serif; padding: 30px; }
-    h3 { font-size: 36px; text-align: center; margin-bottom: 15px; }
-    .date-inputs { text-align: center; margin-bottom: 20px; font-size: 20px; }
-    .date-inputs input { margin: 0 10px; font-size: 18px; padding: 5px; }
-    button { font-size: 26px; padding: 10px 20px; margin: 5px; border-radius: 8px; cursor: pointer; }
-    #queryResult { margin-top: 20px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 15px; font-size: 18px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-    th { background-color: #f2f2f2; }
-    .total { font-size: 22px; font-weight: bold; color: #d9534f; margin-top: 10px; }
-    canvas { margin-top: 20px; max-width: 800px; }
-    
-    /* 數字欄位靠右 ... */  
-    #dataTable th.numeric,
-    #dataTable td.numeric {
-      text-align: right;
-    }
-
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 6px 10px; }
+    th { background: #f2f2f2; cursor: pointer; user-select: none; }
+    td.numeric, th.numeric { text-align: right; }
+    .total { margin-top: 10px; font-weight: bold; }
   </style>
 </head>
 <body>
 
-<h3>非看不可.[<span id="version"></span>]</h3>
-
-<div class="date-inputs">
-  開始日期：<input type="date" id="startDate">
-  結束日期：<input type="date" id="endDate">
-</div>
-
-<div style="text-align:center">
-  <button id="queryMonthBtn">📊 查詢明細</button>
-  <button id="queryMonthPayBtn">💳 查詢付款</button>
-  <button id="queryMonthTypeBtn">⭕ 查詢分類</button>
-  <button id="queryMonthStoreBtn">📋 查詢店家</button>
-</div>
+<h3>零用金查詢</h3>
+開始日期：<input type="date" id="startDate" value="2025-09-01">
+結束日期：<input type="date" id="endDate" value="2025-09-16">
+<button onclick="sendQuery('明細')">查詢明細</button>
+<button onclick="sendQuery('分類')">查詢分類</button>
+<button onclick="sendQuery('付款')">查詢付款</button>
+<button onclick="sendQuery('店家')">查詢店家</button>
 
 <div id="queryResult"></div>
 <canvas id="chartCanvas"></canvas>
 
 <script>
-const LIFF_ID = "2008096451-jPJ50MOY";
-const VERSION = "T9";
-const API_URL = "https://script.google.com/macros/s/AKfycbwQ1t5wHfjAqrtH0_ijNNWtlE5Q0R-g8fwb5htWQoCXKXxSukVX9qVnrfuyoXOyKkGXdw/exec"; // 改成你的GAS網址
-
+const API_URL = "https://script.google.com/macros/s/AKfycbwQ1t5wHfjAqrtH0_ijNNWtlE5Q0R-g8fwb5htWQoCXKXxSukVX9qVnrfuyoXOyKkGXdw/exec"; 
+const VERSION = "1.0";
 let chartInstance = null;
 
-document.getElementById("version").textContent = VERSION;
-
-// 初始化 LIFF
-async function main() {
-  await liff.init({ liffId: LIFF_ID });
-  if (!liff.isLoggedIn()) liff.login();
-  setDefaultDateRange();
+/* 解析儲存格文字成數字或文字 */
+function parseCellValue(text) {
+  let v = text.replace(/,/g, "").trim();
+  if (v.endsWith("%")) {
+    return parseFloat(v.replace("%", "")) || 0;
+  }
+  if (!isNaN(v) && v !== "") {
+    return parseFloat(v);
+  }
+  return v.toLowerCase(); // 文字比對
 }
-main();
-
-// 設定預設日期為本月月初與月底
-function setDefaultDateRange() {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), 1);
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  document.getElementById("startDate").value = toInputDate(start);
-  document.getElementById("endDate").value = toInputDate(end);
-}
-
-function toInputDate(d) {
-  const m = (d.getMonth() + 1).toString().padStart(2, "0");
-  const day = d.getDate().toString().padStart(2, "0");
-  return `${d.getFullYear()}-${m}-${day}`;
-}
-
-// 按鈕事件
-document.getElementById("queryMonthBtn").addEventListener("click", () => sendQuery("明細"));
-document.getElementById("queryMonthTypeBtn").addEventListener("click", () => sendQuery("分類"));
-document.getElementById("queryMonthPayBtn").addEventListener("click", () => sendQuery("付款"));
-document.getElementById("queryMonthStoreBtn").addEventListener("click", () => sendQuery("店家"));
 
 /* 通用表格排序 */
 function makeTableSortable(table) {
   const headers = table.querySelectorAll("th");
   headers.forEach((th, colIndex) => {
-    th.style.cursor = "pointer"; // 滑鼠移過去有手指
     th.addEventListener("click", () => {
-      const rows = Array.from(table.querySelectorAll("tr")).slice(1); // 第一列是表頭
-      const isNumeric = rows.every(r => !isNaN(r.cells[colIndex].innerText.replace(/,/g, "")));
+      const rows = Array.from(table.querySelectorAll("tr")).slice(1);
 
-      // 🔹先清掉所有排序符號
+      // 清掉其他表頭符號
       headers.forEach(h => {
-        h.classList.remove("sort-asc", "sort-desc");
-        h.innerHTML = h.innerHTML.replace(/[\u25B2\u25BC]/g, ""); // ▲▼
+        if (h !== th) {
+          h.dataset.order = "";
+          h.innerHTML = h.innerHTML.replace(/[\u25B2\u25BC]/g, "");
+        }
       });
 
-      const currentOrder = th.dataset.order || null;
+      const currentOrder = th.dataset.order || "none";
       const newOrder = currentOrder === "asc" ? "desc" : "asc";
       th.dataset.order = newOrder;
 
-      // 🔹加上符號
-      if (newOrder === "asc") {
-        th.classList.add("sort-asc");
-        th.innerHTML += " ▲";
-      } else {
-        th.classList.add("sort-desc");
-        th.innerHTML += " ▼";
-      }
-      
-      // 🔹排序
+      // 加上符號
+      th.innerHTML = th.innerHTML.replace(/[\u25B2\u25BC]/g, "");
+      th.innerHTML += newOrder === "asc" ? " ▲" : " ▼";
+
+      // 排序
       rows.sort((a, b) => {
-        let aText = a.cells[colIndex].innerText.trim();
-        let bText = b.cells[colIndex].innerText.trim();
-        if (isNumeric) {
-          aText = parseFloat(aText.replace(/,/g, "")) || 0;
-          bText = parseFloat(bText.replace(/,/g, "")) || 0;
+        let aVal = parseCellValue(a.cells[colIndex].innerText);
+        let bVal = parseCellValue(b.cells[colIndex].innerText);
+
+        if (typeof aVal === "number" && typeof bVal === "number") {
+          return newOrder === "asc" ? aVal - bVal : bVal - aVal;
         }
-        if (newOrder === "asc") return aText > bText ? 1 : -1;
-        else return aText < bText ? 1 : -1;
+        return newOrder === "asc"
+          ? aVal.localeCompare(bVal, "zh-Hant")
+          : bVal.localeCompare(aVal, "zh-Hant");
       });
-      
-      // 🔹把排序後的列放回表格
+
       rows.forEach(r => table.appendChild(r));
     });
   });
 }
-  
+
 // 發送查詢
 async function sendQuery(command) {
   const startDate = document.getElementById("startDate").value;
@@ -144,8 +98,8 @@ async function sendQuery(command) {
     type: "query",
     command: command,
     version: VERSION,
-    startDate: startDate + " 00:00:00",  // 🔹強制從當日零點開始
-    endDate: endDate + " 23:59:59"       // 🔹強制到當日最後一秒
+    startDate: startDate + " 00:00:00",
+    endDate: endDate + " 23:59:59"
   };
 
   try {
@@ -159,7 +113,6 @@ async function sendQuery(command) {
       document.getElementById("queryResult").innerHTML = `<p style="color:red">❌ 查詢失敗</p>`;
       return;
     }
-    
     renderResult(command, json);
   } catch (err) {
     document.getElementById("queryResult").innerHTML = `<p style="color:red">❌ 查詢失敗：${err.message}</p>`;
@@ -211,7 +164,6 @@ function renderResult(command, json) {
     const labels = Object.keys(json.categories);
     const values = Object.values(json.categories);
     const total = values.reduce((a,b)=>a+b,0);
-    const count = values.length; // 筆數 = 有幾個
     
     html += `<h4>⭕ 分類統計</h4>`;
     html += `<table id="dataTable">
@@ -222,7 +174,7 @@ function renderResult(command, json) {
                 </tr>`;
     
     labels.forEach((l,i)=> {
-      const percent = ((values[i] / total) * 100).toFixed(1); // 占比計算
+      const percent = ((values[i] / total) * 100).toFixed(1);
       html += `<tr>
                  <td>${l}</td>
                  <td class="numeric">${values[i].toLocaleString()}</td>
@@ -231,7 +183,7 @@ function renderResult(command, json) {
     });
   
     html += `</table>`;
-    html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${count} 種分類）</div>`;
+    html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${labels.length} 種分類）</div>`;
     renderChart("pie", labels, values);
   }
 
@@ -240,7 +192,6 @@ function renderResult(command, json) {
     const labels = Object.keys(json.payments);
     const values = Object.values(json.payments);
     const total = values.reduce((a,b)=>a+b,0);
-    const count = values.length; // 筆數 = 有幾個
     
     html += `<h4>💳 付款統計</h4>`;
     html += `<table id="dataTable">
@@ -251,7 +202,7 @@ function renderResult(command, json) {
               </tr>`;
     
     labels.forEach((l,i)=> {
-      const percent = ((values[i] / total) * 100).toFixed(1); // 占比計算
+      const percent = ((values[i] / total) * 100).toFixed(1);
       html += `<tr>
                  <td>${l}</td>
                  <td class="numeric">${values[i].toLocaleString()}</td>
@@ -260,7 +211,7 @@ function renderResult(command, json) {
     });
   
     html += `</table>`;
-    html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${count} 種付款）</div>`;
+    html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${labels.length} 種付款）</div>`;
     renderChart("pie", labels, values);
   }
 
@@ -269,7 +220,6 @@ function renderResult(command, json) {
     const labels = Object.keys(json.stores);
     const values = Object.values(json.stores);
     const total = values.reduce((a,b)=>a+b,0);
-    const count = values.length; // 筆數 = 有幾個
     
     html += `<h4>📋 店家統計</h4>`;
     html += `<table id="dataTable">
@@ -280,7 +230,7 @@ function renderResult(command, json) {
               </tr>`;
     
     labels.forEach((l,i)=> {
-      const percent = ((values[i] / total) * 100).toFixed(1); // 占比計算
+      const percent = ((values[i] / total) * 100).toFixed(1);
       html += `<tr>
                  <td>${l}</td>
                  <td class="numeric">${values[i].toLocaleString()}</td>
@@ -289,16 +239,15 @@ function renderResult(command, json) {
     });
   
     html += `</table>`;
-    html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${count} 筆店家）</div>`;
+    html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${labels.length} 筆店家）</div>`;
     renderChart("pie", labels, values);
   }
 
   document.getElementById("queryResult").innerHTML = html;
 
-  // 表格排序
   const dataTable = document.getElementById("dataTable");
   if (dataTable) makeTableSortable(dataTable);
-  }
+}
 
 // 畫圖
 function renderChart(type, labels, values) {
@@ -314,5 +263,3 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
-
-
