@@ -151,13 +151,16 @@ function renderResult(command, json) {
     json.rows.forEach(r => {
       const d = r[4] ? new Date(r[4]).toLocaleDateString("zh-TW") : "";
       const currencyVal = parseFloat(r[14]);
-      if (!d || isNaN(currencyVal) || currencyVal===1) return;
-      if (!dailyMax[d] || currencyVal>dailyMax[d]) dailyMax[d] = currencyVal;
+      // 只取有效匯率數值
+      if (!d || isNaN(currencyVal) || currencyVal <= 0) return;
+      if (!dailyMax[d] || currencyVal > dailyMax[d]) dailyMax[d] = currencyVal;
     });
-    const currencyLabels = Object.keys(dailyMax).sort((a,b)=> new Date(a)-new Date(b));
+    
+    const currencyLabels = Object.keys(dailyMax).sort((a,b)=> new Date(a) - new Date(b));
     const currencyData = currencyLabels.map(d=> dailyMax[d]);
+    
     renderCurrencyChart(currencyLabels, currencyData);
-  }
+   }
 
   // 分類、付款、店家
   const sections = [
@@ -247,3 +250,4 @@ function renderCurrencyChart(labels, values) {
 
 </body>
 </html>
+
