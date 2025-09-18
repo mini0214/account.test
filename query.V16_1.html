@@ -39,7 +39,6 @@
   <button id="queryMonthPayBtn">💳 付款</button>
   <button id="queryMonthTypeBtn">⭕ 分類</button>
   <button id="queryMonthStoreBtn">📋 店家</button>
-  <button id="queryCurrencyBtn">📋 匯率</button>
 </div>
 
 <div id="queryResult"></div>
@@ -81,7 +80,6 @@ document.getElementById("queryMonthBtn").addEventListener("click", () => sendQue
 document.getElementById("queryMonthTypeBtn").addEventListener("click", () => sendQuery("分類"));
 document.getElementById("queryMonthPayBtn").addEventListener("click", () => sendQuery("付款"));
 document.getElementById("queryMonthStoreBtn").addEventListener("click", () => sendQuery("店家"));
-document.getElementById("queryCurrencyBtn").addEventListener("click", () => sendQuery("匯率"));
 
 // 發送查詢
 async function sendQuery(command) {
@@ -162,57 +160,34 @@ function renderResult(command, json) {
     renderChart("bar", sortedDates, sumValues);
   }
 
+  // ====== 匯率走勢圖 ======
+    const rateData = {};  // { currency: { date: maxRate } }
+    json.rows.forEach(r => {
+      const dateStr = new Date(r[4]).toLocaleDateString("zh-TW");
+      const curr = r[13];
+      const rate = parseFloat(r[14]);   // ⚠️ 假設 r[14] 是匯率欄位，需確認
+      if (!curr || curr === "1" || isNaN(rate)) return;
+
+      if (!rateData[curr]) rateData[curr] = {};
+      if (!rateData[curr][dateStr] || rate > rateData[curr][dateStr]) {
+        rateData[curr][dateStr] = rate;
+      }
+    });
+
+    if (Object.keys(rateData).length > 0) {
+      html += `<h5>📈 匯率走勢圖（每日最大值）</h5>
+               <canvas id="rateChart"></canvas>`;
+      setTimeout(()=> renderRateChart(rateData), 0); // 延遲讓 DOM 存在
+    }
+  }
+
+
   // 分類、付款、店家
   const sections = [
     { cmd: "分類", data: json.categories, title: "⭕ 選擇分類統計;標題按下即可排序" },
     { cmd: "付款", data: json.payments, title: "💳 選擇付款統計;標題按下即可排序" },
     { cmd: "店家", data: json.stores, title: "📋 選擇店家統計;標題按下即可排序" }
   ];
-
-  if (command === "匯率" && json.rows) { 
-  html += `<h5>📊 每日最大匯率 (排除=1); 標題按下即可排序</h5>`;
-  html += `<table id="dataTable">
-            <thead>
-              <tr>
-                <th>日期</th>
-                <th>匯率</th>
-              </tr>
-            </thead>
-            <tbody>`;
-
-  // step1: 整理成 {date: maxCurrency}
-  const dailyMax = {};
-  json.rows.forEach(r => {
-    const dateStr = r[4] ? new Date(r[4]).toLocaleDateString("zh-TW") : "";
-    const currencyVal = parseFloat(r[13]);
-
-    if (!dateStr || isNaN(currencyVal)) return;
-    if (currencyVal === 1) return; // 排除=1
-
-    if (!dailyMax[dateStr] || currencyVal > dailyMax[dateStr]) {
-      dailyMax[dateStr] = currencyVal;
-    }
-  });
-
-  // step2: 填表格 & 準備圖表資料
-  const chartLabels = [];
-  const chartData = [];
-  Object.keys(dailyMax).sort((a,b)=> new Date(a)-new Date(b)).forEach(dateStr => {
-    html += `<tr>
-              <td>${dateStr}</td>
-              <td>${dailyMax[dateStr]}</td>
-            </tr>`;
-    chartLabels.push(dateStr);
-    chartData.push(dailyMax[dateStr]);
-  });
-
-  html += `</tbody></table>`;
-
-  // step3: 用共用的 renderChart 畫圖
-  renderChart("bar", chartLabels, chartData);
-}
-
-
 
   sections.forEach(sec => {
     if (command === sec.cmd && sec.data) {
@@ -249,6 +224,36 @@ function renderResult(command, json) {
   // 表格排序
   const dataTable = document.getElementById("dataTable");
   if (dataTable) makeTableSortable(dataTable);
+}
+
+  // ===== 匯率走勢圖繪製 =====
+function renderRateChart(rateData) {
+  const ctx = document.getElementById("rateChart").getContext("2d");
+  if (chartInstance) chartInstance.destroy();
+
+  // 整合所有日期
+  const allDates = [...new Set(
+    Object.values(rateData).flatMap(obj => Object.keys(obj))
+  )].sort((a,b)=> new Date(a)-new Date(b));
+
+  const datasets = Object.keys(rateData).map((curr,i)=>({
+    label: curr,
+    data: allDates.map(d=> rateData[curr][d] || null),
+    borderColor: `hsl(${i*360/Object.keys(rateData).length},70%,50%)`,
+    fill: false,
+    tension: 0.2
+  }));
+
+  chartInstance = new Chart(ctx,{
+    type:"line",
+    data:{ labels: allDates, datasets },
+    options:{
+      responsive:true,
+      interaction:{ mode:"index", intersect:false },
+      plugins:{ legend:{ position:"bottom" } },
+      scales:{ y:{ title:{ display:true, text:"匯率" } } }
+    }
+  });
 }
 
 // 通用表格排序（支援數字/百分比）
@@ -315,11 +320,5 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
-
-
-
-
-
-
 
 
