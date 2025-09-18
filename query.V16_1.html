@@ -161,9 +161,16 @@ function renderResult(command, json) {
     const dailyMax = {};
     json.rows.forEach(r => {
       const d = r[4] ? new Date(r[4]).toLocaleDateString("zh-TW") : "";
-      const currencyVal = parseFloat(r[14]);
-      if (!d || isNaN(currencyVal) || currencyVal <= 0) return;
-      if (!dailyMax[d] || currencyVal > dailyMax[d]) dailyMax[d] = currencyVal;
+      const currencyVal = parseFloat(r[14]);  // exchange
+      const currency = r[13];                 // 幣別代號
+    
+      // 如果是台幣就略過，其他幣別就計算
+      if (!d || isNaN(currencyVal)) return;
+      if (currency === "TWD") return;
+    
+      if (!dailyMax[d] || currencyVal > dailyMax[d]) {
+        dailyMax[d] = currencyVal;
+      }
     });
     const currencyLabels = Object.keys(dailyMax).sort((a,b)=> new Date(a)-new Date(b));
     const currencyData = currencyLabels.map(d=> dailyMax[d]);
@@ -276,4 +283,5 @@ function renderCurrencyChart(labels, values) {
 
 </body>
 </html>
+
 
