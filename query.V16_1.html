@@ -39,7 +39,7 @@
   <button id="queryMonthPayBtn">💳 付款</button>
   <button id="queryMonthTypeBtn">⭕ 分類</button>
   <button id="queryMonthStoreBtn">📋 店家</button>
-  <button id="queryMonthStoreBtn">📋 匯率</button>
+  <button id="queryCurrencyBtn">📋 匯率</button>
 </div>
 
 <div id="queryResult"></div>
@@ -81,7 +81,7 @@ document.getElementById("queryMonthBtn").addEventListener("click", () => sendQue
 document.getElementById("queryMonthTypeBtn").addEventListener("click", () => sendQuery("分類"));
 document.getElementById("queryMonthPayBtn").addEventListener("click", () => sendQuery("付款"));
 document.getElementById("queryMonthStoreBtn").addEventListener("click", () => sendQuery("店家"));
-document.getElementById("queryMonthStoreBtn").addEventListener("click", () => sendQuery("匯率"));
+document.getElementById("queryCurrencyBtn").addEventListener("click", () => sendQuery("匯率"));
 
 // 發送查詢
 async function sendQuery(command) {
@@ -333,6 +333,7 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
+
 
 
 
