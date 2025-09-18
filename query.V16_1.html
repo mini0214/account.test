@@ -38,7 +38,8 @@
   <button id="queryMonthBtn">📊 明細</button>
   <button id="queryMonthPayBtn">💳 付款</button>
   <button id="queryMonthTypeBtn">⭕ 分類</button>
-  <button id="queryMonthStoreBtn">📋 店家</button>
+  <button id="queryMonthStoreBtn">📋 店家</button>  
+  <button id="queryMonthStoreBtn">📋 幣別</button>
 </div>
 
 <div id="queryResult"></div>
@@ -80,6 +81,7 @@ document.getElementById("queryMonthBtn").addEventListener("click", () => sendQue
 document.getElementById("queryMonthTypeBtn").addEventListener("click", () => sendQuery("分類"));
 document.getElementById("queryMonthPayBtn").addEventListener("click", () => sendQuery("付款"));
 document.getElementById("queryMonthStoreBtn").addEventListener("click", () => sendQuery("店家"));
+document.getElementById("queryMonthStoreBtn").addEventListener("click", () => sendQuery("幣別"));
 
 // 發送查詢
 async function sendQuery(command) {
@@ -233,6 +235,69 @@ function makeTableSortable(table) {
   });
 }
 
+if (command === "匯率" && json.rows) { 
+  html += `<h5>📊 每日最大匯率 (排除=1); 標題按下即可排序</h5>`;
+  html += `<table id="dataTable">
+            <thead>
+              <tr>
+                <th>日期</th>
+                <th>匯率</th>
+              </tr>
+            </thead>
+            <tbody>`;
+
+  // step1: 整理成 {date: maxCurrency}
+  const dailyMax = {};
+  json.rows.forEach(r => {
+    const dateStr = r[4] ? new Date(r[4]).toLocaleDateString("zh-TW") : "";
+    const currencyVal = parseFloat(r[13]);
+
+    if (!dateStr || isNaN(currencyVal)) return;
+    if (currencyVal === 1) return; // 排除=1
+
+    if (!dailyMax[dateStr] || currencyVal > dailyMax[dateStr]) {
+      dailyMax[dateStr] = currencyVal;
+    }
+  });
+
+  // step2: 填表格 & 準備圖表資料
+  const chartLabels = [];
+  const chartData = [];
+  Object.keys(dailyMax).sort((a,b)=> new Date(a)-new Date(b)).forEach(dateStr => {
+    html += `<tr>
+              <td>${dateStr}</td>
+              <td>${dailyMax[dateStr]}</td>
+            </tr>`;
+    chartLabels.push(dateStr);
+    chartData.push(dailyMax[dateStr]);
+  });
+
+  html += `</tbody></table>`;
+  html += `<canvas id="barChart" width="600" height="300"></canvas>`;
+
+  // step3: 畫圖
+  setTimeout(() => {
+    const ctx = document.getElementById("barChart").getContext("2d");
+    new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: chartLabels,
+        datasets: [{
+          label: "每日最大匯率",
+          data: chartData,
+          borderWidth: 1
+        }]
+      },
+      options: {
+        scales: {
+          y: { beginAtZero: false }
+        }
+      }
+    });
+  }, 100);
+}
+
+
 // 將欄位文字轉為可比較值
 function parseCellValue(txt) {
   let v = txt.replace(/,/g,"").replace("%","");
@@ -268,5 +333,6 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
+
 
 
