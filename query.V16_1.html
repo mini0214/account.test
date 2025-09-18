@@ -33,8 +33,8 @@
 
 <script>
 const LIFF_ID = "2008096451-jPJ50MOY";   // 換成你的 LIFF ID
-const VERSION = "V16_9";                 
-const API_URL = "https://script.google.com/macros/s/AKfycbwQ1t5wHfjAqrtH0_ijNNWtlE5Q0R-g8fwb5htWQoCXKXxSukVX9qVnrfuyoXOyKkGXdw/exec";  // 換成你的 GAS
+const VERSION = "V16_10";                 
+const API_URL = "https://script.google.com/macros/s/AKfycbxw5A9IT1TrMg8W5szoRSpMdrThcJ1ttMFQfixsD4LX6FCE0Ch9Gpa40rB6m_qN-anz/exec";  // 換成你的 GAS
 
 let chartInstance = null;
 document.getElementById("version").textContent = VERSION;
@@ -128,24 +128,24 @@ function renderResult(command, json) {
     const sumValues = sortedDates.map(d=> dateSum[d]);
     renderChart("bar", sortedDates, sumValues, "金額");
 
-    // ===== 匯率走勢圖 =====
-    const rateData = {};  // { currency: { date: maxRate } }
+        // 匯率走勢圖
+    const dailyMax = {};
     json.rows.forEach(r => {
-      const dateStr = new Date(r[4]).toLocaleDateString("zh-TW");
-      const curr = r[13];
-      const rate = parseFloat(r[14]);   // ⚠️ 確認 r[14] 是否為匯率欄位
-      if (!curr || curr === "1" || isNaN(rate)) return;
-      if (!rateData[curr]) rateData[curr] = {};
-      if (!rateData[curr][dateStr] || rate > rateData[curr][dateStr]) {
-        rateData[curr][dateStr] = rate;
-      }
+      const dateStr = r[4] ? new Date(r[4]).toLocaleDateString("zh-TW") : "";
+      const currencyVal = parseFloat(r[13]);
+      if (!dateStr || isNaN(currencyVal) || currencyVal === 1) return;
+      if (!dailyMax[dateStr] || currencyVal > dailyMax[dateStr]) dailyMax[dateStr] = currencyVal;
     });
-    if (Object.keys(rateData).length > 0) {
-      html += `<h5>📈 匯率走勢圖（每日最大值）</h5>
-               <canvas id="rateChart"></canvas>`;
-      setTimeout(()=> renderRateChart(rateData), 0);
-    }
-  }
+    const chartLabels = Object.keys(dailyMax).sort((a,b)=> new Date(a)-new Date(b));
+    const chartData = chartLabels.map(d=> dailyMax[d]);
+    
+    const ctx = document.getElementById("currencyChart").getContext("2d");
+    new Chart(ctx, {
+      type: "line",
+      data: { labels: chartLabels, datasets:[{ label:"匯率", data: chartData, borderColor:"red", fill:false }] },
+      options: { responsive:true }
+    });
+
 
   // 分類、付款、店家 …（略，跟原本一樣）
 
@@ -154,31 +154,6 @@ function renderResult(command, json) {
   if (dataTable) makeTableSortable(dataTable);
 }
 
-// 匯率走勢圖
-function renderRateChart(rateData) {
-  const ctx = document.getElementById("rateChart").getContext("2d");
-  if (chartInstance) chartInstance.destroy();
-  const allDates = [...new Set(
-    Object.values(rateData).flatMap(obj => Object.keys(obj))
-  )].sort((a,b)=> new Date(a)-new Date(b));
-  const datasets = Object.keys(rateData).map((curr,i)=>({
-    label: curr,
-    data: allDates.map(d=> rateData[curr][d] || null),
-    borderColor: `hsl(${i*360/Object.keys(rateData).length},70%,50%)`,
-    fill: false,
-    tension: 0.2
-  }));
-  chartInstance = new Chart(ctx,{
-    type:"line",
-    data:{ labels: allDates, datasets },
-    options:{
-      responsive:true,
-      interaction:{ mode:"index", intersect:false },
-      plugins:{ legend:{ position:"bottom" } },
-      scales:{ y:{ title:{ display:true, text:"匯率" } } }
-    }
-  });
-}
 
 // 表格排序
 function makeTableSortable(table) {
@@ -235,3 +210,4 @@ function renderChart(type, labels, values, labelText) {
 </script>
 </body>
 </html>
+
