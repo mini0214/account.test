@@ -207,29 +207,11 @@ function renderResult(command, json) {
   });
 
   html += `</tbody></table>`;
-  html += `<canvas id="barChart" width="600" height="300"></canvas>`;
 
-  // step3: 畫圖
-  setTimeout(() => {
-    const ctx = document.getElementById("barChart").getContext("2d");
-    new Chart(ctx, {
-      type: "bar",
-      data: {
-        labels: chartLabels,
-        datasets: [{
-          label: "每日最大匯率",
-          data: chartData,
-          borderWidth: 1
-        }]
-      },
-      options: {
-        scales: {
-          y: { beginAtZero: false }
-        }
-      }
-    });
-  }, 100);
+  // step3: 用共用的 renderChart 畫圖
+  renderChart("bar", chartLabels, chartData);
 }
+
 
 
   sections.forEach(sec => {
@@ -333,6 +315,7 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
+
 
 
 
