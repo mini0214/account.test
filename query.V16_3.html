@@ -293,7 +293,7 @@ function renderChart(labels, barValues, lineValues) {
         y1:{
           type:"linear",
           position:"right",
-          title:{ display:true, text:"匯率" },
+          title:{ display:true, text:"匯率" , borderColor: "red" },
           grid:{ drawOnChartArea:false },
           min:minRate,
           max:maxRate
@@ -302,8 +302,9 @@ function renderChart(labels, barValues, lineValues) {
       }
     });
   }
-}
+
 </script>
 
 </body>
 </html>
+
