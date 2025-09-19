@@ -43,16 +43,19 @@
 
 <div id="queryResult"></div>
 <canvas id="chartCanvas"></canvas>
+<div style="text-align:center; margin-top:10px;">
+  <button id="toggleRateBtn">🔀 顯示/隱藏 匯率走勢</button>
+</div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-const LIFF_ID = "2008096451-jPJ50MOY";   // 換成你的 LIFF ID test
-const VERSION = "V16_#12";                   // 固定版次
-const API_URL = "https://script.google.com/macros/s/AKfycbwyWN-amLqH2mGL1qWC3X6hV82oXiihPYUPqJR_NMOMOnRUo7wsgop-W10IhlW6glCB3w/exec";  // 換成你的 GAS PATH
+const LIFF_ID = "2008096451-jPJ50MOY";   // 換成你的 LIFF ID
+const VERSION = "V16_#12";               
+const API_URL = "https://script.google.com/macros/s/AKfycbwyWN-amLqH2mGL1qWC3X6hV82oXiihPYUPqJR_NMOMOnRUo7wsgop-W10IhlW6glCB3w/exec";
 
 let chartInstance = null;
 document.getElementById("version").textContent = VERSION;
 
-// 初始化 LIFF
 async function main() {
   await liff.init({ liffId: LIFF_ID });
   if (!liff.isLoggedIn()) liff.login();
@@ -60,7 +63,6 @@ async function main() {
 }
 main();
 
-// 設定預設日期為本月月初與月底
 function setDefaultDateRange() {
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -68,7 +70,6 @@ function setDefaultDateRange() {
   document.getElementById("startDate").value = toInputDate(start);
   document.getElementById("endDate").value = toInputDate(end);
 }
-
 function toInputDate(d) {
   const m = (d.getMonth() + 1).toString().padStart(2, "0");
   const day = d.getDate().toString().padStart(2, "0");
@@ -81,11 +82,9 @@ document.getElementById("queryMonthTypeBtn").addEventListener("click", () => sen
 document.getElementById("queryMonthPayBtn").addEventListener("click", () => sendQuery("付款"));
 document.getElementById("queryMonthStoreBtn").addEventListener("click", () => sendQuery("店家"));
 
-// 發送查詢
 async function sendQuery(command) {
   const startDate = document.getElementById("startDate").value;
   const endDate = document.getElementById("endDate").value;
-  
   if (!startDate || !endDate) {
     alert("請選擇開始與結束日期");
     return;
@@ -112,7 +111,6 @@ async function sendQuery(command) {
   }
 }
 
-// 顯示結果表格與圖表
 function renderResult(command, json) {
   let html = "";
 
@@ -149,7 +147,6 @@ function renderResult(command, json) {
     html += `</table>`;
     html += `<div class="total">📌 總額：${Number(json.total||0).toLocaleString()} 元（共 ${json.rows.length} 筆）</div>`;
 
-   
     // 長條圖資料
     const dateSum = {};
     const maxCurrencyByDate = {};
@@ -207,7 +204,7 @@ function parseCellValue(txt) {
   return isNaN(v)?txt:parseFloat(v);
 }
 
-// ✅ 修改後：同一張圖上 bar(金額) + line(每日匯率最大值)
+// ✅ Bar(金額) + Line(匯率) + Toggle 按鈕
 function renderChart(labels, barValues, lineValues) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
   if (chartInstance) chartInstance.destroy();
@@ -252,11 +249,19 @@ function renderChart(labels, barValues, lineValues) {
       }
     }
   });
+
+  // 綁定 toggle 按鈕
+  document.getElementById("toggleRateBtn").onclick = () => {
+    const rateDatasetIndex = 1; // 第二個 dataset (line)
+    const isVisible = chartInstance.isDatasetVisible(rateDatasetIndex);
+    chartInstance.setDatasetVisibility(rateDatasetIndex, !isVisible);
+    chartInstance.update();
+  };
 }
 </script>
-
 </body>
 </html>
+
 
 
 
