@@ -278,8 +278,8 @@ function renderChart(type, labels, values) {
     let maxRate = Math.max(...validRates);
 
     // 加 buffer（各 ±1）
-    minRate = Math.floor(minRate) - 1;
-    maxRate = Math.ceil(maxRate) + 1;
+    minRate = Math.floor(minRate) - 0.5;
+    maxRate = Math.ceil(maxRate) + 0.5;
 
 chartInstance = new Chart(ctx, {
       type: "bar",
@@ -297,12 +297,15 @@ chartInstance = new Chart(ctx, {
             type: "line",
             label: "每日匯率最大值",
             data: lineValues,
-            borderColor: "red",
+            borderColor: "red",       // 線條顏色
+            backgroundColor: "red",   // 點的填充顏色
             borderWidth: 2,
-            fill: false,
+            fill: false,              // 不要灰色底
             yAxisID: "y1",
             tension: 0.1,
-            pointRadius: 3
+            pointRadius: 3,
+            pointBackgroundColor: "red",  // 點顏色
+            pointBorderColor: "red"       // 點邊框顏色            
           }
         ]
       },
@@ -340,6 +343,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
