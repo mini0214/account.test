@@ -41,12 +41,6 @@
   <button id="queryMonthStoreBtn">📋 店家</button>
 </div>
 
-<div id="queryResult"></div>
-<canvas id="chartCanvas"></canvas>
-<div style="text-align:center; margin-top:10px;">
-  <button id="toggleRateBtn">🔀 顯示/隱藏 匯率走勢</button>
-</div>
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 const LIFF_ID = "2008096451-jPJ50MOY";   // 換成你的 LIFF ID
@@ -257,10 +251,18 @@ function renderChart(labels, barValues, lineValues) {
     chartInstance.setDatasetVisibility(rateDatasetIndex, !isVisible);
     chartInstance.update();
   };
+
+  <div id="queryResult"></div>
+    <canvas id="chartCanvas"></canvas>
+    <div style="text-align:center; margin-top:10px;">
+      <button id="toggleRateBtn">🔀 顯示/隱藏 匯率走勢</button>
+  </div>
+  
 }
 </script>
 </body>
 </html>
+
 
 
 
