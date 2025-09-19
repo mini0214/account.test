@@ -246,44 +246,57 @@ function parseCellValue(txt) {
   return isNaN(v)?txt:parseFloat(v);
 }
 
-// 畫圖
-function renderChart(type, labels, values) {
+// 畫圖:同一張圖上 bar(金額) + line(每日匯率最大值)
+function renderChart(labels, barValues, lineValues) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
   if (chartInstance) chartInstance.destroy();
 
-  if (type === "pie") {
-    const backgroundColors = labels.map((_,i)=> `hsl(${i*360/labels.length},70%,60%)`);
-    chartInstance = new Chart(ctx,{
-      type: "pie",
-      data: { labels, datasets:[{ data: values, backgroundColor: backgroundColors }] },
-      options: { responsive:true }
-    });
-  } else if (type === "bar") {
-    chartInstance = new Chart(ctx,{
-      type: "bar",
-      data: {
-        labels: labels,
-        datasets:[
-          { label:"金額合計", data: values[0], backgroundColor:"rgba(54, 162, 235, 0.6)" },
-          { label:"每日匯率最大值", data: values[1], type:"line", borderColor:"red", borderWidth:2, fill:false, yAxisID:"y1" }
-        ]
-      },
-      options: { 
-        responsive:true,
-        interaction:{ mode:"index", intersect:false },
-        scales:{
-          y:{ 
-            type:"linear",
-            position:"left",
-            title:{ display:true, text:"金額" }
-          },
-          y1:{
-            type:"linear",
-            position:"right",
-            title:{ display:true, text:"匯率" },
-            grid:{ drawOnChartArea:false },
-            min:17,   // ✅ 下限
-            max:23    // ✅ 上限
+  // 先計算動態的匯率 min/max
+  let minRate = Math.min(...lineValues.filter(v => !isNaN(v)));
+  let maxRate = Math.max(...lineValues.filter(v => !isNaN(v)));
+
+  // 給一點 buffer 讓圖不會貼邊
+  minRate = Math.floor(minRate) - 1;
+  maxRate = Math.ceil(maxRate) + 1;
+  
+  chartInstance = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label:"金額",
+          data: barValues,
+          backgroundColor: "rgba(54, 162, 235, 0.6)",
+          yAxisID: "y"
+        },
+        {
+          label:"每日匯率最大值",
+          data: lineValues,
+          type: "line",
+          borderColor: "red",
+          borderWidth: 2,
+          fill: false,
+          yAxisID: "y1"
+        }
+      ]
+    },
+    options: { 
+      responsive:true,
+      interaction:{ mode:"index", intersect:false },
+      scales:{
+        y:{ 
+          type:"linear",
+          position:"left",
+          title:{ display:true, text:"金額" }
+        },
+        y1:{
+          type:"linear",
+          position:"right",
+          title:{ display:true, text:"匯率" },
+          grid:{ drawOnChartArea:false },
+          min:minRate,
+          max:maxRate
           }
         }
       }
@@ -294,5 +307,3 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
-
-
