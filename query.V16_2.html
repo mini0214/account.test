@@ -254,10 +254,26 @@ function renderChart(type, labels, values) {
         labels: labels,
         datasets:[
           { label:"金額合計", data: values[0], backgroundColor:"rgba(54, 162, 235, 0.6)" },
-          { label:"幣別最大值", data: values[1], backgroundColor:"rgba(255, 99, 132, 0.6)" }
+          { label:"每日匯率最大值", data: values[1], type:"line", borderColor:"red", borderWidth:2, fill:false, yAxisID:"y1" }
         ]
       },
-      options: { responsive:true }
+      options: { 
+        responsive:true,
+        interaction:{ mode:"index", intersect:false },
+        scales:{
+          y:{ 
+            type:"linear",
+            position:"left",
+            title:{ display:true, text:"金額" }
+          },
+          y1:{
+            type:"linear",
+            position:"right",
+            title:{ display:true, text:"匯率" },
+            grid:{ drawOnChartArea:false }
+          }
+        }
+      }
     });
   }
 }
@@ -265,3 +281,4 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
+
