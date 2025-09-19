@@ -9,18 +9,18 @@
   <style>
     body { font-family: Arial, sans-serif; padding: 50px; }
     h3 { font-size: 50px; text-align: center; margin-bottom: 50px; }
-    .date-inputs { font-size: 50px; text-align: center; margin-bottom: 20px; }
-    .date-inputs input { font-size: 50px; margin: 0 10px; padding: 5px; }
+    .date-inputs { font-size: 50px; text-align: center; margin-bottom: 20px;  }
+    .date-inputs input { font-size: 50px; margin: 0 10px;  padding: 5px; }
     h4 { font-size: 36px; text-align: center; margin-bottom: 20px; }
     button { font-size: 40px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background-color: #4CAF50; color: white; }
     #queryResult { margin-top: 1px; }
-    h5 { font-size: 28px; margin: 0; padding: 0; }
+    h5 { font-size: 28px; margin: 0; padding: 0; }  /*margin: 0; 把上下左右外距都清掉 padding: 0; 保險起見，也把內距清掉 */
     table { font-size: 28px; border-collapse: collapse; width: 100%; margin-top: 15px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
     th { background-color: #f2f2f2; }
-    .numeric { text-align: right; }
+    .numeric { text-align: right; }    /* 數字欄位靠右 ... */  
     .total { font-size: 28px; font-weight: bold; color: #d9534f; margin-top: 10px; }
-    canvas { display: block; margin: 20px auto; width: 850px; height: 400px; }
+    canvas { display: block; margin: 20px auto; width: 850px; height: 600px; }    /*margin: 0 auto; 水平置中 */
   </style>
 </head>
 <body>
@@ -43,17 +43,16 @@
 
 <div id="queryResult"></div>
 <canvas id="chartCanvas"></canvas>
-<canvas id="currencyChartCanvas"></canvas>
 
 <script>
-const LIFF_ID = "2008096451-jPJ50MOY";
-const VERSION = "V16_#11";
-const API_URL = "https://script.google.com/macros/s/AKfycbzLdVYp8aXZMymSoNuQSSkxayMfhlCmYXxJ2zLFq8u7xGnd4MPj5Z3wZouAhvstKhN7_A/exec";
+const LIFF_ID = "2008096451-jPJ50MOY";   // 換成你的 LIFF ID test
+const VERSION = "V16_#12";                   // 固定版次
+const API_URL = "https://script.google.com/macros/s/AKfycbwyWN-amLqH2mGL1qWC3X6hV82oXiihPYUPqJR_NMOMOnRUo7wsgop-W10IhlW6glCB3w/exec";  // 換成你的 GAS PATH
 
 let chartInstance = null;
-let currencyChartInstance = null;
 document.getElementById("version").textContent = VERSION;
 
+// 初始化 LIFF
 async function main() {
   await liff.init({ liffId: LIFF_ID });
   if (!liff.isLoggedIn()) liff.login();
@@ -61,6 +60,7 @@ async function main() {
 }
 main();
 
+// 設定預設日期為本月月初與月底
 function setDefaultDateRange() {
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -75,11 +75,13 @@ function toInputDate(d) {
   return `${d.getFullYear()}-${m}-${day}`;
 }
 
+// 按鈕事件
 document.getElementById("queryMonthBtn").addEventListener("click", () => sendQuery("明細"));
 document.getElementById("queryMonthTypeBtn").addEventListener("click", () => sendQuery("分類"));
 document.getElementById("queryMonthPayBtn").addEventListener("click", () => sendQuery("付款"));
 document.getElementById("queryMonthStoreBtn").addEventListener("click", () => sendQuery("店家"));
 
+// 發送查詢
 async function sendQuery(command) {
   const startDate = document.getElementById("startDate").value;
   const endDate = document.getElementById("endDate").value;
@@ -110,6 +112,7 @@ async function sendQuery(command) {
   }
 }
 
+// 顯示結果表格與圖表
 function renderResult(command, json) {
   let html = "";
 
@@ -149,58 +152,15 @@ function renderResult(command, json) {
     // 長條圖依日期彙總
     const dateSum = {};
     json.rows.forEach(r => {
-      const d = r[4] ? new Date(r[4]).toLocaleDateString("zh-TW") : "";
-      if (!d) return;
+      const d = new Date(r[4]).toLocaleDateString("zh-TW");
       dateSum[d] = (dateSum[d] || 0) + Number(r[5]);
     });
     const sortedDates = Object.keys(dateSum).sort((a,b)=> new Date(a)-new Date(b));
     const sumValues = sortedDates.map(d=> dateSum[d]);
     renderChart("bar", sortedDates, sumValues);
-
-    // 匯率走勢圖
-    // ===== 建構每日最大匯率（健壯版本） =====
-const dailyMax = {};
-json.rows.forEach(r => {
-  // 1) 取得日期（嘗試多種格式）
-  const dateCell = r[4];
-  const dateStr = dateCell ? new Date(dateCell).toLocaleDateString("zh-TW") : null;
-  if (!dateStr) return;
-
-  // 2) 取得 exchange 值（r[14] 為優先，若沒有再看 r[15]）
-  let exchangeRaw = typeof r[14] !== "undefined" ? r[14] : r[15];
-  if (exchangeRaw === "" || exchangeRaw === null || typeof exchangeRaw === "undefined") return;
-
-  // 3) 去掉千分符、空白，轉成數字
-  const exchangeNum = Number(String(exchangeRaw).replace(/,/g, "").trim());
-  if (!isFinite(exchangeNum)) return; // 過濾 NaN / 非數字
-
-  // 4) 可選：如果你要排除某個幣別（例如 TWD），可檢查 r[13]
-  const currencyCode = (r[13] || "").toString().trim().toUpperCase();
-  if (currencyCode === "TWD" || currencyCode === "NTD") return; // 若要排除台幣，取消註解
-
-  // 5) 每日取最大值
-  if (!dailyMax[dateStr] || exchangeNum > dailyMax[dateStr]) {
-    dailyMax[dateStr] = exchangeNum;
   }
-});
 
-// 6) 準備 labels & values（並檢查是否有數據）
-const currencyLabels = Object.keys(dailyMax).sort((a,b)=> new Date(a) - new Date(b));
-const currencyData = currencyLabels.map(d => dailyMax[d]);
-
-console.log("currencyLabels:", currencyLabels);
-console.log("currencyData:", currencyData);
-
-// 若沒有有效資料則不畫圖（避免 Chart.js 顯示 0~1）
-if (currencyData.length === 0) {
-  // 清空或隱藏 canvas
-  if (currencyChartInstance) currencyChartInstance.destroy();
-  document.getElementById("currencyChartCanvas").style.display = "none";
-} else {
-  document.getElementById("currencyChartCanvas").style.display = "block";
-  renderCurrencyChart(currencyLabels, currencyData);
-}
-
+  // 分類、付款、店家
   const sections = [
     { cmd: "分類", data: json.categories, title: "⭕ 選擇分類統計;標題按下即可排序" },
     { cmd: "付款", data: json.payments, title: "💳 選擇付款統計;標題按下即可排序" },
@@ -221,6 +181,7 @@ if (currencyData.length === 0) {
                    <th class="numeric">金額</th>
                    <th class="numeric">占比</th>
                  </tr>`;
+
       labels.forEach((l,i)=>{
         const percent = ((values[i]/total)*100).toFixed(1);
         html += `<tr>
@@ -229,6 +190,7 @@ if (currencyData.length === 0) {
                    <td class="numeric">${percent}%</td>
                  </tr>`;
       });
+
       html += `</table>`;
       html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${count} 筆）</div>`;
       renderChart("pie", labels, values);
@@ -237,10 +199,12 @@ if (currencyData.length === 0) {
 
   document.getElementById("queryResult").innerHTML = html;
 
+  // 表格排序
   const dataTable = document.getElementById("dataTable");
   if (dataTable) makeTableSortable(dataTable);
 }
 
+// 通用表格排序（支援數字/百分比）
 function makeTableSortable(table) {
   const headers = table.querySelectorAll("th");
   headers.forEach((th, colIndex)=>{
@@ -261,106 +225,48 @@ function makeTableSortable(table) {
       rows.sort((a,b)=>{
         let aVal = parseCellValue(a.cells[colIndex].innerText);
         let bVal = parseCellValue(b.cells[colIndex].innerText);
-        return newOrder==="asc"? aVal-bVal : bVal-aVal;
+        if (newOrder==="asc") return aVal>bVal?1:-1;
+        else return aVal<bVal?1:-1;
       });
       rows.forEach(r=>table.appendChild(r));
     });
   });
 }
 
+// 將欄位文字轉為可比較值
 function parseCellValue(txt) {
   let v = txt.replace(/,/g,"").replace("%","");
   return isNaN(v)?txt:parseFloat(v);
 }
 
+// 畫圖
 function renderChart(type, labels, values) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
   if (chartInstance) chartInstance.destroy();
-  let backgroundColors = type==="pie"? labels.map((_,i)=>`hsl(${i*360/labels.length},70%,60%)`) : "rgba(54, 162, 235, 0.6)";
-  chartInstance = new Chart(ctx,{
-    type:type,
-    data:{ labels:labels, datasets:[{ label:"金額", data:values, backgroundColor:backgroundColors }] },
-    options:{ responsive:true }
-  });
-}
 
-function renderCurrencyChart(labels, values) {
-  const ctx = document.getElementById("currencyChartCanvas").getContext("2d");
-
-  // 轉為數字（保留 null 以支援 gap）
-  const numericValues = values.map(v => (v === null || v === undefined) ? null : Number(v));
-
-  // 檢查是否有任何有效數字
-  const validNums = numericValues.filter(v => Number.isFinite(v));
-  if (validNums.length === 0) {
-    if (currencyChartInstance) currencyChartInstance.destroy();
-    // 顯示無資料提示（放在 queryResult 或 console）
-    console.warn("匯率：沒有有效資料可畫（values may be NaN/empty）", values);
-    // 清空 canvas
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    return;
-  }
-
-  // 依需要計算 y 軸的顯示範圍（單一值時也給予微幅上下界）
-  let min = Math.min(...validNums);
-  let max = Math.max(...validNums);
-  if (min === max) {
-    // 單一值時給  ±2% 範圍避免扁成一條線
-    const pad = Math.abs(min) * 0.02 || 0.1;
-    min = min - pad;
-    max = max + pad;
+  let backgroundColors = [];
+  if (type === "pie") {
+    backgroundColors = labels.map((_,i)=> `hsl(${i*360/labels.length},70%,60%)`);
   } else {
-    // 給點 padding（避免圖貼在邊緣）
-    const pad = (max - min) * 0.08;
-    min = min - pad;
-    max = max + pad;
+    backgroundColors = "rgba(54, 162, 235, 0.6)";
   }
 
-  if (currencyChartInstance) currencyChartInstance.destroy();
-
-  currencyChartInstance = new Chart(ctx, {
-    type: "line",
+  chartInstance = new Chart(ctx,{
+    type: type,
     data: {
       labels: labels,
-      datasets: [{
-        label: "匯率",
-        data: numericValues,
-        borderColor: "rgba(255,99,132,1)",
-        backgroundColor: "rgba(255,99,132,0.2)",
-        fill: true,
-        tension: 0.15,
-        spanGaps: true, // 連接 null 之間的間隔（或設 false 讓斷點可見）
-        pointRadius: 3
+      datasets:[{
+        label:"金額",
+        data: values,
+        backgroundColor: backgroundColors
       }]
     },
-    options: {
-      responsive: true,
-      interaction: { mode: "index", intersect: false },
-      plugins: {
-        legend: { position: "bottom" },
-        tooltip: {
-          callbacks: {
-            label: ctx => {
-              const v = ctx.parsed.y;
-              return v == null ? '' : `匯率: ${v}`;
-            }
-          }
-        }
-      },
-      scales: {
-        y: {
-          beginAtZero: false,
-          suggestedMin: min,
-          suggestedMax: max
-        }
-      }
-    }
+    options: { responsive:true }
   });
 }
 </script>
 
 </body>
 </html>
-
 
 
