@@ -4,12 +4,6 @@
   <meta charset="utf-8">
   <title>零用金支出帳簿</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script><!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>零用金支出帳簿</title>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
   <style>
@@ -322,18 +316,18 @@ chartInstance = new Chart(ctx, {
           legend: {
             labels: {
               font: {
-                size: 28   // ✅ 放大「每日匯率最大值」圖例字體
+                size: 30   // ✅ 放大「每日匯率最大值」圖例字體
               },
-              color: "red"  // ✅ 圖例字體顏色也改成綠色
+              color: "green"  // ✅ 圖例字體顏色也改成綠色
             }
           }
         },
-      scales: {
         scales: {
           y: {
             type: "linear",
             position: "left",
-            title: { display: true, text: "金額" }
+            title: { display: true, text: "金額" },
+            beginAtZero: true
           },
           y1: {
             type: "linear",
@@ -353,8 +347,3 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
-
-
-
-
-
