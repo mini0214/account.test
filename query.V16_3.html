@@ -297,12 +297,15 @@ function renderChart(type, labels, values) {
             type: "line",
             label: "每日匯率最大值",
             data: lineValues,
-            borderColor: "red",
+            borderColor: "red",       // 線條顏色
+            backgroundColor: "red",   // 點的填充顏色
             borderWidth: 2,
-            fill: false,
+            fill: false,              // 不要灰色底
             yAxisID: "y1",
             tension: 0.1,
             pointRadius: 3
+            pointBackgroundColor: "red",  // 點顏色
+            pointBorderColor: "red"       // 點邊框顏色
           }
         ]
       },
@@ -319,7 +322,7 @@ function renderChart(type, labels, values) {
           y1: {
             type: "linear",
             position: "right",
-            title: { display: true, text: "匯率" },
+            title: { display: true, text: "匯率", color: "red" },
             grid: { drawOnChartArea: false },
             min: minRate,
             max: maxRate
@@ -334,4 +337,5 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
+
 
