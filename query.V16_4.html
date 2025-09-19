@@ -247,107 +247,86 @@ function parseCellValue(txt) {
 }
 
 // 畫圖
-function renderChart(type, labels, values) {
+function renderChart(labels, barValues, lineValues) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
   if (chartInstance) chartInstance.destroy();
 
-  if (type === "pie") {
-    // --- PIE ---
-    const backgroundColors = labels.map((_, i) =>
-      `hsl(${i * 360 / labels.length}, 70%, 60%)`
-    );
-    chartInstance = new Chart(ctx, {
-      type: "pie",
-      data: {
-        labels,
-        datasets: [{
-          data: values,
-          backgroundColor: backgroundColors
-        }]
-      },
-      options: { responsive: true }
-    });
-  } else if (type === "bar") {
-    // --- BAR + LINE ---
-    const barValues = values[0] || [];
-    const lineValues = values[1] || [];
+  // ✅ 動態計算匯率座標範圍
+  let minRate = Math.min(...lineValues.filter(v => !isNaN(v)));
+  let maxRate = Math.max(...lineValues.filter(v => !isNaN(v)));
+  minRate = Math.floor(minRate) - 1;
+  maxRate = Math.ceil(maxRate) + 1;
 
-    // 動態計算 min/max
-    let validRates = lineValues.filter(v => !isNaN(v));
-    let minRate = Math.min(...validRates);
-    let maxRate = Math.max(...validRates);
-
-    // 加 buffer（各 ±1）
-    minRate = Math.floor(minRate) - 1;
-    maxRate = Math.ceil(maxRate) + 1;
-
-chartInstance = new Chart(ctx, {
-      type: "bar",
-      data: {
-        labels,
-        datasets: [
-          {
-            type: "bar",
-            label: "金額合計",
-            data: barValues,
-            backgroundColor: "rgba(54, 162, 235, 0.6)",
-            yAxisID: "y"
-          },
-          {
-            type: "line",
-            label: "每日匯率最大值",
-            data: lineValues,
-            borderColor: "red",       // 線條顏色
-            backgroundColor: "red",   // 點的填充顏色
-            borderWidth: 2,
-            fill: false,              // 不要灰色底
-            yAxisID: "y1",
-            tension: 0.1,
-            pointRadius: 3,
-            pointBackgroundColor: "red",  // 點顏色
-            pointBorderColor: "red"       // 點邊框顏色            
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        interaction: { mode: "index", intersect: false },
-        plugins: {
-          legend: {
-            labels: {
-              font: {
-                size: 50 ,  // ✅ 放大「每日匯率最大值」圖例字體
-                weight: "bold"     // ✅ 加粗
-              },
-              color: "green"  // ✅ 圖例字體顏色也改成綠色
-            }
-          }
+  chartInstance = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: "金額",
+          data: barValues,
+          backgroundColor: "rgba(54, 162, 235, 0.6)",
+          yAxisID: "y"
         },
-        scales: {
-          y: {
-            type: "linear",
-            position: "left",
-            title: { display: true, text: "金額" },
-            beginAtZero: true
-          },
-          y1: {
-            type: "linear",
-            position: "right",
-            title: { display: true, text: "匯率", color: "red" },
-            grid: { drawOnChartArea: false },
-            min: minRate,
-            max: maxRate
+        {
+          type: "line",
+          label: "每日匯率最大值",
+          data: lineValues,
+          borderColor: "green",          // 線條顏色
+          backgroundColor: "green",      // 點顏色
+          borderWidth: 2,
+          fill: false,
+          yAxisID: "y1",
+          tension: 0.1,
+          pointRadius: 3,
+          pointBackgroundColor: "green",
+          pointBorderColor: "green"
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: {
+          labels: {
+            font: {
+              size: 20,          // ✅ 放大 legend 字體
+              weight: "bold"     // ✅ 加粗
+            },
+            color: "green"        // ✅ legend 文字顏色
           }
+        }
+      },
+      scales: {
+        y: {
+          type: "linear",
+          position: "left",
+          title: { display: true, text: "金額" }
         },
-        plugins: { legend: { position: "top" } }
+        y1: {
+          type: "linear",
+          position: "right",
+          title: { 
+            display: true, 
+            text: "匯率",
+            color: "green",
+            font: { size: 20, weight: "bold" }  // ✅ 匯率座標標題放大
+          },
+          grid: { drawOnChartArea: false },
+          min: minRate,
+          max: maxRate
+        }
       }
-    });
-  }
+    }
+  });
 }
+
 </script>
 
 </body>
 </html>
+
 
 
 
