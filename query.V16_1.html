@@ -158,24 +158,48 @@ function renderResult(command, json) {
     renderChart("bar", sortedDates, sumValues);
 
     // 匯率走勢圖
-    const dailyMax = {};
-    json.rows.forEach(r => {
-      const d = r[4] ? new Date(r[4]).toLocaleDateString("zh-TW") : "";
-      const currencyVal = parseFloat(r[14]);  // exchange
-      const currency = r[13];                 // 幣別代號
-    
-      // 如果是台幣就略過，其他幣別就計算
-      if (!d || isNaN(currencyVal)) return;
-      if (currency === "TWD") return;
-    
-      if (!dailyMax[d] || currencyVal > dailyMax[d]) {
-        dailyMax[d] = currencyVal;
-      }
-    });
-    const currencyLabels = Object.keys(dailyMax).sort((a,b)=> new Date(a)-new Date(b));
-    const currencyData = currencyLabels.map(d=> dailyMax[d]);
-    renderCurrencyChart(currencyLabels, currencyData);
+    // ===== 建構每日最大匯率（健壯版本） =====
+const dailyMax = {};
+json.rows.forEach(r => {
+  // 1) 取得日期（嘗試多種格式）
+  const dateCell = r[4];
+  const dateStr = dateCell ? new Date(dateCell).toLocaleDateString("zh-TW") : null;
+  if (!dateStr) return;
+
+  // 2) 取得 exchange 值（r[14] 為優先，若沒有再看 r[15]）
+  let exchangeRaw = typeof r[14] !== "undefined" ? r[14] : r[15];
+  if (exchangeRaw === "" || exchangeRaw === null || typeof exchangeRaw === "undefined") return;
+
+  // 3) 去掉千分符、空白，轉成數字
+  const exchangeNum = Number(String(exchangeRaw).replace(/,/g, "").trim());
+  if (!isFinite(exchangeNum)) return; // 過濾 NaN / 非數字
+
+  // 4) 可選：如果你要排除某個幣別（例如 TWD），可檢查 r[13]
+  const currencyCode = (r[13] || "").toString().trim().toUpperCase();
+  if (currencyCode === "TWD" || currencyCode === "NTD") return; // 若要排除台幣，取消註解
+
+  // 5) 每日取最大值
+  if (!dailyMax[dateStr] || exchangeNum > dailyMax[dateStr]) {
+    dailyMax[dateStr] = exchangeNum;
   }
+});
+
+// 6) 準備 labels & values（並檢查是否有數據）
+const currencyLabels = Object.keys(dailyMax).sort((a,b)=> new Date(a) - new Date(b));
+const currencyData = currencyLabels.map(d => dailyMax[d]);
+
+console.log("currencyLabels:", currencyLabels);
+console.log("currencyData:", currencyData);
+
+// 若沒有有效資料則不畫圖（避免 Chart.js 顯示 0~1）
+if (currencyData.length === 0) {
+  // 清空或隱藏 canvas
+  if (currencyChartInstance) currencyChartInstance.destroy();
+  document.getElementById("currencyChartCanvas").style.display = "none";
+} else {
+  document.getElementById("currencyChartCanvas").style.display = "block";
+  renderCurrencyChart(currencyLabels, currencyData);
+}
 
   const sections = [
     { cmd: "分類", data: json.categories, title: "⭕ 選擇分類統計;標題按下即可排序" },
@@ -262,26 +286,81 @@ function renderChart(type, labels, values) {
 
 function renderCurrencyChart(labels, values) {
   const ctx = document.getElementById("currencyChartCanvas").getContext("2d");
+
+  // 轉為數字（保留 null 以支援 gap）
+  const numericValues = values.map(v => (v === null || v === undefined) ? null : Number(v));
+
+  // 檢查是否有任何有效數字
+  const validNums = numericValues.filter(v => Number.isFinite(v));
+  if (validNums.length === 0) {
+    if (currencyChartInstance) currencyChartInstance.destroy();
+    // 顯示無資料提示（放在 queryResult 或 console）
+    console.warn("匯率：沒有有效資料可畫（values may be NaN/empty）", values);
+    // 清空 canvas
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    return;
+  }
+
+  // 依需要計算 y 軸的顯示範圍（單一值時也給予微幅上下界）
+  let min = Math.min(...validNums);
+  let max = Math.max(...validNums);
+  if (min === max) {
+    // 單一值時給  ±2% 範圍避免扁成一條線
+    const pad = Math.abs(min) * 0.02 || 0.1;
+    min = min - pad;
+    max = max + pad;
+  } else {
+    // 給點 padding（避免圖貼在邊緣）
+    const pad = (max - min) * 0.08;
+    min = min - pad;
+    max = max + pad;
+  }
+
   if (currencyChartInstance) currencyChartInstance.destroy();
-  currencyChartInstance = new Chart(ctx,{
-    type:"line",
-    data:{
-      labels:labels,
-      datasets:[{
-        label:"匯率",
-        data:values,
-        borderColor:"rgba(255,99,132,1)",
-        backgroundColor:"rgba(255,99,132,0.2)",
-        fill:true,
-        tension:0.1
+
+  currencyChartInstance = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "匯率",
+        data: numericValues,
+        borderColor: "rgba(255,99,132,1)",
+        backgroundColor: "rgba(255,99,132,0.2)",
+        fill: true,
+        tension: 0.15,
+        spanGaps: true, // 連接 null 之間的間隔（或設 false 讓斷點可見）
+        pointRadius: 3
       }]
     },
-    options:{ responsive:true, scales:{ y:{ beginAtZero:false } } }
+    options: {
+      responsive: true,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: { position: "bottom" },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const v = ctx.parsed.y;
+              return v == null ? '' : `匯率: ${v}`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: false,
+          suggestedMin: min,
+          suggestedMax: max
+        }
+      }
+    }
   });
 }
 </script>
 
 </body>
 </html>
+
 
 
