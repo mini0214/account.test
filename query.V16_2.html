@@ -14,13 +14,13 @@
     h4 { font-size: 36px; text-align: center; margin-bottom: 20px; }
     button { font-size: 40px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background-color: #4CAF50; color: white; }
     #queryResult { margin-top: 1px; }
-    h5 { font-size: 28px; margin: 0; padding: 0; }  /*margin: 0; 把上下左右外距都清掉 padding: 0; 保險起見，也把內距清掉 */
+    h5 { font-size: 28px; margin: 0; padding: 0; }
     table { font-size: 28px; border-collapse: collapse; width: 100%; margin-top: 15px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
     th { background-color: #f2f2f2; }
-    .numeric { text-align: right; }    /* 數字欄位靠右 ... */  
+    .numeric { text-align: right; }
     .total { font-size: 28px; font-weight: bold; color: #d9534f; margin-top: 10px; }
-    canvas { display: block; margin: 20px auto; width: 850px; height: 600px; }    /*margin: 0 auto; 水平置中 */
+    canvas { display: block; margin: 20px auto; width: 850px; height: 600px; }
   </style>
 </head>
 <body>
@@ -45,14 +45,13 @@
 <canvas id="chartCanvas"></canvas>
 
 <script>
-const LIFF_ID = "2008096451-jPJ50MOY";   // 換成你的 LIFF ID test
-const VERSION = "V16_#12";                   // 固定版次
-const API_URL = "https://script.google.com/macros/s/AKfycbwyWN-amLqH2mGL1qWC3X6hV82oXiihPYUPqJR_NMOMOnRUo7wsgop-W10IhlW6glCB3w/exec";  // 換成你的 GAS PATH
+const LIFF_ID = "2008096451-jPJ50MOY";
+const VERSION = "V16_#12";
+const API_URL = "https://script.google.com/macros/s/AKfycbwyWN-amLqH2mGL1qWC3X6hV82oXiihPYUPqJR_NMOMOnRUo7wsgop-W10IhlW6glCB3w/exec";
 
 let chartInstance = null;
 document.getElementById("version").textContent = VERSION;
 
-// 初始化 LIFF
 async function main() {
   await liff.init({ liffId: LIFF_ID });
   if (!liff.isLoggedIn()) liff.login();
@@ -60,7 +59,6 @@ async function main() {
 }
 main();
 
-// 設定預設日期為本月月初與月底
 function setDefaultDateRange() {
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -75,13 +73,11 @@ function toInputDate(d) {
   return `${d.getFullYear()}-${m}-${day}`;
 }
 
-// 按鈕事件
 document.getElementById("queryMonthBtn").addEventListener("click", () => sendQuery("明細"));
 document.getElementById("queryMonthTypeBtn").addEventListener("click", () => sendQuery("分類"));
 document.getElementById("queryMonthPayBtn").addEventListener("click", () => sendQuery("付款"));
 document.getElementById("queryMonthStoreBtn").addEventListener("click", () => sendQuery("店家"));
 
-// 發送查詢
 async function sendQuery(command) {
   const startDate = document.getElementById("startDate").value;
   const endDate = document.getElementById("endDate").value;
@@ -112,7 +108,6 @@ async function sendQuery(command) {
   }
 }
 
-// 顯示結果表格與圖表
 function renderResult(command, json) {
   let html = "";
 
@@ -149,7 +144,7 @@ function renderResult(command, json) {
     html += `</table>`;
     html += `<div class="total">📌 總額：${Number(json.total||0).toLocaleString()} 元（共 ${json.rows.length} 筆）</div>`;
 
-    // 長條圖依日期彙總
+    // 長條圖資料：金額總和 + 幣別最大值
     const dateSum = {};
     const maxCurrencyByDate = {};
     json.rows.forEach(r => {
@@ -167,93 +162,9 @@ function renderResult(command, json) {
     const sumValues = sortedDates.map(d=> dateSum[d]);
     const currencyValues = sortedDates.map(d=> maxCurrencyByDate[d] || 0);
 
-    renderChart("barline",sortedDates, sumValues, currencyValues);
+    renderChart("bar", sortedDates, [sumValues, currencyValues]);
   }
 
-      document.getElementById("queryResult").innerHTML = html;
-      const dataTable = document.getElementById("dataTable");
-      if (dataTable) makeTableSortable(dataTable);
-    }
-    
-    function makeTableSortable(table) {
-      const headers = table.querySelectorAll("th");
-      headers.forEach((th, colIndex)=>{
-        th.style.cursor = "pointer";
-        th.addEventListener("click", ()=>{
-          const rows = Array.from(table.querySelectorAll("tr")).slice(1);
-          const currentOrder = th.dataset.order || null;
-          const newOrder = currentOrder === "asc" ? "desc" : "asc";
-          th.dataset.order = newOrder;
-          headers.forEach(h=>{
-            h.classList.remove("sort-asc","sort-desc");
-            h.innerHTML = h.innerHTML.replace(/[\u25B2\u25BC]/g,"");
-          });
-          th.classList.add(newOrder==="asc"?"sort-asc":"sort-desc");
-          th.innerHTML += newOrder==="asc"?" ▲":" ▼";
-    
-          rows.sort((a,b)=>{
-            let aVal = parseCellValue(a.cells[colIndex].innerText);
-            let bVal = parseCellValue(b.cells[colIndex].innerText);
-            if (newOrder==="asc") return aVal>bVal?1:-1;
-            else return aVal<bVal?1:-1;
-          });
-          rows.forEach(r=>table.appendChild(r));
-        });
-      });
-    }
-    function parseCellValue(txt) {
-      let v = txt.replace(/,/g,"").replace("%","");
-      return isNaN(v)?txt:parseFloat(v);
-    }
-    
-    // ✅ 修改後：同一張圖上 bar(金額) + line(每日匯率最大值)
-    function renderChart(labels, barValues, lineValues) {
-      const ctx = document.getElementById("chartCanvas").getContext("2d");
-      if (chartInstance) chartInstance.destroy();
-    
-      chartInstance = new Chart(ctx,{
-        type: "bar",
-        data: {
-          labels: labels,
-          datasets:[
-            {
-              label:"金額",
-              data: barValues,
-              backgroundColor: "rgba(54, 162, 235, 0.6)",
-              yAxisID: "y"
-            },
-            {
-              label:"每日匯率最大值",
-              data: lineValues,
-              type: "line",
-              borderColor: "red",
-              borderWidth: 2,
-              fill: false,
-              yAxisID: "y1"
-            }
-          ]
-        },
-        options: { 
-          responsive:true,
-          interaction:{ mode:"index", intersect:false },
-          scales:{
-            y:{ 
-              type:"linear",
-              position:"left",
-              title:{ display:true, text:"金額" }
-            },
-            y1:{
-              type:"linear",
-              position:"right",
-              title:{ display:true, text:"匯率" },
-              grid:{ drawOnChartArea:false }
-            }
-          }
-        }
-      });
-    }
-  
-  // 分類、付款、店家
   const sections = [
     { cmd: "分類", data: json.categories, title: "⭕ 選擇分類統計;標題按下即可排序" },
     { cmd: "付款", data: json.payments, title: "💳 選擇付款統計;標題按下即可排序" },
@@ -274,7 +185,6 @@ function renderResult(command, json) {
                    <th class="numeric">金額</th>
                    <th class="numeric">占比</th>
                  </tr>`;
-
       labels.forEach((l,i)=>{
         const percent = ((values[i]/total)*100).toFixed(1);
         html += `<tr>
@@ -283,7 +193,6 @@ function renderResult(command, json) {
                    <td class="numeric">${percent}%</td>
                  </tr>`;
       });
-
       html += `</table>`;
       html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${count} 筆）</div>`;
       renderChart("pie", labels, values);
@@ -291,13 +200,10 @@ function renderResult(command, json) {
   });
 
   document.getElementById("queryResult").innerHTML = html;
-
-  // 表格排序
   const dataTable = document.getElementById("dataTable");
   if (dataTable) makeTableSortable(dataTable);
 }
 
-// 通用表格排序（支援數字/百分比）
 function makeTableSortable(table) {
   const headers = table.querySelectorAll("th");
   headers.forEach((th, colIndex)=>{
@@ -307,7 +213,6 @@ function makeTableSortable(table) {
       const currentOrder = th.dataset.order || null;
       const newOrder = currentOrder === "asc" ? "desc" : "asc";
       th.dataset.order = newOrder;
-
       headers.forEach(h=>{
         h.classList.remove("sort-asc","sort-desc");
         h.innerHTML = h.innerHTML.replace(/[\u25B2\u25BC]/g,"");
@@ -326,59 +231,31 @@ function makeTableSortable(table) {
   });
 }
 
-// 將欄位文字轉為可比較值
 function parseCellValue(txt) {
   let v = txt.replace(/,/g,"").replace("%","");
   return isNaN(v)?txt:parseFloat(v);
 }
 
-// 畫圖
-function renderChart(type, labels, values, lineValues=null) {
+function renderChart(type, labels, values) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
   if (chartInstance) chartInstance.destroy();
 
-  if (type === "barline") {
+  if (type === "pie") {
+    const backgroundColors = labels.map((_,i)=> `hsl(${i*360/labels.length},70%,60%)`);
+    chartInstance = new Chart(ctx,{
+      type: "pie",
+      data: { labels, datasets:[{ data: values, backgroundColor: backgroundColors }] },
+      options: { responsive:true }
+    });
+  } else if (type === "bar") {
     chartInstance = new Chart(ctx,{
       type: "bar",
       data: {
         labels: labels,
         datasets:[
-          {
-            label:"金額",
-            data: values,
-            backgroundColor: "rgba(54, 162, 235, 0.6)",
-            yAxisID: "y"
-          },
-          {
-            label:"每日匯率最大值",
-            data: lineValues,
-            type: "line",
-            borderColor: "red",
-            borderWidth: 2,
-            fill: false,
-            yAxisID: "y1"
-          }
+          { label:"金額合計", data: values[0], backgroundColor:"rgba(54, 162, 235, 0.6)" },
+          { label:"幣別最大值", data: values[1], backgroundColor:"rgba(255, 99, 132, 0.6)" }
         ]
-      },
-      options: { 
-        responsive:true,
-        interaction:{ mode:"index", intersect:false },
-        scales:{
-          y:{ position:"left", title:{ display:true, text:"金額" }},
-          y1:{ position:"right", title:{ display:true, text:"匯率" }, grid:{ drawOnChartArea:false }}
-        }
-      }
-    });
-  } else if (type === "pie") {
-    chartInstance = new Chart(ctx,{
-      type: "pie",
-      data: {
-        labels: labels,
-        datasets:[{
-          label:"金額",
-          data: values,
-          backgroundColor: labels.map((_,i)=> `hsl(${i*360/labels.length},70%,60%)`)
-        }]
       },
       options: { responsive:true }
     });
@@ -388,4 +265,3 @@ function renderChart(type, labels, values, lineValues=null) {
 
 </body>
 </html>
-
