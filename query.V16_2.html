@@ -46,8 +46,8 @@
 
 <script>
 const LIFF_ID = "2008096451-jPJ50MOY";   // 換成你的 LIFF ID test
-const VERSION = "V16_9";                   // 固定版次
-const API_URL = "https://script.google.com/macros/s/AKfycbwQ1t5wHfjAqrtH0_ijNNWtlE5Q0R-g8fwb5htWQoCXKXxSukVX9qVnrfuyoXOyKkGXdw/exec";  // 換成你的 GAS PATH
+const VERSION = "V16_#12";                   // 固定版次
+const API_URL = "https://script.google.com/macros/s/AKfycbwyWN-amLqH2mGL1qWC3X6hV82oXiihPYUPqJR_NMOMOnRUo7wsgop-W10IhlW6glCB3w/exec";  // 換成你的 GAS PATH
 
 let chartInstance = null;
 document.getElementById("version").textContent = VERSION;
@@ -151,15 +151,108 @@ function renderResult(command, json) {
 
     // 長條圖依日期彙總
     const dateSum = {};
+    const maxCurrencyByDate = {};
     json.rows.forEach(r => {
       const d = new Date(r[4]).toLocaleDateString("zh-TW");
-      dateSum[d] = (dateSum[d] || 0) + Number(r[5]);
+      const amount = Number(r[5]);
+      const currency = Number(r[13]);
+
+      dateSum[d] = (dateSum[d] || 0) + amount;
+      if (!maxCurrencyByDate[d] || currency > maxCurrencyByDate[d]) {
+        maxCurrencyByDate[d] = currency;
+      }
     });
+
     const sortedDates = Object.keys(dateSum).sort((a,b)=> new Date(a)-new Date(b));
     const sumValues = sortedDates.map(d=> dateSum[d]);
-    renderChart("bar", sortedDates, sumValues);
+    const currencyValues = sortedDates.map(d=> maxCurrencyByDate[d] || 0);
+
+    renderChart(sortedDates, sumValues, currencyValues);
   }
 
+      document.getElementById("queryResult").innerHTML = html;
+      const dataTable = document.getElementById("dataTable");
+      if (dataTable) makeTableSortable(dataTable);
+    }
+    
+    function makeTableSortable(table) {
+      const headers = table.querySelectorAll("th");
+      headers.forEach((th, colIndex)=>{
+        th.style.cursor = "pointer";
+        th.addEventListener("click", ()=>{
+          const rows = Array.from(table.querySelectorAll("tr")).slice(1);
+          const currentOrder = th.dataset.order || null;
+          const newOrder = currentOrder === "asc" ? "desc" : "asc";
+          th.dataset.order = newOrder;
+          headers.forEach(h=>{
+            h.classList.remove("sort-asc","sort-desc");
+            h.innerHTML = h.innerHTML.replace(/[\u25B2\u25BC]/g,"");
+          });
+          th.classList.add(newOrder==="asc"?"sort-asc":"sort-desc");
+          th.innerHTML += newOrder==="asc"?" ▲":" ▼";
+    
+          rows.sort((a,b)=>{
+            let aVal = parseCellValue(a.cells[colIndex].innerText);
+            let bVal = parseCellValue(b.cells[colIndex].innerText);
+            if (newOrder==="asc") return aVal>bVal?1:-1;
+            else return aVal<bVal?1:-1;
+          });
+          rows.forEach(r=>table.appendChild(r));
+        });
+      });
+    }
+    function parseCellValue(txt) {
+      let v = txt.replace(/,/g,"").replace("%","");
+      return isNaN(v)?txt:parseFloat(v);
+    }
+    
+    // ✅ 修改後：同一張圖上 bar(金額) + line(每日匯率最大值)
+    function renderChart(labels, barValues, lineValues) {
+      const ctx = document.getElementById("chartCanvas").getContext("2d");
+      if (chartInstance) chartInstance.destroy();
+    
+      chartInstance = new Chart(ctx,{
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets:[
+            {
+              label:"金額",
+              data: barValues,
+              backgroundColor: "rgba(54, 162, 235, 0.6)",
+              yAxisID: "y"
+            },
+            {
+              label:"每日匯率最大值",
+              data: lineValues,
+              type: "line",
+              borderColor: "red",
+              borderWidth: 2,
+              fill: false,
+              yAxisID: "y1"
+            }
+          ]
+        },
+        options: { 
+          responsive:true,
+          interaction:{ mode:"index", intersect:false },
+          scales:{
+            y:{ 
+              type:"linear",
+              position:"left",
+              title:{ display:true, text:"金額" }
+            },
+            y1:{
+              type:"linear",
+              position:"right",
+              title:{ display:true, text:"匯率" },
+              grid:{ drawOnChartArea:false }
+            }
+          }
+        }
+      });
+    }
+  
   // 分類、付款、店家
   const sections = [
     { cmd: "分類", data: json.categories, title: "⭕ 選擇分類統計;標題按下即可排序" },
@@ -268,5 +361,3 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
-
-
