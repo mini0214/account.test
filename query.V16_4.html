@@ -305,10 +305,22 @@ chartInstance = new Chart(ctx, {
             tension: 0.1,
             pointRadius: 3,
             pointBackgroundColor: "red",  // 點顏色
-            pointBorderColor: "red" ,      // 點邊框顏色
-            size: 40  // 調整圖例文字大小
+            pointBorderColor: "red"      // 點邊框顏色
           }
         ]
+      },
+      options: {
+      responsive: true,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: {
+          labels: {
+            font: {
+              size: 20   // ✅ 放大「每日匯率最大值」圖例字體
+            },
+            
+          }
+        }
       },
       options: {
         responsive: true,
@@ -344,6 +356,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
