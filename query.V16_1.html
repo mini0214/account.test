@@ -149,62 +149,33 @@ function renderResult(command, json) {
     html += `</table>`;
     html += `<div class="total">📌 總額：${Number(json.total||0).toLocaleString()} 元（共 ${json.rows.length} 筆）</div>`;
 
-    // 長條圖依日期彙總
+   
+    // 長條圖資料
     const dateSum = {};
+    const maxCurrencyByDate = {};
     json.rows.forEach(r => {
       const d = new Date(r[4]).toLocaleDateString("zh-TW");
-      dateSum[d] = (dateSum[d] || 0) + Number(r[5]);
+      const amount = Number(r[5]);
+      const currency = Number(r[13]);
+
+      dateSum[d] = (dateSum[d] || 0) + amount;
+      if (!maxCurrencyByDate[d] || currency > maxCurrencyByDate[d]) {
+        maxCurrencyByDate[d] = currency;
+      }
     });
+
     const sortedDates = Object.keys(dateSum).sort((a,b)=> new Date(a)-new Date(b));
     const sumValues = sortedDates.map(d=> dateSum[d]);
-    renderChart("bar", sortedDates, sumValues);
+    const currencyValues = sortedDates.map(d=> maxCurrencyByDate[d] || 0);
+
+    renderChart(sortedDates, sumValues, currencyValues);
   }
 
-  // 分類、付款、店家
-  const sections = [
-    { cmd: "分類", data: json.categories, title: "⭕ 選擇分類統計;標題按下即可排序" },
-    { cmd: "付款", data: json.payments, title: "💳 選擇付款統計;標題按下即可排序" },
-    { cmd: "店家", data: json.stores, title: "📋 選擇店家統計;標題按下即可排序" }
-  ];
-
-  sections.forEach(sec => {
-    if (command === sec.cmd && sec.data) {
-      const labels = Object.keys(sec.data);
-      const values = Object.values(sec.data);
-      const total = values.reduce((a,b)=>a+b,0);
-      const count = values.length;
-
-      html += `<h5>${sec.title}</h5>`;
-      html += `<table id="dataTable">
-                 <tr>
-                   <th>${sec.cmd==="店家"?"店家":sec.cmd==="付款"?"付款方式":"分類方式"}</th>
-                   <th class="numeric">金額</th>
-                   <th class="numeric">占比</th>
-                 </tr>`;
-
-      labels.forEach((l,i)=>{
-        const percent = ((values[i]/total)*100).toFixed(1);
-        html += `<tr>
-                   <td>${l}</td>
-                   <td class="numeric">${values[i].toLocaleString()}</td>
-                   <td class="numeric">${percent}%</td>
-                 </tr>`;
-      });
-
-      html += `</table>`;
-      html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${count} 筆）</div>`;
-      renderChart("pie", labels, values);
-    }
-  });
-
   document.getElementById("queryResult").innerHTML = html;
-
-  // 表格排序
   const dataTable = document.getElementById("dataTable");
   if (dataTable) makeTableSortable(dataTable);
 }
 
-// 通用表格排序（支援數字/百分比）
 function makeTableSortable(table) {
   const headers = table.querySelectorAll("th");
   headers.forEach((th, colIndex)=>{
@@ -214,7 +185,6 @@ function makeTableSortable(table) {
       const currentOrder = th.dataset.order || null;
       const newOrder = currentOrder === "asc" ? "desc" : "asc";
       th.dataset.order = newOrder;
-
       headers.forEach(h=>{
         h.classList.remove("sort-asc","sort-desc");
         h.innerHTML = h.innerHTML.replace(/[\u25B2\u25BC]/g,"");
@@ -232,41 +202,61 @@ function makeTableSortable(table) {
     });
   });
 }
-
-// 將欄位文字轉為可比較值
 function parseCellValue(txt) {
   let v = txt.replace(/,/g,"").replace("%","");
   return isNaN(v)?txt:parseFloat(v);
 }
 
-// 畫圖
-function renderChart(type, labels, values) {
+// ✅ 修改後：同一張圖上 bar(金額) + line(每日匯率最大值)
+function renderChart(labels, barValues, lineValues) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
   if (chartInstance) chartInstance.destroy();
 
-  let backgroundColors = [];
-  if (type === "pie") {
-    backgroundColors = labels.map((_,i)=> `hsl(${i*360/labels.length},70%,60%)`);
-  } else {
-    backgroundColors = "rgba(54, 162, 235, 0.6)";
-  }
-
   chartInstance = new Chart(ctx,{
-    type: type,
+    type: "bar",
     data: {
       labels: labels,
-      datasets:[{
-        label:"金額",
-        data: values,
-        backgroundColor: backgroundColors
-      }]
+      datasets:[
+        {
+          label:"金額",
+          data: barValues,
+          backgroundColor: "rgba(54, 162, 235, 0.6)",
+          yAxisID: "y"
+        },
+        {
+          label:"每日匯率最大值",
+          data: lineValues,
+          type: "line",
+          borderColor: "red",
+          borderWidth: 2,
+          fill: false,
+          yAxisID: "y1"
+        }
+      ]
     },
-    options: { responsive:true }
+    options: { 
+      responsive:true,
+      interaction:{ mode:"index", intersect:false },
+      scales:{
+        y:{ 
+          type:"linear",
+          position:"left",
+          title:{ display:true, text:"金額" }
+        },
+        y1:{
+          type:"linear",
+          position:"right",
+          title:{ display:true, text:"匯率" },
+          grid:{ drawOnChartArea:false }
+        }
+      }
+    }
   });
 }
 </script>
 
 </body>
 </html>
+
 
 
