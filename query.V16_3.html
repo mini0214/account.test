@@ -278,8 +278,8 @@ function renderChart(type, labels, values) {
     let maxRate = Math.max(...validRates);
 
     // 加 buffer（各 ±1）
-    minRate = Math.floor(minRate) - 0.5;
-    maxRate = Math.ceil(maxRate) + 0.5;
+    minRate = Math.floor(minRate) - 1;
+    maxRate = Math.ceil(maxRate) + 1;
 
 chartInstance = new Chart(ctx, {
       type: "bar",
@@ -316,7 +316,7 @@ chartInstance = new Chart(ctx, {
           y: {
             type: "linear",
             position: "left",
-            title: { display: true, text: "金額", color: "rgba(54, 162, 235, 0.6)" },
+            title: { display: true, text: "金額" },
             beginAtZero: true
           },
           y1: {
@@ -343,6 +343,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
