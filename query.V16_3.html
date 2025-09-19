@@ -252,40 +252,80 @@ function renderChart(type, labels, values) {
   if (chartInstance) chartInstance.destroy();
 
   if (type === "pie") {
-    const backgroundColors = labels.map((_,i)=> `hsl(${i*360/labels.length},70%,60%)`);
-    chartInstance = new Chart(ctx,{
+    // --- PIE ---
+    const backgroundColors = labels.map((_, i) =>
+      `hsl(${i * 360 / labels.length}, 70%, 60%)`
+    );
+    chartInstance = new Chart(ctx, {
       type: "pie",
-      data: { labels, datasets:[{ data: values, backgroundColor: backgroundColors }] },
-      options: { responsive:true }
+      data: {
+        labels,
+        datasets: [{
+          data: values,
+          backgroundColor: backgroundColors
+        }]
+      },
+      options: { responsive: true }
     });
   } else if (type === "bar") {
-    chartInstance = new Chart(ctx,{
+    // --- BAR + LINE ---
+    const barValues = values[0] || [];
+    const lineValues = values[1] || [];
+
+    // 動態計算 min/max
+    let validRates = lineValues.filter(v => !isNaN(v));
+    let minRate = Math.min(...validRates);
+    let maxRate = Math.max(...validRates);
+
+    // 加 buffer（各 ±1）
+    minRate = Math.floor(minRate) - 1;
+    maxRate = Math.ceil(maxRate) + 1;
+
+    chartInstance = new Chart(ctx, {
       type: "bar",
       data: {
-        labels: labels,
-        datasets:[
-          { label:"金額合計", data: values[0], backgroundColor:"rgba(54, 162, 235, 0.6)" },
-          { label:"每日匯率最大值", data: values[1], type:"line", borderColor:"red", borderWidth:2, fill:false, yAxisID:"y1" }
+        labels,
+        datasets: [
+          {
+            type: "bar",
+            label: "金額合計",
+            data: barValues,
+            backgroundColor: "rgba(54, 162, 235, 0.6)",
+            yAxisID: "y"
+          },
+          {
+            type: "line",
+            label: "每日匯率最大值",
+            data: lineValues,
+            borderColor: "red",
+            borderWidth: 2,
+            fill: false,
+            yAxisID: "y1",
+            tension: 0.1,
+            pointRadius: 3
+          }
         ]
       },
-      options: { 
-        responsive:true,
-        interaction:{ mode:"index", intersect:false },
-        scales:{
-          y:{ 
-            type:"linear",
-            position:"left",
-            title:{ display:true, text:"金額" }
+      options: {
+        responsive: true,
+        interaction: { mode: "index", intersect: false },
+        scales: {
+          y: {
+            type: "linear",
+            position: "left",
+            title: { display: true, text: "金額" },
+            beginAtZero: true
           },
-          y1:{
-            type:"linear",
-            position:"right",
-            title:{ display:true, text:"匯率", Color:"red" },
-            grid:{ drawOnChartArea:false },
-            min:18,   // ✅ 下限
-            max:22    // ✅ 上限
+          y1: {
+            type: "linear",
+            position: "right",
+            title: { display: true, text: "匯率" },
+            grid: { drawOnChartArea: false },
+            min: minRate,
+            max: maxRate
           }
-        }
+        },
+        plugins: { legend: { position: "top" } }
       }
     });
   }
@@ -294,3 +334,4 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
+
