@@ -281,7 +281,9 @@ function renderChart(type, labels, values) {
             type:"linear",
             position:"right",
             title:{ display:true, text:"匯率" },
-            grid:{ drawOnChartArea:false }
+            grid:{ drawOnChartArea:false },
+            min:17,   // ✅ 下限
+            max:23    // ✅ 上限
           }
         }
       }
@@ -292,4 +294,5 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
+
 
