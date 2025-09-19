@@ -45,13 +45,14 @@
 <canvas id="chartCanvas"></canvas>
 
 <script>
-const LIFF_ID = "2008096451-jPJ50MOY";
-const VERSION = "V16_#12";
-const API_URL = "https://script.google.com/macros/s/AKfycbwyWN-amLqH2mGL1qWC3X6hV82oXiihPYUPqJR_NMOMOnRUo7wsgop-W10IhlW6glCB3w/exec";
+const LIFF_ID = "2008096451-jPJ50MOY"; // 換成你的 LIFF ID
+const VERSION = "V16_#12";             // 固定版次
+const API_URL = "https://script.google.com/macros/s/AKfycbwyWN-amLqH2mGL1qWC3X6hV82oXiihPYUPqJR_NMOMOnRUo7wsgop-W10IhlW6glCB3w/exec";  // 換成你的 GAS PATH
 
 let chartInstance = null;
 document.getElementById("version").textContent = VERSION;
 
+// 初始化 LIFF
 async function main() {
   await liff.init({ liffId: LIFF_ID });
   if (!liff.isLoggedIn()) liff.login();
@@ -59,6 +60,7 @@ async function main() {
 }
 main();
 
+// 設定預設日期為本月月初與月底
 function setDefaultDateRange() {
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -73,11 +75,13 @@ function toInputDate(d) {
   return `${d.getFullYear()}-${m}-${day}`;
 }
 
+// 按鈕事件
 document.getElementById("queryMonthBtn").addEventListener("click", () => sendQuery("明細"));
 document.getElementById("queryMonthTypeBtn").addEventListener("click", () => sendQuery("分類"));
 document.getElementById("queryMonthPayBtn").addEventListener("click", () => sendQuery("付款"));
 document.getElementById("queryMonthStoreBtn").addEventListener("click", () => sendQuery("店家"));
 
+// 發送查詢
 async function sendQuery(command) {
   const startDate = document.getElementById("startDate").value;
   const endDate = document.getElementById("endDate").value;
@@ -108,6 +112,7 @@ async function sendQuery(command) {
   }
 }
 
+// 顯示結果表格與圖表
 function renderResult(command, json) {
   let html = "";
 
@@ -165,6 +170,7 @@ function renderResult(command, json) {
     renderChart("bar", sortedDates, [sumValues, currencyValues]);
   }
 
+  // 分類、付款、店家
   const sections = [
     { cmd: "分類", data: json.categories, title: "⭕ 選擇分類統計;標題按下即可排序" },
     { cmd: "付款", data: json.payments, title: "💳 選擇付款統計;標題按下即可排序" },
@@ -200,10 +206,13 @@ function renderResult(command, json) {
   });
 
   document.getElementById("queryResult").innerHTML = html;
+
+  // 表格排序
   const dataTable = document.getElementById("dataTable");
   if (dataTable) makeTableSortable(dataTable);
 }
 
+// 通用表格排序（支援數字/百分比）
 function makeTableSortable(table) {
   const headers = table.querySelectorAll("th");
   headers.forEach((th, colIndex)=>{
@@ -231,11 +240,13 @@ function makeTableSortable(table) {
   });
 }
 
+// 將欄位文字轉為可比較值
 function parseCellValue(txt) {
   let v = txt.replace(/,/g,"").replace("%","");
   return isNaN(v)?txt:parseFloat(v);
 }
 
+// 畫圖
 function renderChart(type, labels, values) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
   if (chartInstance) chartInstance.destroy();
@@ -281,3 +292,4 @@ function renderChart(type, labels, values) {
 
 </body>
 </html>
+
