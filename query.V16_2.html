@@ -167,7 +167,7 @@ function renderResult(command, json) {
     const sumValues = sortedDates.map(d=> dateSum[d]);
     const currencyValues = sortedDates.map(d=> maxCurrencyByDate[d] || 0);
 
-    renderChart(sortedDates, sumValues, currencyValues);
+    renderChart("barline",sortedDates, sumValues, currencyValues);
   }
 
       document.getElementById("queryResult").innerHTML = html;
@@ -333,31 +333,59 @@ function parseCellValue(txt) {
 }
 
 // 畫圖
-function renderChart(type, labels, values) {
+function renderChart(type, labels, values, lineValues=null) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
   if (chartInstance) chartInstance.destroy();
 
-  let backgroundColors = [];
-  if (type === "pie") {
-    backgroundColors = labels.map((_,i)=> `hsl(${i*360/labels.length},70%,60%)`);
-  } else {
-    backgroundColors = "rgba(54, 162, 235, 0.6)";
+  if (type === "barline") {
+    chartInstance = new Chart(ctx,{
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets:[
+          {
+            label:"金額",
+            data: values,
+            backgroundColor: "rgba(54, 162, 235, 0.6)",
+            yAxisID: "y"
+          },
+          {
+            label:"每日匯率最大值",
+            data: lineValues,
+            type: "line",
+            borderColor: "red",
+            borderWidth: 2,
+            fill: false,
+            yAxisID: "y1"
+          }
+        ]
+      },
+      options: { 
+        responsive:true,
+        interaction:{ mode:"index", intersect:false },
+        scales:{
+          y:{ position:"left", title:{ display:true, text:"金額" }},
+          y1:{ position:"right", title:{ display:true, text:"匯率" }, grid:{ drawOnChartArea:false }}
+        }
+      }
+    });
+  } else if (type === "pie") {
+    chartInstance = new Chart(ctx,{
+      type: "pie",
+      data: {
+        labels: labels,
+        datasets:[{
+          label:"金額",
+          data: values,
+          backgroundColor: labels.map((_,i)=> `hsl(${i*360/labels.length},70%,60%)`)
+        }]
+      },
+      options: { responsive:true }
+    });
   }
-
-  chartInstance = new Chart(ctx,{
-    type: type,
-    data: {
-      labels: labels,
-      datasets:[{
-        label:"金額",
-        data: values,
-        backgroundColor: backgroundColors
-      }]
-    },
-    options: { responsive:true }
-  });
 }
 </script>
 
 </body>
 </html>
+
