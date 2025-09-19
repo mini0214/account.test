@@ -274,8 +274,7 @@ function renderChart(labels, barValues, lineValues) {
           label:"每日匯率最大值",
           data: lineValues,
           type: "line",
-          borderColor: "red",
-          borderWidth: 2,
+          Color: "red",
           fill: false,
           yAxisID: "y1"
         }
@@ -293,7 +292,7 @@ function renderChart(labels, barValues, lineValues) {
         y1:{
           type:"linear",
           position:"right",
-          title:{ display:true, text:"匯率" , borderColor: "red" },
+          title:{ display:true, text:"匯率" , Color: "red" },
           grid:{ drawOnChartArea:false },
           min:minRate,
           max:maxRate
@@ -307,4 +306,5 @@ function renderChart(labels, barValues, lineValues) {
 
 </body>
 </html>
+
 
