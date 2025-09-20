@@ -265,7 +265,17 @@ function renderChart(type, labels, values) {
           backgroundColor: backgroundColors
         }]
       },
-      options: { responsive: true }
+      options: { responsive: true },
+      plugins: {
+        legend: {
+          position: "top",   // ✅ 圖例放上方
+          labels: {
+            font: {
+              size: 30       // ✅ 放大 pie chart 圖例字體
+            }
+          }
+        }
+      }
     });
   } else if (type === "bar") {
     // --- BAR + LINE ---
@@ -346,5 +356,6 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
