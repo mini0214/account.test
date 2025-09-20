@@ -314,6 +314,7 @@ chartInstance = new Chart(ctx, {
         interaction: { mode: "index", intersect: false },
         plugins: {
           legend: {
+            position: "top",   // ✅ 把位置放這裡
             labels: {
               font: {
                 size: 40   // ✅ 放大「每日匯率最大值」圖例字體
@@ -337,8 +338,7 @@ chartInstance = new Chart(ctx, {
             min: minRate,
             max: maxRate
           }
-        },
-        plugins: { legend: { position: "top" } }
+        }
       }
     });
   }
@@ -347,3 +347,4 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
