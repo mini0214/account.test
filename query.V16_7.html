@@ -347,7 +347,19 @@ chartInstance = new Chart(ctx, {
           },
           tooltip: {
             titleFont: { size: 30 },  // ✅ Tooltip 標題字體
-            bodyFont: { size: 36 }    // ✅ Tooltip 內容字體
+            bodyFont: { size: 36 } ,  // ✅ Tooltip 內容字體
+            callbacks: {
+              label: function (context) {
+                // 只處理 bar (金額合計)，line 就照舊
+                if (context.dataset.type === "bar") {
+                  const dataset = context.dataset.data;
+                  const total = dataset.reduce((a, b) => a + b, 0);
+                  const value = context.parsed.y;
+                  const percentage = ((value / total) * 100).toFixed(1) + "%";
+                  return `${context.dataset.label}: ${value} (${percentage})`;
+                } else {
+                  return `${context.dataset.label}: ${context.parsed.y}`;
+                }
           }
         },
         scales: {
@@ -374,6 +386,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
