@@ -357,9 +357,9 @@ chartInstance = new Chart(ctx, {
                   const total = dataset.reduce((a, b) => a + b, 0);
                   const value = context.parsed.y;
                   const percentage = ((value / total) * 100).toFixed(1) + "%";
-                  return `${context.dataset.label}: ${value} (${percentage})`;
+                  return `${context.dataset.label}: ${numberFormat.format(value)} (${percentage})`;
                 } else {
-                  return `${context.dataset.label}: ${context.parsed.y}`;
+                  return `${context.dataset.label}: ${context.parsed.y}`;      
                 }
               }
             }
@@ -389,6 +389,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
