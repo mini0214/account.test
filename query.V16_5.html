@@ -251,32 +251,41 @@ function renderChart(type, labels, values) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
   if (chartInstance) chartInstance.destroy();
 
-  if (type === "pie") {
-    // --- PIE ---
-    const backgroundColors = labels.map((_, i) =>
-      `hsl(${i * 360 / labels.length}, 70%, 60%)`
-    );
-    chartInstance = new Chart(ctx, {
-      type: "pie",
-      data: {
-        labels,
-        datasets: [{
-          data: values,
-          backgroundColor: backgroundColors
-        }]
-      },
-      options: { responsive: true },
+if (type === "pie") {
+  // --- PIE ---
+  const backgroundColors = labels.map((_, i) =>
+    `hsl(${i * 360 / labels.length}, 70%, 60%)`
+  );
+  chartInstance = new Chart(ctx, {
+    type: "pie",
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: backgroundColors
+      }]
+    },
+    options: { 
+      responsive: true,
       plugins: {
         legend: {
           position: "top",   // ✅ 圖例放上方
           labels: {
             font: {
-              size: 30       // ✅ 放大 pie chart 圖例字體
-            }
+              size: 40       // ✅ 放大圖例字體
+            },
+            color: "green"   // ✅ 圖例文字顏色
           }
+        },
+        tooltip: {
+          titleFont: { size: 30 },  // ✅ Tooltip 標題字體
+          bodyFont: { size: 26 }    // ✅ Tooltip 內容字體
         }
       }
-    });
+    }
+  });
+}
+
   } else if (type === "bar") {
     // --- BAR + LINE ---
     const barValues = values[0] || [];
@@ -356,6 +365,4 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
-
-
 
