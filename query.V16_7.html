@@ -280,11 +280,12 @@ function renderChart(type, labels, values) {
           bodyFont: { size: 36 },    // ✅ Tooltip 內容字體
           callbacks: {
             label: function(context) {
+              const numberFormat = new Intl.NumberFormat("en-US"); // ✅ 千分位
               const dataset = context.dataset;
               const total = dataset.data.reduce((a, b) => a + b, 0);
               const value = dataset.data[context.dataIndex];
               const percentage = ((value / total) * 100).toFixed(1) + "%";// ✅ 一位小數
-              return `${context.label}: ${value} (${percentage})`; 
+              return `${context.label}: ${numberFormat.format(value)} (${percentage})`; 
             }
           }
         }
@@ -389,6 +390,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
