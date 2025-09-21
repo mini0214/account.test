@@ -283,7 +283,7 @@ function renderChart(type, labels, values) {
               const dataset = context.dataset;
               const total = dataset.data.reduce((a, b) => a + b, 0);
               const value = dataset.data[context.dataIndex];
-              const percentage = ((value / total) * 100).toFixed(2) + "%";
+              const percentage = ((value / total) * 100).toFixed(1) + "%";// ✅ 一位小數
               return `${context.label}: ${value} (${percentage})`; 
             }
           }
@@ -374,5 +374,6 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
