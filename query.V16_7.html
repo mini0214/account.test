@@ -350,6 +350,7 @@ chartInstance = new Chart(ctx, {
             bodyFont: { size: 36 } ,  // ✅ Tooltip 內容字體
             callbacks: {
               label: function (context) {
+                const numberFormat = new Intl.NumberFormat("en-US"); // ✅ 千分位
                 // 只處理 bar (金額合計)，line 就照舊
                 if (context.dataset.type === "bar") {
                   const dataset = context.dataset.data;
@@ -388,6 +389,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
