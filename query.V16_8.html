@@ -137,7 +137,9 @@ function renderResult(command, json) {
                 <td>${dateStr}</td>
                 <td>${r[8]}</td>
                 <td class="numeric">${Number(r[11]).toLocaleString()}</td>
-                <td class="numeric">${Number(r[12]).toLocaleString()}</td>
+                <td class="numeric">
+                  ${Number(r[12]).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </td>
                 <td>${r[13]}</td>
                 <td class="numeric">${Number(r[5]).toLocaleString()}</td>
                 <td>${r[7]}</td>
@@ -390,6 +392,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
