@@ -286,6 +286,7 @@ function renderChart(type, labels, values) {
               const percentage = ((value / total) * 100).toFixed(2) + "%";
               return `${context.label}: ${value} (${percentage})`; 
             }
+          }
         }
       }
     }    
@@ -373,4 +374,5 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
