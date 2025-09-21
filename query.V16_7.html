@@ -277,7 +277,15 @@ function renderChart(type, labels, values) {
         },
         tooltip: {
           titleFont: { size: 30 },  // ✅ Tooltip 標題字體
-          bodyFont: { size: 36 }    // ✅ Tooltip 內容字體
+          bodyFont: { size: 36 },    // ✅ Tooltip 內容字體
+          callbacks: {
+            label: function(context) {
+              const dataset = context.dataset;
+              const total = dataset.data.reduce((a, b) => a + b, 0);
+              const value = dataset.data[context.dataIndex];
+              const percentage = ((value / total) * 100).toFixed(2) + "%";
+              return `${context.label}: ${value} (${percentage})`; 
+            }
         }
       }
     }    
@@ -365,3 +373,4 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
