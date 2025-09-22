@@ -214,10 +214,10 @@ function renderResult(command, json) {
   sections.forEach(sec => {
     if (command === sec.cmd) {
       
-      // ✅ 這裡重新建立 filteredRows，跟 bar chart 一樣有過濾登入者
-      const filteredRows = (json.rows && currentUser)
-        ? json.rows.filter(r => r[3] === currentUser)
-        : [];
+      // ✅ 管理員用全部資料，一般使用者才過濾
+      const rowsForCalc = (currentUser === adminUser)
+        ? json.rows
+        : (json.rows ? json.rows.filter(r => r[3] === currentUser) : []);
       
       // 依 filteredRows 計算統計
       const counts = {};
@@ -438,6 +438,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
