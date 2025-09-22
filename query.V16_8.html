@@ -50,7 +50,7 @@ const VERSION = "V16_#12";             // 固定版次
 const API_URL = "https://script.google.com/macros/s/AKfycbwyWN-amLqH2mGL1qWC3X6hV82oXiihPYUPqJR_NMOMOnRUo7wsgop-W10IhlW6glCB3w/exec";  // 換成你的 GAS PATH
 
 let chartInstance = null;
-let currentUser = null;   // ✅ 先定義變數，不要一開始就用 json
+let currentUser = null;   // ✅ 先定義變數，不要一開始就用 json 登入者的資料
   
 document.getElementById("version").textContent = VERSION;
 
@@ -59,7 +59,7 @@ async function main() {
   await liff.init({ liffId: LIFF_ID });
   if (!liff.isLoggedIn()) liff.login();
 
-  // 這裡也可以從 LINE 帳號自動抓名稱
+  // 這裡也可以從 LINE 帳號自動抓名稱 登入者的資料
   try {
     const profile = await liff.getProfile();
     currentUser = profile.displayName;
@@ -128,12 +128,12 @@ async function sendQuery(command) {
 function renderResult(command, json) {
   let html = "";
   
-  // ✅ 如果 currentUser 還沒定義，就用資料表第一筆
+  // ✅ 如果 currentUser 還沒定義，就用資料表第一筆 登入者的資料
   if (!currentUser && json.rows && json.rows.length > 0) {
     currentUser = json.rows[0][3];  // 第 4 欄是 display_name
   }
 
-  // ✅ 過濾只顯示自己
+  // ✅ 過濾只顯示自己 登入者的資料
   if (json.rows && currentUser) {
     json.rows = json.rows.filter(r => r[3] === currentUser);
   }
@@ -171,6 +171,8 @@ function renderResult(command, json) {
       </tr>`;
     });
     html += `</table>`;
+    // ✅ 依登入者過濾後重新計算總額
+    const totalAmount = json.rows.reduce((sum, r) => sum + Number(r[5] || 0), 0);
     html += `<div class="total">📌 總額：${Number(json.total||0).toLocaleString()} 元（共 ${json.rows.length} 筆）</div>`;
 
     // 長條圖資料：金額總和 + 幣別最大值
@@ -414,6 +416,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
