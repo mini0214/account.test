@@ -229,8 +229,6 @@ function renderResult(command, json) {
                  </tr>`;
       });
       html += `</table>`;
-      // ✅ 用 filteredRows 計算總額
-      const totalAmount = filteredRows.reduce((sum, r) => sum + Number(r[5] || 0), 0);
       html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${count} 筆）</div>`;
       renderChart("pie", labels, values);
     }
@@ -421,6 +419,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
