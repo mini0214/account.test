@@ -139,6 +139,9 @@ function renderResult(command, json) {
   }
   
   if (command === "明細" && json.rows) {
+    // 先依登入者過濾
+    const filteredRows = json.rows.filter(r => r[3] === currentUser); // r[3] = display_name
+    
     html += `<h5>📊 選擇查詢明細;標題按下即可排序</h5>`;
     html += `<table id="dataTable">
               <tr>
@@ -171,10 +174,9 @@ function renderResult(command, json) {
       </tr>`;
     });
     html += `</table>`;
-    // ✅ 依登入者過濾後重新計算總額
-    const filteredRows = json.rows.filter(r => r[3] === currentUser);
+    // ✅ 用 filteredRows 計算總額
     const totalAmount = filteredRows.reduce((sum, r) => sum + Number(r[5] || 0), 0);
-    html += `<div class="total">📌 總額：${Number(json.total||0).toLocaleString()} 元（共 ${json.rows.length} 筆）</div>`;
+    html += `<div class="total">📌 總額：${totalAmount.toLocaleString()} 元（共 ${filteredRows.length} 筆）</div>`;
 
     // 長條圖資料：金額總和 + 幣別最大值
     const dateSum = {};
@@ -417,6 +419,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
