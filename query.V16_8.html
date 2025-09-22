@@ -142,12 +142,13 @@ function renderResult(command, json) {
   }
   
   if (command === "明細" && json.rows) {
-    // 先依登入者過濾
-    const filteredRows = json.rows.filter(r => r[3] === currentUser); // r[3] = display_name
+    // ✅ 這裡不要重新定義 filteredRows，直接用前面已經處理好的
+    const rowsForDisplay = (currentUser === adminUser) ? json.rows : filteredRows;
     
     html += `<h5>📊 選擇查詢明細;標題按下即可排序</h5>`;
     html += `<table id="dataTable">
               <tr>
+                <th>記帳者</th>
                 <th>日期</th>
                 <th>店家</th>
                 <th class="numeric">收入</th>
@@ -159,9 +160,12 @@ function renderResult(command, json) {
                 <th>附註</th>
                 <th>備註</th>
               </tr>`;
-    json.rows.forEach(r => {
+
+    // ✅ 表格資料只輸出 rowsForDisplay
+    rowsForDisplay.forEach(r => {
       const dateStr = r[4] ? new Date(r[4]).toLocaleDateString("zh-TW") : "";
       html += `<tr>
+                <td>${r[3]}</td>
                 <td>${dateStr}</td>
                 <td>${r[8]}</td>
                 <td class="numeric">${Number(r[11]).toLocaleString()}</td>
@@ -177,16 +181,15 @@ function renderResult(command, json) {
       </tr>`;
     });
     html += `</table>`;
-    // ✅ 如果是管理員，用所有資料算；否則用 filteredRows
-    const rowsForTotal = (currentUser === adminUser) ? json.rows : filteredRows;
-    // ✅ 用 filteredRows 計算總額
-    const totalAmount = rowsForTotal.reduce((sum, r) => sum + Number(r[5] || 0), 0);
-    html += `<div class="total">📌 總額：${totalAmount.toLocaleString()} 元（共 ${rowsForTotal.length} 筆）</div>`;
+  
+    // ✅ 總額 & 筆數同樣用 rowsForDisplay
+    const totalAmount = rowsForDisplay.reduce((sum, r) => sum + Number(r[5] || 0), 0);
+    html += `<div class="total">📌 總額：${totalAmount.toLocaleString()} 元（共 ${rowsForDisplay.length} 筆）</div>`;
 
     // 長條圖資料：金額總和 + 幣別最大值
     const dateSum = {};
     const maxCurrencyByDate = {};
-    json.rows.forEach(r => {
+    rowsForDisplay.forEach(r => {
       const d = new Date(r[4]).toLocaleDateString("zh-TW");
       const amount = Number(r[5]);
       const currency = Number(r[13]);
@@ -438,19 +441,6 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
