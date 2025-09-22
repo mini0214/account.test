@@ -50,17 +50,24 @@ const VERSION = "V16_#12";             // 固定版次
 const API_URL = "https://script.google.com/macros/s/AKfycbwyWN-amLqH2mGL1qWC3X6hV82oXiihPYUPqJR_NMOMOnRUo7wsgop-W10IhlW6glCB3w/exec";  // 換成你的 GAS PATH
 
 let chartInstance = null;
+let currentUser = null;   // ✅ 先定義變數，不要一開始就用 json
+  
 document.getElementById("version").textContent = VERSION;
 
-// 從第一筆資料自動抓 display_name
-if (json.rows && json.rows.length > 0) {
-  currentUser = json.rows[0][3];  // ⚠️ 假設第 4 欄是 display_name
-}
-  
 // 初始化 LIFF
 async function main() {
   await liff.init({ liffId: LIFF_ID });
   if (!liff.isLoggedIn()) liff.login();
+
+  // 這裡也可以從 LINE 帳號自動抓名稱
+  try {
+    const profile = await liff.getProfile();
+    currentUser = profile.displayName;
+    console.log("登入使用者:", currentUser);
+  } catch (e) {
+    console.warn("抓不到 LINE 名稱，會改用資料表第一筆:", e);
+  }
+  
   setDefaultDateRange();
 }
 main();
@@ -121,17 +128,16 @@ async function sendQuery(command) {
 function renderResult(command, json) {
   let html = "";
   
-  // ✅ 先依登入者 display_name 過濾
-  function initUserSelector(json) {
-    const users = [...new Set(json.rows.map(r => r[3]))]; // 去重複
-    const sel = document.getElementById("userSelect");
-    sel.innerHTML = users.map(u => `<option value="${u}">${u}</option>`).join("");
-    
-    sel.addEventListener("change", e => {
-      currentUser = e.target.value;
-      renderResult("明細", json);  // 重新渲染
-    });
+  // ✅ 如果 currentUser 還沒定義，就用資料表第一筆
+  if (!currentUser && json.rows && json.rows.length > 0) {
+    currentUser = json.rows[0][3];  // 第 4 欄是 display_name
   }
+
+  // ✅ 過濾只顯示自己
+  if (json.rows && currentUser) {
+    json.rows = json.rows.filter(r => r[3] === currentUser);
+  }
+  
   if (command === "明細" && json.rows) {
     html += `<h5>📊 選擇查詢明細;標題按下即可排序</h5>`;
     html += `<table id="dataTable">
@@ -408,6 +414,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
