@@ -172,7 +172,8 @@ function renderResult(command, json) {
     });
     html += `</table>`;
     // ✅ 依登入者過濾後重新計算總額
-    const totalAmount = json.rows.reduce((sum, r) => sum + Number(r[5] || 0), 0);
+    const filteredRows = json.rows.filter(r => r[3] === userId);
+    const totalAmount = filteredRows.reduce((sum, r) => sum + Number(r[5] || 0), 0);
     html += `<div class="total">📌 總額：${Number(json.total||0).toLocaleString()} 元（共 ${json.rows.length} 筆）</div>`;
 
     // 長條圖資料：金額總和 + 幣別最大值
@@ -416,6 +417,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
