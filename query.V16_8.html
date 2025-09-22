@@ -52,7 +52,10 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwyWN-amLqH2mGL1qWC3X6h
 let chartInstance = null;
 document.getElementById("version").textContent = VERSION;
 
-const currentUser = "Betty Yi";
+// 從第一筆資料自動抓 display_name
+if (json.rows && json.rows.length > 0) {
+  currentUser = json.rows[0][3];  // ⚠️ 假設第 4 欄是 display_name
+}
   
 // 初始化 LIFF
 async function main() {
@@ -119,11 +122,16 @@ function renderResult(command, json) {
   let html = "";
   
   // ✅ 先依登入者 display_name 過濾
-  if (json.rows && currentUser) {
-    json.rows = json.rows.filter(r => r[3] === currentUser); 
-    // ⚠️ 假設 display_name 在第 4 欄 (index=3)，依你的 sheet 結構調整
+  function initUserSelector(json) {
+    const users = [...new Set(json.rows.map(r => r[3]))]; // 去重複
+    const sel = document.getElementById("userSelect");
+    sel.innerHTML = users.map(u => `<option value="${u}">${u}</option>`).join("");
+    
+    sel.addEventListener("change", e => {
+      currentUser = e.target.value;
+      renderResult("明細", json);  // 重新渲染
+    });
   }
-
   if (command === "明細" && json.rows) {
     html += `<h5>📊 選擇查詢明細;標題按下即可排序</h5>`;
     html += `<table id="dataTable">
@@ -400,5 +408,6 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
