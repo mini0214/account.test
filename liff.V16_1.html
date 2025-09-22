@@ -247,7 +247,9 @@
       const btnPayout = document.getElementById("btnPayout");
       const income = document.getElementById("income");
       const payout = document.getElementById("payout");
-    
+
+      const currency = document.getElementById("currency");  // ← 多抓幣別下拉
+      
       function resetButtons() {
         btnIncome.classList.remove("active");
         btnPayout.classList.remove("active");
@@ -272,6 +274,24 @@
         income.style.display = "none";
         income.value = "";
       });
+
+      // ✅ 在這裡加上小數點判斷
+      payout.addEventListener("input", () => {
+        if (payout.value.includes(".")) {
+          currency.value = "20";  // 自動選澳幣
+        } else {
+          currency.value = "1";   // 預設台幣
+        }
+      });
+    
+      income.addEventListener("input", () => {
+        if (income.value.includes(".")) {
+          currency.value = "20";
+        } else {
+          currency.value = "1";   // 預設台幣
+        }
+      });
+      
     </script>      
 
     <div class="form-block">
@@ -397,5 +417,6 @@
   </script>
 </body>
 </html>
+
 
 
