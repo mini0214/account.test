@@ -241,7 +241,7 @@ function renderResult(command, json) {
                  </tr>`;
       });
       html += `</table>`;
-      html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${filteredRows.length} 筆）</div>`;
+      html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${labels.length} 筆）</div>`;
 
       // Pie Chart
       renderChart("pie", labels, values);
@@ -433,6 +433,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
