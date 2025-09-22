@@ -177,6 +177,8 @@ function renderResult(command, json) {
       </tr>`;
     });
     html += `</table>`;
+    // ✅ 如果是管理員，用所有資料算；否則用 filteredRows
+    const rowsForTotal = (currentUser === adminUser) ? json.rows : filteredRows;
     // ✅ 用 filteredRows 計算總額
     const totalAmount = filteredRows.reduce((sum, r) => sum + Number(r[5] || 0), 0);
     html += `<div class="total">📌 總額：${totalAmount.toLocaleString()} 元（共 ${filteredRows.length} 筆）</div>`;
@@ -436,6 +438,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
