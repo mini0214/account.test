@@ -115,6 +115,12 @@ async function sendQuery(command) {
 // 顯示結果表格與圖表
 function renderResult(command, json) {
   let html = "";
+  
+  // ✅ 先依登入者 display_name 過濾
+  if (json.rows && currentUser) {
+    json.rows = json.rows.filter(r => r[3] === currentUser); 
+    // ⚠️ 假設 display_name 在第 4 欄 (index=3)，依你的 sheet 結構調整
+  }
 
   if (command === "明細" && json.rows) {
     html += `<h5>📊 選擇查詢明細;標題按下即可排序</h5>`;
@@ -392,3 +398,4 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
