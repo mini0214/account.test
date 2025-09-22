@@ -127,15 +127,18 @@ async function sendQuery(command) {
 // 顯示結果表格與圖表
 function renderResult(command, json) {
   let html = "";
+
+  const adminUser = "Betty Yi"; // ✅ 管理者帳號
   
   // ✅ 如果 currentUser 還沒定義，就用資料表第一筆 登入者的資料
   if (!currentUser && json.rows && json.rows.length > 0) {
     currentUser = json.rows[0][3];  // 第 4 欄是 display_name
   }
 
-  // ✅ 過濾只顯示自己 登入者的資料
-  if (json.rows && currentUser) {
-    json.rows = json.rows.filter(r => r[3] === currentUser);
+  // ✅ 統一過濾：管理者看到全部，其它人只看自己
+  let filteredRows = json.rows || [];
+  if (currentUser && currentUser !== adminUser) {
+    filteredRows = filteredRows.filter(r => r[3] === currentUser);
   }
   
   if (command === "明細" && json.rows) {
@@ -433,6 +436,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
