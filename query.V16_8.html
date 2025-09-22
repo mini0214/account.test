@@ -201,17 +201,23 @@ function renderResult(command, json) {
 
   // 分類、付款、店家
   const sections = [
-    { cmd: "分類", data: json.categories, title: "⭕ 選擇分類統計;標題按下即可排序" },
-    { cmd: "付款", data: json.payments, title: "💳 選擇付款統計;標題按下即可排序" },
-    { cmd: "店家", data: json.stores, title: "📋 選擇店家統計;標題按下即可排序" }
+    { cmd: "分類", key: 6, title: "⭕ 選擇分類統計;標題按下即可排序" },
+    { cmd: "付款", key: 7, title: "💳 選擇付款統計;標題按下即可排序" },
+    { cmd: "店家", key: 8, title: "📋 選擇店家統計;標題按下即可排序" }
   ];
 
   sections.forEach(sec => {
-    if (command === sec.cmd && sec.data) {
-      const labels = Object.keys(sec.data);
-      const values = Object.values(sec.data);
+    if (command === sec.cmd) {
+      // 依 filteredRows 計算統計
+      const counts = {};
+      filteredRows.forEach(r => {
+        const value = r[sec.key] || "未知";
+        counts[value] = (counts[value] || 0) + Number(r[5] || 0); // 金額在 r[5]
+      });
+  
+      const labels = Object.keys(counts);
+      const values = Object.values(counts);
       const total = values.reduce((a,b)=>a+b,0);
-      const count = values.length;
 
       html += `<h5>${sec.title}</h5>`;
       html += `<table id="dataTable">
@@ -230,6 +236,8 @@ function renderResult(command, json) {
       });
       html += `</table>`;
       html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${count} 筆）</div>`;
+
+      // Pie Chart
       renderChart("pie", labels, values);
     }
   });
@@ -419,6 +427,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
