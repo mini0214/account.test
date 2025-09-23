@@ -333,6 +333,13 @@ function parseCellValue(txt) {
 // 畫圖
 function renderChart(type, labels, values) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
+
+  // ✅ 如果有舊圖表，先銷毀
+  if (window.currentChart) {
+    window.currentChart.destroy();
+    window.currentChart = null;
+  }
+  
   if (chartInstance) chartInstance.destroy();
 
   if (type === "pie") {
@@ -474,6 +481,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
