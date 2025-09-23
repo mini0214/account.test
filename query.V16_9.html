@@ -134,7 +134,7 @@ async function sendQuery(command) {
       // ✅ 查詢結束後隱藏
       document.getElementById("loading").style.display = "none";
     }
-  }
+  };
 
   try {
     const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(body) });
@@ -466,6 +466,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
