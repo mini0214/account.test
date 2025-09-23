@@ -41,6 +41,12 @@
   <button id="queryMonthStoreBtn">📋 店家</button>
 </div>
 
+<!-- ⏳ 載入提示區 -->
+  <div id="loading" style="display:none; text-align:center; margin:20px;">
+    <span>⏳ 載入中，請稍候...</span>
+  </div>
+
+<!-- 📊 查詢結果顯示區 -->  
 <div id="queryResult"></div>
 <canvas id="chartCanvas"></canvas>
 
@@ -110,6 +116,25 @@ async function sendQuery(command) {
     startDate: startDate + " 00:00:00",
     endDate: endDate + " 23:59:59"
   };
+
+    // ✅ 顯示載入中
+    document.getElementById("loading").style.display = "block";
+  
+    try {
+      const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(body) });
+      const json = await res.json();
+      if (!json.ok) {
+        document.getElementById("queryResult").innerHTML = `<p style="color:red">❌ 查詢失敗</p>`;
+        return;
+      }
+      renderResult(command, json);
+    } catch (err) {
+      document.getElementById("queryResult").innerHTML = `<p style="color:red">❌ 查詢失敗：${err.message}</p>`;
+    } finally {
+      // ✅ 查詢結束後隱藏
+      document.getElementById("loading").style.display = "none";
+    }
+  }
 
   try {
     const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(body) });
@@ -441,6 +466,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
