@@ -260,7 +260,7 @@ function renderResult(command, json) {
       html += `<h5>${sec.title}</h5>`;
       html += `<table id="dataTable">
                  <tr>
-                   <th>${sec.cmd==="店家"?"店家":sec.cmd==="付款"?"付款方式":"分類方式"}</th>
+                   <th>${sec.cmd==="店家"?"店家":sec.cmd==="付款"?"付款方式":sec.cmd==="記帳者"?"記帳者":"分類方式"}</th>
                    <th class="numeric">金額</th>
                    <th class="numeric">占比</th>
                  </tr>`;
@@ -477,6 +477,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
