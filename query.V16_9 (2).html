@@ -144,7 +144,7 @@ async function sendQuery(command) {
       // ✅ 查詢結束後隱藏
       document.getElementById("loading").style.display = "none";
     }
-
+  } // ✅ sendQuery() 結束
 // 顯示結果表格與圖表
 function renderResult(command, json) {
   let html = "";
@@ -467,6 +467,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
