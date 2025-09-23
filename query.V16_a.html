@@ -264,11 +264,11 @@ function renderResult(command, json) {
                  </tr>`;
       // ✅ 用 sortedEntries 生成表格
      sortedEntries.forEach(([label, value])=>{
-        const percent = ((value/total)*100).toFixed(1);
+        const percent = ((Math.abs(value)/total)*100).toFixed(1);  // ✅ 用絕對值算占比
         html += `<tr>
                    <td>${label}</td>
-                   <td class="numeric">${value.toLocaleString()}</td>
-                   <td class="numeric">${percent}%</td>
+                   <td class="numeric">${value.toLocaleString()}</td>  <!-- 原本負數顯示 -->
+                   <td class="numeric">${percent}%</td>               <!-- 占比正數 -->
                  </tr>`;
       });
       html += `</table>`;
@@ -277,7 +277,7 @@ function renderResult(command, json) {
       // Pie Chart
       renderChart("pie",
       sortedEntries.map(e=>e[0]),
-      sortedEntries.map(e=>Math.abs(e[1]))
+      sortedEntries.map(e=>Math.abs(e[1])) // ✅ Pie chart 用絕對值
                  );
     }
   });
@@ -483,6 +483,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
