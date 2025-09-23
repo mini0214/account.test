@@ -250,10 +250,9 @@ function renderResult(command, json) {
         counts[value] = (counts[value] || 0) + Number(r[5] || 0); // 金額在 r[5]
       });
     
-      // ✅ 先轉成陣列再排序：金額從大到小
-      const filteredEntries = Object.entries(counts).map(([k,v])=> [k, v]);    // 轉成陣列
-      const sortedEntries = filteredEntries.sort((a,b)=> Math.abs(b[1]) - Math.abs(a[1]));           // 排序依照絕對值大小
-      const total = sortedEntries.reduce((sum,[k,v])=> sum + Math.abs(v),0);           // 保留正負號
+      const labels = Object.keys(counts);
+      const values = Object.values(counts);
+      const total = values.reduce((a,b)=>a+b,0);
 
       html += `<h5>${sec.title}</h5>`;
       html += `<table id="dataTable">
@@ -262,23 +261,19 @@ function renderResult(command, json) {
                    <th class="numeric">金額</th>
                    <th class="numeric">占比</th>
                  </tr>`;
-      // ✅ 用 sortedEntries 生成表格
-     sortedEntries.forEach(([label, value])=>{
-        const percent = ((Math.abs(value)/total)*100).toFixed(1);  // ✅ 用絕對值算占比
+      labels.forEach((l,i)=>{
+        const percent = ((values[i]/total)*100).toFixed(1);
         html += `<tr>
-                   <td>${label}</td>
-                   <td class="numeric">${value.toLocaleString()}</td>  <!-- 原本負數顯示 -->
-                   <td class="numeric">${percent}%</td>               <!-- 占比正數 -->
+                   <td>${l}</td>
+                   <td class="numeric">${values[i].toLocaleString()}</td>
+                   <td class="numeric">${percent}%</td>
                  </tr>`;
       });
       html += `</table>`;
-      html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${sortedEntries.length} 筆）</div>`;
+      html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${labels.length} 筆）</div>`;
 
       // Pie Chart
-      renderChart("pie",
-      sortedEntries.map(e=>e[0]),
-      sortedEntries.map(e=>Math.abs(e[1])) // ✅ Pie chart 用絕對值
-                 );
+      renderChart("pie", labels, values);
     }
   });
 
@@ -483,6 +478,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
