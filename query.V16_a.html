@@ -251,8 +251,9 @@ function renderResult(command, json) {
       });
       
       // ✅ 先轉成陣列再排序：金額從大到小
-      const sortedEntries = Object.entries(counts).sort((a,b)=> b[1]-a[1]);
+      const filteredEntries = Object.entries(counts).map(([k,v])=> [k, Math.abs(v)]);
       const total = sortedEntries.reduce((sum,[k,v])=>sum+v,0);
+      const sortedEntries = filteredEntries.sort((a,b)=> b[1]-a[1]);
 
       html += `<h5>${sec.title}</h5>`;
       html += `<table id="dataTable">
@@ -479,6 +480,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
