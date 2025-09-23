@@ -311,14 +311,17 @@ function makeTableSortable(table) {
           }
           return newOrder==="asc" ? aVal - bVal : bVal - aVal;
         });
+
+      // 重新把 row 加回 table
+      rows.forEach(row => table.appendChild(row));
   });
 }
 
 // 將欄位文字轉為可比較值
 function parseCellValue(txt) {
   let v = txt.replace(/,/g,"").replace("%","");
-  return isNaN(v)?txt:parseFloat(v);     // 數字
-  return txt.normalize("NFKD");          // 文字用 localeCompare
+  if (!isNaN(v) && v !== "") return parseFloat(v);  // 數字
+  return txt.normalize("NFKD");                     // 文字用 localeCompare
 }
 
 // 畫圖
@@ -326,9 +329,9 @@ function renderChart(type, labels, values) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
 
   // ✅ 如果有舊圖表，先銷毀
-  if (window.currentChart) {
-    window.currentChart.destroy();
-    window.currentChart = null;
+  if (chartInstance) {
+    chartInstance.destroy();
+    chartInstance = null;
   }
   
   if (type === "pie") {
@@ -470,4 +473,5 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
