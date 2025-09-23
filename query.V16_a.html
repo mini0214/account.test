@@ -251,9 +251,9 @@ function renderResult(command, json) {
       });
       
       // ✅ 先轉成陣列再排序：金額從大到小
-      const filteredEntries = Object.entries(counts).map(([k,v])=> [k, Math.abs(v)]);
-      const sortedEntries = filteredEntries.sort((a,b)=> b[1]-a[1]);
-      const total = sortedEntries.reduce((sum,[k,v])=>sum+v,0);
+      const filteredEntries = Object.entries(counts).map(([k,v])=> [k, v]);  // ✅ 不用 Math.abs
+      const sortedEntries = filteredEntries.sort((a,b)=> b[1]-a[1]);           // 從大到小排序
+      const total = sortedEntries.reduce((sum,[k,v])=> sum + v, 0);            // 保留正負號
 
       html += `<h5>${sec.title}</h5>`;
       html += `<table id="dataTable">
@@ -480,6 +480,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
