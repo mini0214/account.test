@@ -249,7 +249,7 @@ function renderResult(command, json) {
         const value = r[sec.key] || "未知";
         counts[value] = (counts[value] || 0) + Number(r[5] || 0); // 金額在 r[5]
       });
-    
+  
       const labels = Object.keys(counts);
       const values = Object.values(counts);
       const total = values.reduce((a,b)=>a+b,0);
@@ -302,8 +302,8 @@ function makeTableSortable(table) {
       th.innerHTML += newOrder==="asc"?" ▲":" ▼";
 
       rows.sort((a,b)=>{
-        let aVal = parseCellValue(a.cells[colIndex].innerText, colIndex);
-        let bVal = parseCellValue(b.cells[colIndex].innerText, colIndex);
+        let aVal = parseCellValue(a.cells[colIndex].innerText);
+        let bVal = parseCellValue(b.cells[colIndex].innerText);
         if (newOrder==="asc") return aVal>bVal?1:-1;
         else return aVal<bVal?1:-1;
       });
@@ -312,23 +312,12 @@ function makeTableSortable(table) {
   });
 }
 
-// 依照欄位類型解析
-function parseCellValue(txt, colIndex) {
-  txt = txt.trim();
-  
-  // 日期欄 (第二欄)
-  if (colIndex === 1) {
-    return new Date(txt);
-  }
-  // 金額欄 (3,4,6) 或百分比欄 (最後一欄)
-  if ([3,4,6].includes(colIndex)) {
-    const v = txt.replace(/,/g,"").replace("%","");
-    return parseFloat(v) || 0;
-  }
-  // 文字欄
-  return txt.toLowerCase(); // 統一小寫比較
+// 將欄位文字轉為可比較值
+function parseCellValue(txt) {
+  let v = txt.replace(/,/g,"").replace("%","");
+  return isNaN(v)?txt:parseFloat(v);
 }
-  
+
 // 畫圖
 function renderChart(type, labels, values) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
@@ -478,12 +467,3 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
