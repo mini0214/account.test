@@ -252,9 +252,7 @@ function renderResult(command, json) {
       
       // ✅ 先轉成陣列再排序：金額從大到小
       const sortedEntries = Object.entries(counts).sort((a,b)=> b[1]-a[1]);
-      const labels = sortedEntries.map(e=> e[0]);
-      const values = sortedEntries.map(e=> e[1]);
-      const total = values.reduce((a,b)=>a+b,0);
+      const total = sortedEntries.reduce((sum,[k,v])=>sum+v,0);
 
       html += `<h5>${sec.title}</h5>`;
       html += `<table id="dataTable">
@@ -263,19 +261,20 @@ function renderResult(command, json) {
                    <th class="numeric">金額</th>
                    <th class="numeric">占比</th>
                  </tr>`;
-      labels.forEach((l,i)=>{
-        const percent = ((values[i]/total)*100).toFixed(1);
+      // ✅ 用 sortedEntries 生成表格
+     sortedEntries.forEach(([label, value])=>{
+        const percent = ((value/total)*100).toFixed(1);
         html += `<tr>
-                   <td>${l}</td>
-                   <td class="numeric">${values[i].toLocaleString()}</td>
+                   <td>${label}</td>
+                   <td class="numeric">${value.toLocaleString()}</td>
                    <td class="numeric">${percent}%</td>
                  </tr>`;
       });
       html += `</table>`;
-      html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${labels.length} 筆）</div>`;
+      html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${sortedEntries.length} 筆）</div>`;
 
       // Pie Chart
-      renderChart("pie", labels, values);
+      renderChart("pie", sortedEntries.map(e=>e[0]), sortedEntries.map(e=>e[1]));
     }
   });
 
@@ -480,5 +479,6 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
