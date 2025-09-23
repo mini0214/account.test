@@ -72,8 +72,7 @@ async function main() {
     console.log("登入使用者:", currentUser);
   } catch (e) {
     console.warn("抓不到 LINE 名稱，會改用資料表第一筆:", e);
-  }
-  
+  }  
   setDefaultDateRange();
 }
 main();
@@ -113,9 +112,9 @@ async function sendQuery(command) {
     document.getElementById("queryResult").innerHTML = "";
   
     // ✅ 如果有舊圖表，銷毀掉
-    if (window.currentChart) {
-      window.currentChart.destroy();
-      window.currentChart = null;
+    if (chartInstance) {
+      chartInstance.destroy();
+      chartInstance = null;
     }
     const ctx = document.getElementById("chartCanvas").getContext("2d");
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -145,19 +144,6 @@ async function sendQuery(command) {
       // ✅ 查詢結束後隱藏
       document.getElementById("loading").style.display = "none";
     }
-
-  try {
-    const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(body) });
-    const json = await res.json();
-    if (!json.ok) {
-      document.getElementById("queryResult").innerHTML = `<p style="color:red">❌ 查詢失敗</p>`;
-      return;
-    }
-    renderResult(command, json);
-  } catch (err) {
-    document.getElementById("queryResult").innerHTML = `<p style="color:red">❌ 查詢失敗：${err.message}</p>`;
-  }
-}
 
 // 顯示結果表格與圖表
 function renderResult(command, json) {
@@ -481,6 +467,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
