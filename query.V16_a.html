@@ -302,8 +302,8 @@ function makeTableSortable(table) {
       th.innerHTML += newOrder==="asc"?" ▲":" ▼";
 
       rows.sort((a,b)=>{
-        let aVal = parseCellValue(a.cells[colIndex].innerText);
-        let bVal = parseCellValue(b.cells[colIndex].innerText);
+        let aVal = parseCellValue(a.cells[colIndex].innerText, colIndex);
+        let bVal = parseCellValue(b.cells[colIndex].innerText, colIndex);
         if (newOrder==="asc") return aVal>bVal?1:-1;
         else return aVal<bVal?1:-1;
       });
@@ -478,3 +478,4 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
