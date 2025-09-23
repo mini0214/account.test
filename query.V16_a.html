@@ -304,34 +304,39 @@ function makeTableSortable(table) {
       rows.sort((a,b)=>{
         let aVal = parseCellValue(a.cells[colIndex].innerText);
         let bVal = parseCellValue(b.cells[colIndex].innerText);
-        if (typeof aVal === "string" && typeof bVal === "string") {
-            return newOrder==="asc" 
-                   ? aVal.localeCompare(bVal, 'zh-TW') 
-                   : bVal.localeCompare(aVal, 'zh-TW');
-          }
-          return newOrder==="asc" ? aVal - bVal : bVal - aVal;
-        });
-
-      // 重新把 row 加回 table
-      rows.forEach(row => table.appendChild(row));
+        if (newOrder==="asc") return aVal>bVal?1:-1;
+        else return aVal<bVal?1:-1;
+      });
+      rows.forEach(r=>table.appendChild(r));
+    });
   });
 }
 
-// 將欄位文字轉為可比較值
-function parseCellValue(txt) {
-  let v = txt.replace(/,/g,"").replace("%","");
-  if (!isNaN(v) && v !== "") return parseFloat(v);  // 數字
-  return txt.normalize("NFKD");                     // 文字用 localeCompare
+// 依照欄位類型解析
+function parseCellValue(txt, colIndex) {
+  txt = txt.trim();
+  
+  // 日期欄 (第二欄)
+  if (colIndex === 1) {
+    return new Date(txt);
+  }
+  // 金額欄 (3,4,6) 或百分比欄 (最後一欄)
+  if ([3,4,6].includes(colIndex)) {
+    const v = txt.replace(/,/g,"").replace("%","");
+    return parseFloat(v) || 0;
+  }
+  // 文字欄
+  return txt.toLowerCase(); // 統一小寫比較
 }
-
+  
 // 畫圖
 function renderChart(type, labels, values) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
 
   // ✅ 如果有舊圖表，先銷毀
-  if (chartInstance) {
-    chartInstance.destroy();
-    chartInstance = null;
+  if (window.currentChart) {
+    window.currentChart.destroy();
+    window.currentChart = null;
   }
   
   if (type === "pie") {
@@ -473,5 +478,3 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
-
-
