@@ -342,8 +342,6 @@ function renderChart(type, labels, values) {
     window.currentChart = null;
   }
   
-  if (chartInstance) chartInstance.destroy();
-
   if (type === "pie") {
     // --- PIE ---
     const backgroundColors = labels.map((_, i) =>
@@ -483,6 +481,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
