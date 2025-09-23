@@ -304,18 +304,21 @@ function makeTableSortable(table) {
       rows.sort((a,b)=>{
         let aVal = parseCellValue(a.cells[colIndex].innerText);
         let bVal = parseCellValue(b.cells[colIndex].innerText);
-        if (newOrder==="asc") return aVal>bVal?1:-1;
-        else return aVal<bVal?1:-1;
-      });
-      rows.forEach(r=>table.appendChild(r));
-    });
+        if (typeof aVal === "string" && typeof bVal === "string") {
+            return newOrder==="asc" 
+                   ? aVal.localeCompare(bVal, 'zh-TW') 
+                   : bVal.localeCompare(aVal, 'zh-TW');
+          }
+          return newOrder==="asc" ? aVal - bVal : bVal - aVal;
+        });
   });
 }
 
 // 將欄位文字轉為可比較值
 function parseCellValue(txt) {
   let v = txt.replace(/,/g,"").replace("%","");
-  return isNaN(v)?txt:parseFloat(v);
+  return isNaN(v)?txt:parseFloat(v);     // 數字
+  return txt.normalize("NFKD");          // 文字用 localeCompare
 }
 
 // 畫圖
@@ -467,3 +470,4 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
