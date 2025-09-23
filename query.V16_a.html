@@ -284,7 +284,7 @@ function renderResult(command, json) {
   if (dataTable) makeTableSortable(dataTable);
 }
 
-// 通用表格排序（支援數字/百分比）
+// 通用表格排序（支援數字/百分比/日期）
 function makeTableSortable(table) {
   const headers = table.querySelectorAll("th");
   headers.forEach((th, colIndex)=>{
@@ -294,6 +294,7 @@ function makeTableSortable(table) {
       const currentOrder = th.dataset.order || null;
       const newOrder = currentOrder === "asc" ? "desc" : "asc";
       th.dataset.order = newOrder;
+      // reset 標記
       headers.forEach(h=>{
         h.classList.remove("sort-asc","sort-desc");
         h.innerHTML = h.innerHTML.replace(/[\u25B2\u25BC]/g,"");
@@ -302,8 +303,8 @@ function makeTableSortable(table) {
       th.innerHTML += newOrder==="asc"?" ▲":" ▼";
 
       rows.sort((a,b)=>{
-        let aVal = parseCellValue(a.cells[colIndex].innerText);
-        let bVal = parseCellValue(b.cells[colIndex].innerText);
+        let aVal = parseCellValue(a.cells[colIndex].innerText, colIndex);
+        let bVal = parseCellValue(b.cells[colIndex].innerText, colIndex);
         if (newOrder==="asc") return aVal>bVal?1:-1;
         else return aVal<bVal?1:-1;
       });
@@ -313,9 +314,15 @@ function makeTableSortable(table) {
 }
 
 // 將欄位文字轉為可比較值
-function parseCellValue(txt) {
-  let v = txt.replace(/,/g,"").replace("%","");
-  return isNaN(v)?txt:parseFloat(v);
+function parseCellValue(txt, colIndex) {
+  // ✅ 如果是日期欄（第 2 欄，index=1），轉 Date
+  if (colIndex === 1) {
+    const d = new Date(txt.replace(/\//g, "-")); // "2025/9/2" → Date
+    return d.getTime() || 0;
+  }
+  // 其他照舊：數字/百分比
+  let v = txt.replace(/,/g, "").replace("%", "");
+  return isNaN(v) ? txt : parseFloat(v);
 }
 
 // 畫圖
@@ -467,3 +474,4 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
