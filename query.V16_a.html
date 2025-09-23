@@ -249,11 +249,11 @@ function renderResult(command, json) {
         const value = r[sec.key] || "未知";
         counts[value] = (counts[value] || 0) + Number(r[5] || 0); // 金額在 r[5]
       });
-      
+    
       // ✅ 先轉成陣列再排序：金額從大到小
-      const filteredEntries = Object.entries(counts).map(([k,v])=> [k, v]);  // ✅ 不用 Math.abs
-      const sortedEntries = filteredEntries.sort((a,b)=> b[1]-a[1]);           // 從大到小排序
-      const total = sortedEntries.reduce((sum,[k,v])=> sum + v, 0);            // 保留正負號
+      const filteredEntries = Object.entries(counts).map(([k,v])=> [k, v]);    // 轉成陣列
+      const sortedEntries = filteredEntries.sort((a,b)=> Math.abs(b[1]) - Math.abs(a[1]));           // 排序依照絕對值大小
+      const total = sortedEntries.reduce((sum,[k,v])=> sum + Math.abs(v),0);           // 保留正負號
 
       html += `<h5>${sec.title}</h5>`;
       html += `<table id="dataTable">
@@ -275,7 +275,10 @@ function renderResult(command, json) {
       html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${sortedEntries.length} 筆）</div>`;
 
       // Pie Chart
-      renderChart("pie", sortedEntries.map(e=>e[0]), sortedEntries.map(e=>e[1]));
+      renderChart("pie",
+      sortedEntries.map(e=>e[0]),
+      sortedEntries.map(e=>Math.abs(e[1]))
+                 );
     }
   });
 
@@ -480,6 +483,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
