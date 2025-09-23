@@ -117,6 +117,8 @@ async function sendQuery(command) {
       window.currentChart.destroy();
       window.currentChart = null;
     }
+    const ctx = document.getElementById("chartCanvas").getContext("2d");
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
   
     // ✅ 顯示載入中
     document.getElementById("loading").style.display = "block";
@@ -481,6 +483,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
