@@ -108,18 +108,27 @@ async function sendQuery(command) {
     alert("請選擇開始與結束日期");
     return;
   }
-
-  const body = {
-    type: "query",
-    command: command,
-    version: VERSION,
-    startDate: startDate + " 00:00:00",
-    endDate: endDate + " 23:59:59"
-  };
-
+  
+    // ✅ 查詢前清空舊的查詢結果
+    document.getElementById("queryResult").innerHTML = "";
+  
+    // ✅ 如果有舊圖表，銷毀掉
+    if (window.currentChart) {
+      window.currentChart.destroy();
+      window.currentChart = null;
+    }
+  
     // ✅ 顯示載入中
     document.getElementById("loading").style.display = "block";
-  
+    
+    const body = {
+      type: "query",
+      command: command,
+      version: VERSION,
+      startDate: startDate + " 00:00:00",
+      endDate: endDate + " 23:59:59"
+    };
+ 
     try {
       const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(body) });
       const json = await res.json();
@@ -465,6 +474,7 @@ chartInstance = new Chart(ctx, {
 
 </body>
 </html>
+
 
 
 
