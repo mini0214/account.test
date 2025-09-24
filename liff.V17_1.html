@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>零用金支出帳簿</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>  <!-- 引入 Chart.js 在 <head> 區塊中加入 CDN：-->
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 50px;
+    }
+
+    h2 {
+      font-size: 50px;
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    h3 {
+      font-size: 50px;
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    label {
+      font-size: 50px;
+      font-weight: bold;
+      display: inline-block; /* ✅ 換成 inline-block 比較不會被擠下去 */
+      margin-top: 25px;
+      white-space: nowrap;   /* ✅ 關鍵：不允許自動換行 */
+    }
+
+    input {
+      font-size: 50px;
+      padding: 25px;
+      width: 70%;
+      margin-top: 5px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    select {
+      font-size: 50px;
+      padding: 25px;
+      width: 70%;
+      margin-top: 5px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    
+    .form-row {
+      display: flex;
+      align-items: center;
+      margin: 20px 0;
+      display: inline-block; /* ✅ 換成 inline-block 比較不會被擠下去 */
+      margin-top: 25px;
+      white-space: nowrap;   /* ✅ 關鍵：不允許自動換行 */
+    }
+  
+    .form-row label {
+      font-size: 50px;
+      font-weight: bold;
+      margin-right: 20px;
+      white-space: nowrap;
+    }
+  
+    .form-row input {
+      font-size: 50px;
+      padding: 25px;
+      width: 70%;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    .form-row select {
+      font-size: 50px;
+      padding: 25px;
+      width: 70%;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    .form-block {
+      display: flex;
+      align-items: center;
+      margin: 20px 0;
+      display: inline-block; /* ✅ 換成 inline-block 比較不會被擠下去 */
+      margin-top: 25px;
+      white-space: nowrap;   /* ✅ 關鍵：不允許自動換行 */
+    }
+  
+    .form-block label {
+      font-size: 50px;
+      font-weight: bold;
+      margin-right: 20px;
+      white-space: nowrap;
+    }
+    
+    .form-block input {
+      font-size: 50px;
+      padding: 25px;
+      width: 70%;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    .form-block select {
+      font-size: 50px;
+      padding: 25px;
+      width: 70%;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    
+    button {
+      font-size: 50px;
+      padding: 25px;
+      border-radius: 8px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      width: 100%;
+      margin-top: 25px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 25px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    .total {
+      font-size: 50px;
+      margin-top: 25px;
+      font-weight: bold;
+      color: #d9534f;
+    }
+
+    /* 查詢資料大小 ... */  
+    /* ✅ 強化選擇器，確保套用字體大小 */
+    #queryResult table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 15px;
+      font-size: 24px; /* 整張表格預設字體大小 */
+    }
+  
+    #queryResult table th,
+    #queryResult table td {
+      border: 1px solid #ddd;
+      padding: 20px;
+      text-align: center;
+      font-size: 30px !important; /* 強制覆蓋掉舊的 */
+    }
+  
+    #queryResult table th {
+      background-color: #f2f2f2;
+      font-weight: bold;
+    }
+  
+    .total {
+      margin-top: 10px;
+      font-size: 60px;
+      font-weight: bold;
+      color: #d9534f;
+    }
+
+     .toggle-btn {
+        padding: 8px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 30px;
+        opacity: 0.6;       /* 預設暗淡 */
+        transition: opacity 0.2s, box-shadow 0.2s;
+      }
+      #btnIncome { background: #000080; color: white; }
+      #btnPayout { background: #f44336; color: white; }
+    
+      .active {
+        opacity: 1;         /* 選中變亮 */
+        box-shadow: 0 0 6px rgba(0,0,0,0.3);
+      }
+    
+    <!--按下感CSS微動畫-->
+    button {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    
+    button:hover {
+      transform: scale(1.05);
+    }
+    
+    button:active {
+      transform: scale(0.97);
+      box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+  </style>
+</head>
+<body>
+
+  <h2 id="title">非記不可.[<span id="version"></span>]</h2>
+
+  <!-- 登錄表單 -->
+  <form id="expenseForm">
+    
+    <div class="form-row">
+      <label for="store">日期：</label>
+      <input type="date" id="date" placeholder="選填">
+    </div>    
+  
+    <div class="form-row">
+      <label for="store">店家：</label>
+      <input type="text" id="store" placeholder="選填">
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+      <button type="button" id="btnIncome" class="toggle-btn">收入</button>
+      <button type="button" id="btnPayout" class="toggle-btn active">支出</button>
+    
+      <input type="number" id="income" placeholder="請輸入收入金額" style="width:550px; color:blue; display:none;" step="0.01">
+      <input type="number" id="payout" placeholder="請輸入支出金額" style="width:550px; color:red; display:inline-block;" step="0.01">
+    </div>   
+    
+    <script>
+      const btnIncome = document.getElementById("btnIncome");
+      const btnPayout = document.getElementById("btnPayout");
+      const income = document.getElementById("income");
+      const payout = document.getElementById("payout");
+    
+      function resetButtons() {
+        btnIncome.classList.remove("active");
+        btnPayout.classList.remove("active");
+      }
+    
+      btnIncome.addEventListener("click", () => {
+        resetButtons();
+        btnIncome.classList.add("active");
+    
+        income.style.display = "inline-block";
+        income.value = "";
+        payout.style.display = "none";
+        payout.value = "";
+      });
+    
+      btnPayout.addEventListener("click", () => {
+        resetButtons();
+        btnPayout.classList.add("active");
+    
+        payout.style.display = "inline-block";
+        payout.value = "";
+        income.style.display = "none";
+        income.value = "";
+      });
+    </script>      
+
+    <div class="form-block">
+      <label for="currency">幣別：</label>
+      <select id="currency" required>
+        <option value="">請選擇幣別</option>
+        <option value="1">台幣:1</option>
+        <option value="20">澳幣:20</option>
+      </select>
+    </div>
+  
+    <div class="form-row">
+      <label for="payment">付款：</label>
+      <select id="payment" required>
+        <option value="">請選擇付款</option>
+        <option value="現金">現金</option>
+        <option value="信用卡">信用卡</option>
+        <option value="LINE Pay">LINE Pay</option>
+        <option value="銀行轉帳">銀行轉帳</option>
+      </select>
+    </div>
+
+    <div class="form-block">
+      <label for="type">分類：</label>
+      <select id="type" required>
+        <option value="">請選擇分類</option>
+        <option value="食">食</option>
+        <option value="衣">衣</option>
+        <option value="住">住</option>
+        <option value="行">行</option>
+        <option value="育">育</option>
+        <option value="樂">樂</option>
+        <option value="其他">其他</option>
+        <option value="收入">收入</option>   
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label for="store">附註：</label>
+      <input type="text" id="note" placeholder="選填">
+    </div>
+
+    <div class="form-row">
+      <label for="store">備註：</label>
+      <input type="text" id="memo" placeholder="選填">
+    </div>
+
+    <button type="submit" id="submitBtn">送出</button>
+    <div id="loadingMsg" style="display:none; font-size:40px; color:red; text-align:center; margin-top:20px;">
+      ⏳ 資料送出中，請稍候...
+    </div>
+  </form>
+
+  <!-- LIFF 初始化 + 登錄送出 -->
+  <script>  
+    const LIFF_ID = "2008096451-3DobjEw8";   // 換成你的 LIFF ID test
+    const VERSION = "V17_#14";                   // 固定版次
+    const API_URL = "https://script.google.com/macros/s/AKfycbxYYiOez-4xMhYyXNIdh4MieorwUFd_KXL-dxKUX2hOIihEV2ejGdZkC6WL_Ldhby9ZDQ/exec";  // 換成你的 GAS PATH
+
+    document.getElementById("version").textContent = VERSION;
+
+    async function main() {
+      await liff.init({ liffId: LIFF_ID });
+      if (!liff.isLoggedIn()) liff.login();
+
+      // 預設日期為今天
+      document.getElementById("date").valueAsDate = new Date();
+    }
+    main();
+
+    document.getElementById("expenseForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      
+      const submitBtn = document.getElementById("submitBtn");
+      const loadingMsg = document.getElementById("loadingMsg");
+
+      
+      // 🔒 禁用按鈕 + 顯示訊息
+      submitBtn.disabled = true;
+      submitBtn.innerText = "處理中...";
+      loadingMsg.style.display = "block";
+      
+      const date = document.getElementById("date").value;
+      const store = document.getElementById("store").value;
+      const income = document.getElementById("income").value;
+      const payout = document.getElementById("payout").value;
+      const payment = document.getElementById("payment").value;
+      const currency = document.getElementById("currency").value;
+      const type = document.getElementById("type").value;
+      const note = document.getElementById("note").value;
+      const memo = document.getElementById("memo").value;
+
+      const profile = await liff.getProfile();
+      
+      const now = new Date();
+      const taiwanTime = new Date(now.getTime() + (8 * 60 * 60 * 1000))
+        .toISOString()
+        .replace("T", " ")
+        .split(".")[0]; 
+      
+      const payload = {
+        version: VERSION,
+        userId: profile.userId,
+        displayName: profile.displayName,
+        inputDate: date,
+        store: store,
+        income: income,
+        payout: payout,
+        currency: currency,
+        amount: Math.round((income-payout)*currency),
+        payment: payment,
+        type: type,
+        note: note,
+        memo: memo,
+        createdAt: taiwanTime
+      };
+
+      const apiUrl = API_URL; 
+      try {
+        const res = await fetch(apiUrl, {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+        alert("✅ 已送出！");
+
+        document.getElementById("expenseForm").reset();
+        document.getElementById("date").valueAsDate = new Date();
+
+      } catch(err) {
+        alert("❌ 送出失敗：" + err.message);
+      } finally {
+        // ✅ 無論成功失敗都恢復按鈕 & 隱藏訊息
+        submitBtn.disabled = false;
+        submitBtn.innerText = "送出";
+        loadingMsg.style.display = "none";
+      }
+    });
+  </script>
+</body>
+</html>
+
+
