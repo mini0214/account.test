@@ -247,9 +247,7 @@
       const btnPayout = document.getElementById("btnPayout");
       const income = document.getElementById("income");
       const payout = document.getElementById("payout");
-
-      const currency = document.getElementById("currency");  // ← 多抓幣別下拉
-      
+    
       function resetButtons() {
         btnIncome.classList.remove("active");
         btnPayout.classList.remove("active");
@@ -274,24 +272,6 @@
         income.style.display = "none";
         income.value = "";
       });
-
-      // ✅ 在這裡加上小數點判斷
-      payout.addEventListener("input", () => {
-        if (payout.value.includes(".")) {
-          currency.value = "20";  // 自動選澳幣
-        } else {
-          currency.value = "1";   // 預設台幣
-        }
-      });
-    
-      income.addEventListener("input", () => {
-        if (income.value.includes(".")) {
-          currency.value = "20";
-        } else {
-          currency.value = "1";   // 預設台幣
-        }
-      });
-      
     </script>      
 
     <div class="form-block">
@@ -345,8 +325,8 @@
   <!-- LIFF 初始化 + 登錄送出 -->
   <script>  
     const LIFF_ID = "2008096451-3DobjEw8";   // 換成你的 LIFF ID test
-    const VERSION = "V16_9";                   // 固定版次
-    const API_URL = "https://script.google.com/macros/s/AKfycbwQ1t5wHfjAqrtH0_ijNNWtlE5Q0R-g8fwb5htWQoCXKXxSukVX9qVnrfuyoXOyKkGXdw/exec";  // 換成你的 GAS PATH
+    const VERSION = "V16_#14";                   // 固定版次
+    const API_URL = "https://script.google.com/macros/s/AKfycbxYYiOez-4xMhYyXNIdh4MieorwUFd_KXL-dxKUX2hOIihEV2ejGdZkC6WL_Ldhby9ZDQ/exec";  // 換成你的 GAS PATH
 
     document.getElementById("version").textContent = VERSION;
 
@@ -417,6 +397,4 @@
   </script>
 </body>
 </html>
-
-
 
