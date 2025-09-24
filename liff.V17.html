@@ -319,13 +319,16 @@
       <input type="text" id="memo" placeholder="選填">
     </div>
 
-    <button type="submit">送出</button>
+    <button type="submit" id="submitBtn">送出</button>
+    <div id="loadingMsg" style="display:none; font-size:40px; color:red; text-align:center; margin-top:20px;">
+      ⏳ 資料送出中，請稍候...
+    </div>
   </form>
 
   <!-- LIFF 初始化 + 登錄送出 -->
   <script>  
     const LIFF_ID = "2008096451-3DobjEw8";   // 換成你的 LIFF ID test
-    const VERSION = "V16_#14";                   // 固定版次
+    const VERSION = "V17_#14";                   // 固定版次
     const API_URL = "https://script.google.com/macros/s/AKfycbxYYiOez-4xMhYyXNIdh4MieorwUFd_KXL-dxKUX2hOIihEV2ejGdZkC6WL_Ldhby9ZDQ/exec";  // 換成你的 GAS PATH
 
     document.getElementById("version").textContent = VERSION;
@@ -341,7 +344,16 @@
 
     document.getElementById("expenseForm").addEventListener("submit", async (e) => {
       e.preventDefault();
+      
+      const submitBtn = document.getElementById("submitBtn");
+      const loadingMsg = document.getElementById("loadingMsg");
 
+      
+      // 🔒 禁用按鈕 + 顯示訊息
+      submitBtn.disabled = true;
+      submitBtn.innerText = "處理中...";
+      loadingMsg.style.display = "block";
+      
       const date = document.getElementById("date").value;
       const store = document.getElementById("store").value;
       const income = document.getElementById("income").value;
@@ -392,9 +404,15 @@
 
       } catch(err) {
         alert("❌ 送出失敗：" + err.message);
+      } finally {
+        // ✅ 無論成功失敗都恢復按鈕 & 隱藏訊息
+        submitBtn.disabled = false;
+        submitBtn.innerText = "送出";
+        loadingMsg.style.display = "none";
       }
     });
   </script>
 </body>
 </html>
+
 
