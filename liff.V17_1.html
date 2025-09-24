@@ -7,23 +7,9 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>  <!-- 引入 Chart.js 在 <head> 區塊中加入 CDN：-->
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 50px;
-    }
-
-    h2 {
-      font-size: 50px;
-      text-align: center;
-      margin-bottom: 50px;
-    }
-
-    h3 {
-      font-size: 50px;
-      text-align: center;
-      margin-bottom: 50px;
-    }
-
+    body {font-family: Arial, sans-serif; padding: 50px; }
+    h2 { font-size: 50px; text-align: center; margin-bottom: 50px; }
+    h3 { font-size: 50px; text-align: center; margin-bottom: 50px; }
     label {
       font-size: 50px;
       font-weight: bold;
@@ -31,25 +17,8 @@
       margin-top: 25px;
       white-space: nowrap;   /* ✅ 關鍵：不允許自動換行 */
     }
-
-    input {
-      font-size: 50px;
-      padding: 25px;
-      width: 70%;
-      margin-top: 5px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
-
-    select {
-      font-size: 50px;
-      padding: 25px;
-      width: 70%;
-      margin-top: 5px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
-    
+    input { font-size: 50px; padding: 25px; width: 70%; margin-top: 5px; border-radius: 8px; border: 1px solid #ccc; }
+    select { font-size: 50px; padding: 25px; width: 70%; margin-top: 5px; border-radius: 8px; border: 1px solid #ccc; }    
     .form-row {
       display: flex;
       align-items: center;
@@ -58,29 +27,9 @@
       margin-top: 25px;
       white-space: nowrap;   /* ✅ 關鍵：不允許自動換行 */
     }
-  
-    .form-row label {
-      font-size: 50px;
-      font-weight: bold;
-      margin-right: 20px;
-      white-space: nowrap;
-    }
-  
-    .form-row input {
-      font-size: 50px;
-      padding: 25px;
-      width: 70%;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
-
-    .form-row select {
-      font-size: 50px;
-      padding: 25px;
-      width: 70%;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
+    .form-row label { font-size: 50px; font-weight: bold; margin-right: 20px; white-space: nowrap; }
+    .form-row input { font-size: 50px; padding: 25px; width: 70%; border-radius: 8px; border: 1px solid #ccc; }
+    .form-row select { font-size: 50px; padding: 25px; width: 70%; border-radius: 8px; border: 1px solid #ccc; }
 
     .form-block {
       display: flex;
@@ -231,7 +180,8 @@
   
     <div class="form-row">
       <label for="store">店家：</label>
-      <input type="text" id="store" placeholder="選填">
+      <input type="text" id="store" list="storeList" placeholder="選填">
+      <datalist id="storeList"></datalist>
     </div>
 
     <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
@@ -339,9 +289,35 @@
 
       // 預設日期為今天
       document.getElementById("date").valueAsDate = new Date();
+
+      // 載入店家清單
+      loadStores();
+    }
+
+    // 從 GAS 抓店家清單
+    async function loadStores() {
+      try {
+        const res = await fetch(API_URL + "?type=query&command=店家");
+        const data = await res.json();
+        if (!data.ok) return;
+
+        const storeListEl = document.getElementById("storeList");
+        storeListEl.innerHTML = "";
+
+        if (data.storeList && data.storeList.length > 0) {
+          data.storeList.forEach(store => {
+            const option = document.createElement("option");
+            option.value = store;
+            storeListEl.appendChild(option);
+          });
+        }
+      } catch (err) {
+        console.error("載入店家失敗:", err);
+      }
     }
     main();
-
+    
+    // 表單送出
     document.getElementById("expenseForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       
@@ -401,7 +377,7 @@
 
         document.getElementById("expenseForm").reset();
         document.getElementById("date").valueAsDate = new Date();
-
+        loadStores(); // ✅ 送出後重新載入店家
       } catch(err) {
         alert("❌ 送出失敗：" + err.message);
       } finally {
@@ -414,5 +390,6 @@
   </script>
 </body>
 </html>
+
 
 
