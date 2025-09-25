@@ -12,10 +12,9 @@
   <!-- 自動提示清單 -->
   <datalist id="storeList"></datalist>
 
-  <button onclick="loadStores()">載入店家清單</button>
-
   <script>
-    // 🔹 向 GAS 取得店家清單
+    document.addEventListener("DOMContentLoaded", loadStores);
+
     async function loadStores() {
       try {
         const res = await fetch("https://script.google.com/macros/s/你的GAS_ID/exec", {
@@ -27,6 +26,7 @@
             endDate: "2025-12-31"
           })
         });
+
         const data = await res.json();
 
         if (data.ok && data.storeList) {
@@ -37,13 +37,11 @@
             option.value = store;
             datalist.appendChild(option);
           });
-          alert("店家清單已載入完成 ✅");
         } else {
-          alert("查無店家清單");
+          console.warn("查無店家清單");
         }
       } catch (err) {
-        console.error(err);
-        alert("讀取店家清單失敗 ❌");
+        console.error("讀取店家清單失敗 ❌", err);
       }
     }
   </script>
