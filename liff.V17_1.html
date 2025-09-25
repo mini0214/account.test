@@ -1,29 +1,155 @@
-function doGet(e) {
-  // 模擬資料，實際可改為讀 Spreadsheet
-  const rows = [
-    ["2025-09-25", "Big W", 100],
-    ["2025-09-24", "Coles", 50],
-    ["2025-09-23", "7-Eleven", 200],
-    ["2025-09-22", "Family Mart", 150]
-  ];
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>零用金支出帳簿</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body { font-family: Arial; padding: 50px; }
+    h2 { font-size: 50px; text-align:center; margin-bottom:50px; }
+    label { font-size: 50px; font-weight:bold; display:inline-block; margin-top:25px; white-space:nowrap; }
+    input, select, button { font-size: 50px; padding:25px; border-radius:8px; border:1px solid #ccc; width:70%; margin-top:5px; }
+    button { background:#4CAF50; color:white; width:100%; margin-top:25px; cursor:pointer; }
+    #suggestions { border:1px solid #ccc; display:none; position:absolute; background:white; z-index:10; }
+  </style>
+</head>
+<body>
+  <h2 id="title">非記不可.[<span id="version"></span>]</h2>
 
-  // 生成 storeMap
-  const storeMap = {};
-  rows.forEach(r => {
-    const store = r[1] || "未填寫";
-    storeMap[store] = (storeMap[store] || 0) + (Number(r[2]) || 0);
-  });
+  <form id="expenseForm">
+    <div>
+      <label for="date">日期：</label>
+      <input type="date" id="date">
+    </div>
 
-  const result = {
-    ok: true,
-    type: "query",
-    command: "店家",
-    rows: rows,
-    stores: storeMap,
-    storeList: Object.keys(storeMap)
-  };
+    <div style="position:relative;">
+      <label for="store">店家：</label>
+      <input type="text" id="store" placeholder="輸入或選擇店家">
+      <div id="suggestions"></div>
+    </div>
 
-  return ContentService.createTextOutput(JSON.stringify(result))
-    .setMimeType(ContentService.MimeType.JSON)
-    .setHeader("Access-Control-Allow-Origin", "*"); // ✅ 讓前端 fetch 不會被擋
-}
+    <div>
+      <label for="amount">金額：</label>
+      <input type="number" id="amount" step="0.01">
+    </div>
+
+    <div>
+      <label for="type">分類：</label>
+      <select id="type">
+        <option value="">請選擇分類</option>
+        <option value="食">食</option>
+        <option value="衣">衣</option>
+        <option value="住">住</option>
+        <option value="行">行</option>
+        <option value="育">育</option>
+        <option value="樂">樂</option>
+        <option value="其他">其他</option>
+      </select>
+    </div>
+
+    <button type="submit">送出</button>
+    <div id="loadingMsg" style="display:none; font-size:40px; color:red; text-align:center; margin-top:20px;">⏳ 資料送出中...</div>
+  </form>
+
+  <script>
+    const VERSION = "V17_#14";
+    const API_URL = "你的 GAS Web App URL"; // 替換成你部署的 GAS URL
+    document.getElementById("version").textContent = VERSION;
+
+    let allStores = [];
+
+    async function loadStoreList() {
+      try {
+        const res = await fetch(`${API_URL}?type=query&command=店家`);
+        const data = await res.json();
+        if(data.ok && data.storeList){
+          allStores = data.storeList;
+          console.log("店家清單:", allStores);
+        }
+      } catch(err) {
+        console.error("載入店家清單失敗:", err);
+      }
+    }
+
+    function showSuggestions(val) {
+      const sugg = document.getElementById("suggestions");
+      sugg.innerHTML = "";
+      if(!val) { sugg.style.display = "none"; return; }
+
+      const matches = allStores.filter(s => s.toLowerCase().includes(val.toLowerCase()));
+      if(matches.length === 0) { sugg.style.display = "none"; return; }
+
+      matches.forEach(s => {
+        const div = document.createElement("div");
+        div.textContent = s;
+        div.style.padding = "5px";
+        div.style.cursor = "pointer";
+        div.onclick = () => { document.getElementById("store").value = s; sugg.style.display = "none"; };
+        sugg.appendChild(div);
+      });
+
+      const input = document.getElementById("store");
+      sugg.style.display = "block";
+      sugg.style.width = input.offsetWidth + "px";
+      sugg.style.top = (input.offsetTop + input.offsetHeight) + "px";
+      sugg.style.left = input.offsetLeft + "px";
+    }
+
+    document.getElementById("store").addEventListener("input", e => {
+      showSuggestions(e.target.value);
+    });
+
+    async function main() {
+      await liff.init({ liffId: "https://script.google.com/macros/s/AKfycby3FERiRi2KHn6hLWYNvccZVYGRPYX5ckte-HpNnIEGbB47QcROnQrMBSv2BciNFCHztQ/exec" });
+      if(!liff.isLoggedIn()) liff.login();
+      document.getElementById("date").valueAsDate = new Date();
+      await loadStoreList();
+    }
+    main();
+
+    document.getElementById("expenseForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const submitBtn = e.target.querySelector("button");
+      const loadingMsg = document.getElementById("loadingMsg");
+      submitBtn.disabled = true;
+      loadingMsg.style.display = "block";
+
+      const date = document.getElementById("date").value;
+      const store = document.getElementById("store").value;
+      const amount = Number(document.getElementById("amount").value);
+      const type = document.getElementById("type").value;
+
+      const profile = await liff.getProfile();
+      const now = new Date();
+      const taiwanTime = new Date(now.getTime() + (8*60*60*1000)).toISOString().replace("T"," ").split(".")[0];
+
+      const payload = {
+        version: VERSION,
+        userId: profile.userId,
+        displayName: profile.displayName,
+        inputDate: date,
+        store: store,
+        amount: amount,
+        type: type,
+        createdAt: taiwanTime
+      };
+
+      try {
+        const res = await fetch(API_URL, {
+          method:"POST",
+          body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        alert("✅ 已送出：" + JSON.stringify(result));
+        e.target.reset();
+        document.getElementById("date").valueAsDate = new Date();
+      } catch(err) {
+        alert("❌ 送出失敗：" + err.message);
+      } finally {
+        submitBtn.disabled = false;
+        loadingMsg.style.display = "none";
+      }
+    });
+  </script>
+</body>
+</html>
