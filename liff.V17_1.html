@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>店家提示範例</title>
+  <title>店家提示範例(GAS)</title>
   <style>
     #store { width: 300px; padding: 8px; font-size: 20px; }
     #suggestions { border:1px solid #ccc; display:none; position:absolute; background:white; max-height:150px; overflow-y:auto; }
@@ -16,17 +16,35 @@
   <div id="suggestions"></div>
 
   <script>
-    // 模擬 GAS 回傳的 storeList
-    const storeList = ["Big W", "Coles", "7-Eleven", "Family Mart", "U-Mart", "Union Shop"];
+    const API_URL = "https://script.google.com/macros/s/AKfycby3FERiRi2KHn6hLWYNvccZVYGRPYX5ckte-HpNnIEGbB47QcROnQrMBSv2BciNFCHztQ/exec"; // 替換成你的 GAS URL
+    let storeList = []; // 從 GAS 取得的完整清單
     const input = document.getElementById("store");
     const sugg = document.getElementById("suggestions");
 
+    // 取得 storeList
+    async function loadStoreList() {
+      try {
+        const res = await fetch(`${API_URL}?type=query&command=店家`);
+        const data = await res.json();
+        if (data.ok && data.storeList) {
+          storeList = data.storeList;
+          console.log("載入店家清單成功:", storeList);
+        } else {
+          console.error("GAS 回傳格式不正確:", data);
+        }
+      } catch (err) {
+        console.error("載入店家清單失敗:", err);
+      }
+    }
+
+    loadStoreList(); // 頁面載入時呼叫
+
+    // 即時提示
     input.addEventListener("input", () => {
       const val = input.value.toLowerCase();
       sugg.innerHTML = "";
       if (!val) { sugg.style.display = "none"; return; }
 
-      // 過濾 storeList
       const matches = storeList.filter(s => s.toLowerCase().includes(val));
       if (matches.length === 0) { sugg.style.display = "none"; return; }
 
