@@ -1,8 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>零用金支出帳簿</title>
+<meta charset="utf-8">
+<title>零用金支出帳簿</title>
+<style>
+  #store { width: 300px; padding: 5px; font-size: 16px; }
+  #suggestions { border:1px solid #ccc; display:none; position:absolute; background:white; z-index:1000; }
+  #suggestions div { padding:5px; cursor:pointer; }
+  #suggestions div:hover { background:#eee; }
+</style>
 </head>
 <body>
 
@@ -12,10 +18,10 @@
     <input type="date" id="date">
   </div>
 
-  <div>
+  <div style="position:relative;">
     <label for="store">店家：</label>
-    <input type="text" id="store" list="storeList">
-    <datalist id="storeList"></datalist>
+    <input type="text" id="store" placeholder="輸入或選擇店家">
+    <div id="suggestions"></div>
   </div>
 
   <div>
@@ -28,43 +34,52 @@
 
 <script>
 const API_URL = "你的 GAS URL"; // 改成你的 GAS Path
+let storeList = []; // 從 GAS 取得的完整清單
 
-let allStores = []; // 儲存 GAS 回傳完整清單
-
+// 讀取 GAS storeList
 async function loadStoreList() {
   try {
     const res = await fetch(`${API_URL}?type=query&command=店家`);
     const data = await res.json();
     if(data.ok && data.storeList){
-      allStores = data.storeList; // 儲存完整列表
-      updateDatalist(""); // 初始化 datalist
+      storeList = data.storeList;
     }
   } catch(err) {
     console.error("載入店家清單失敗:", err);
   }
 }
 
-// 根據輸入即時更新 datalist
-const storeInput = document.getElementById("store");
-storeInput.addEventListener("input", () => {
-  const val = storeInput.value.toLowerCase();
-  updateDatalist(val);
+// 下拉提示邏輯
+const input = document.getElementById("store");
+const sugg = document.getElementById("suggestions");
+
+input.addEventListener("input", () => {
+  const val = input.value.toLowerCase();
+  sugg.innerHTML = "";
+  if (!val) { sugg.style.display = "none"; return; }
+
+  const matches = storeList.filter(s => s.toLowerCase().includes(val));
+  if (matches.length === 0) { sugg.style.display = "none"; return; }
+
+  matches.forEach(m => {
+    const div = document.createElement("div");
+    div.textContent = m;
+    div.onclick = () => { input.value = m; sugg.style.display = "none"; };
+    sugg.appendChild(div);
+  });
+
+  sugg.style.display = "block";
+  sugg.style.width = input.offsetWidth + "px";
+  sugg.style.top = (input.offsetTop + input.offsetHeight) + "px";
+  sugg.style.left = input.offsetLeft + "px";
 });
 
-function updateDatalist(filter) {
-  const datalist = document.getElementById("storeList");
-  datalist.innerHTML = ""; // 清空選項
-  allStores
-    .filter(s => s.toLowerCase().includes(filter))  // 過濾
-    .forEach(s => {
-      const option = document.createElement("option");
-      option.value = s;
-      datalist.appendChild(option);
-    });
-}
-
-// 頁面載入時先抓店家清單
-loadStoreList();
+// 點擊表單外隱藏 suggestions
+document.addEventListener("click", (e) => {
+  if (!input.contains(e.target) && !sugg.contains(e.target)) {
+    sugg.style.display = "none";
+  }
+});
 
 // submit 邏輯
 document.getElementById("expenseForm").addEventListener("submit", async (e) => {
@@ -86,6 +101,13 @@ document.getElementById("expenseForm").addEventListener("submit", async (e) => {
     alert("❌ 送出失敗：" + err.message);
   }
 });
+
+// 頁面載入先讀店家清單
+loadStoreList();
+
+// 預設日期為今天
+document.getElementById("date").valueAsDate = new Date();
 </script>
+
 </body>
 </html>
