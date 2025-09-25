@@ -4,37 +4,74 @@
 <meta charset="utf-8">
 <title>零用金支出帳簿</title>
 <style>
-  #store { width: 300px; padding: 5px; font-size: 16px; }
+  body { font-family: Arial; padding: 20px; }
+  label { display:inline-block; width:80px; }
+  input, select { width:300px; padding:5px; margin:5px 0; }
   #suggestions { border:1px solid #ccc; display:none; position:absolute; background:white; z-index:1000; }
   #suggestions div { padding:5px; cursor:pointer; }
   #suggestions div:hover { background:#eee; }
+  button { padding:10px 20px; margin-top:10px; }
 </style>
 </head>
 <body>
 
+<h2>零用金支出帳簿</h2>
+
 <form id="expenseForm">
   <div>
-    <label for="date">日期：</label>
+    <label>日期：</label>
     <input type="date" id="date">
   </div>
 
   <div style="position:relative;">
-    <label for="store">店家：</label>
+    <label>店家：</label>
     <input type="text" id="store" placeholder="輸入或選擇店家">
     <div id="suggestions"></div>
   </div>
 
   <div>
-    <label for="amount">金額：</label>
+    <label>金額：</label>
     <input type="number" id="amount" step="0.01">
+  </div>
+
+  <div>
+    <label>幣別：</label>
+    <select id="currency">
+      <option value="1">台幣</option>
+      <option value="20">澳幣</option>
+    </select>
+  </div>
+
+  <div>
+    <label>付款：</label>
+    <select id="payment">
+      <option value="現金">現金</option>
+      <option value="信用卡">信用卡</option>
+      <option value="LINE Pay">LINE Pay</option>
+      <option value="銀行轉帳">銀行轉帳</option>
+    </select>
+  </div>
+
+  <div>
+    <label>分類：</label>
+    <select id="type">
+      <option value="食">食</option>
+      <option value="衣">衣</option>
+      <option value="住">住</option>
+      <option value="行">行</option>
+      <option value="育">育</option>
+      <option value="樂">樂</option>
+      <option value="其他">其他</option>
+      <option value="收入">收入</option>
+    </select>
   </div>
 
   <button type="submit">送出</button>
 </form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzPaRFw3VFTYd2H_07-6s-qEZvnAHgfmGGPJwI5RT6hI3lhHP6X1VNp1QkOccmF3hANSQ/exec"; // 改成你的 GAS Path
-let storeList = []; // 從 GAS 取得的完整清單
+const API_URL = "你的 GAS URL"; // 改成你的 GAS Path
+let storeList = [];
 
 // 讀取 GAS storeList
 async function loadStoreList() {
@@ -49,7 +86,7 @@ async function loadStoreList() {
   }
 }
 
-// 下拉提示邏輯
+// 店家下拉提示
 const input = document.getElementById("store");
 const sugg = document.getElementById("suggestions");
 
@@ -68,26 +105,30 @@ input.addEventListener("input", () => {
     sugg.appendChild(div);
   });
 
+  const rect = input.getBoundingClientRect();
   sugg.style.display = "block";
-  sugg.style.width = input.offsetWidth + "px";
+  sugg.style.width = rect.width + "px";
   sugg.style.top = (input.offsetTop + input.offsetHeight) + "px";
   sugg.style.left = input.offsetLeft + "px";
 });
 
-// 點擊表單外隱藏 suggestions
+// 點擊外面隱藏
 document.addEventListener("click", (e) => {
   if (!input.contains(e.target) && !sugg.contains(e.target)) {
     sugg.style.display = "none";
   }
 });
 
-// submit 邏輯
+// submit
 document.getElementById("expenseForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const payload = {
     date: document.getElementById("date").value,
     store: document.getElementById("store").value,
-    amount: document.getElementById("amount").value
+    amount: document.getElementById("amount").value,
+    currency: document.getElementById("currency").value,
+    payment: document.getElementById("payment").value,
+    type: document.getElementById("type").value
   };
   try {
     const res = await fetch(API_URL, {
@@ -97,6 +138,7 @@ document.getElementById("expenseForm").addEventListener("submit", async (e) => {
     const result = await res.json();
     alert("✅ 已送出：" + JSON.stringify(result));
     document.getElementById("expenseForm").reset();
+    document.getElementById("date").valueAsDate = new Date();
   } catch(err) {
     alert("❌ 送出失敗：" + err.message);
   }
@@ -104,11 +146,8 @@ document.getElementById("expenseForm").addEventListener("submit", async (e) => {
 
 // 頁面載入先讀店家清單
 loadStoreList();
-
-// 預設日期為今天
 document.getElementById("date").valueAsDate = new Date();
 </script>
 
 </body>
 </html>
-
