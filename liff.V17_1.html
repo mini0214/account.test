@@ -1,25 +1,53 @@
-<input type="text" id="store" placeholder="輸入或選擇店家">
-<div id="suggestions" style="border:1px solid #ccc; display:none; position:absolute; background:white;"></div>
+<div style="position:relative;">
+  <label for="store">店家：</label>
+  <input type="text" id="store" placeholder="輸入或選擇店家">
+  <div id="suggestions" style="border:1px solid #ccc; display:none; position:absolute; background:white; z-index:10;"></div>
+</div>
 
 <script>
-const storeList = ["Big W", "Coles", "7-Eleven", "Family Mart"];
+const API_URL = "https://script.google.com/macros/s/AKfycby3FERiRi2KHn6hLWYNvccZVYGRPYX5ckte-HpNnIEGbB47QcROnQrMBSv2BciNFCHztQ/exec"; // 替換成你的 GAS URL
 const input = document.getElementById("store");
 const sugg = document.getElementById("suggestions");
+let storeList = []; // 從 GAS 讀取的店家清單
 
+// 載入 GAS 的 storeList
+async function loadStoreList() {
+  try {
+    const res = await fetch(`${API_URL}?type=query&command=店家`);
+    const data = await res.json();
+    if (data.ok && data.storeList) {
+      storeList = data.storeList;
+      console.log("載入店家清單:", storeList);
+    }
+  } catch(err) {
+    console.error("載入店家清單失敗:", err);
+  }
+}
+
+// 根據輸入即時顯示建議
 input.addEventListener("input", () => {
   const val = input.value.toLowerCase();
   sugg.innerHTML = "";
-  if (!val) { sugg.style.display = "none"; return; }
+  if (!val) { 
+    sugg.style.display = "none"; 
+    return; 
+  }
 
   const matches = storeList.filter(s => s.toLowerCase().includes(val));
-  if (matches.length === 0) { sugg.style.display = "none"; return; }
+  if (matches.length === 0) { 
+    sugg.style.display = "none"; 
+    return; 
+  }
 
   matches.forEach(m => {
     const div = document.createElement("div");
     div.textContent = m;
     div.style.padding = "5px";
     div.style.cursor = "pointer";
-    div.onclick = () => { input.value = m; sugg.style.display = "none"; };
+    div.onclick = () => { 
+      input.value = m; 
+      sugg.style.display = "none"; 
+    };
     sugg.appendChild(div);
   });
 
@@ -28,4 +56,7 @@ input.addEventListener("input", () => {
   sugg.style.top = (input.offsetTop + input.offsetHeight) + "px";
   sugg.style.left = input.offsetLeft + "px";
 });
+
+// 初始化
+loadStoreList();
 </script>
