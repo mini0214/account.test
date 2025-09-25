@@ -1,31 +1,21 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>零用金支出帳簿</title>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <style>
-    body { font-family: Arial; padding: 50px; }
-    label { font-size: 30px; font-weight: bold; display: inline-block; margin-top: 20px; }
-    input, select { font-size: 28px; padding: 10px; width: 70%; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; }
-    button { font-size: 28px; padding: 15px; border-radius: 8px; background-color: #4CAF50; color: white; border: none; width: 100%; margin-top: 20px; cursor:pointer; }
-    button:active { transform: scale(0.97); }
-  </style>
+<meta charset="utf-8">
+<title>零用金支出帳簿</title>
 </head>
 <body>
 
-<h2>零用金支出帳簿</h2>
-
 <form id="expenseForm">
   <label>日期：</label>
-  <input type="date" id="date">
+  <input type="date" id="date"><br><br>
 
   <label>店家：</label>
   <input list="storeList" id="store" placeholder="選填">
-  <datalist id="storeList"></datalist>
+  <datalist id="storeList"></datalist><br><br>
 
   <label>金額：</label>
-  <input type="number" id="amount" placeholder="輸入金額" step="0.01">
+  <input type="number" id="amount" placeholder="輸入金額"><br><br>
 
   <label>分類：</label>
   <select id="type">
@@ -37,26 +27,30 @@
     <option value="育">育</option>
     <option value="樂">樂</option>
     <option value="其他">其他</option>
-  </select>
+  </select><br><br>
 
   <button type="submit">送出</button>
-  <div id="loadingMsg" style="display:none; color:red; margin-top:10px;">⏳ 資料送出中...</div>
 </form>
 
+<div id="loadingMsg" style="display:none;">⏳ 資料送出中...</div>
+
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script>
 const LIFF_ID = "你的LIFF_ID";
 const API_URL = "你的GAS_URL";
 
+// 初始化 LIFF
 async function main() {
   await liff.init({ liffId: LIFF_ID });
   if (!liff.isLoggedIn()) liff.login();
+
   document.getElementById("date").valueAsDate = new Date();
 
-  // 🔹 讀取 storeList
+  // 讀取 storeList
   fetch(`${API_URL}?type=query&command=店家`)
     .then(res => res.json())
     .then(result => {
-      if(result.ok && result.storeList && result.storeList.length > 0){
+      if(result.ok && result.storeList){
         const datalist = document.getElementById("storeList");
         datalist.innerHTML = "";
         result.storeList.forEach(store => {
@@ -71,18 +65,16 @@ async function main() {
 
 main();
 
-document.getElementById("expenseForm").addEventListener("submit", async e => {
+document.getElementById("expenseForm").addEventListener("submit", async e=>{
   e.preventDefault();
   const submitBtn = e.target.querySelector("button");
   const loadingMsg = document.getElementById("loadingMsg");
-
   submitBtn.disabled = true;
   loadingMsg.style.display = "block";
 
   const profile = await liff.getProfile();
   const now = new Date();
-  const taiwanTime = new Date(now.getTime() + 8*60*60*1000)
-    .toISOString().replace("T"," ").split(".")[0];
+  const taiwanTime = new Date(now.getTime()+8*60*60*1000).toISOString().replace("T"," ").split(".")[0];
 
   const payload = {
     userId: profile.userId,
@@ -95,12 +87,12 @@ document.getElementById("expenseForm").addEventListener("submit", async e => {
   };
 
   try {
-    const res = await fetch(API_URL, { method:"POST", body: JSON.stringify(payload) });
+    const res = await fetch(API_URL,{ method:"POST", body:JSON.stringify(payload) });
     const data = await res.json();
     alert("✅ 已送出：" + JSON.stringify(payload));
     e.target.reset();
     document.getElementById("date").valueAsDate = new Date();
-  } catch(err) {
+  } catch(err){
     alert("❌ 送出失敗：" + err.message);
   } finally {
     submitBtn.disabled = false;
