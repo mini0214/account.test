@@ -1,34 +1,29 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>測試 GAS storeList</title>
-</head>
-<body>
+function doGet(e) {
+  // 模擬資料，實際可改為讀 Spreadsheet
+  const rows = [
+    ["2025-09-25", "Big W", 100],
+    ["2025-09-24", "Coles", 50],
+    ["2025-09-23", "7-Eleven", 200],
+    ["2025-09-22", "Family Mart", 150]
+  ];
 
-<h2>GAS storeList 測試</h2>
-<button id="loadBtn">載入店家清單</button>
-<pre id="output"></pre>
+  // 生成 storeMap
+  const storeMap = {};
+  rows.forEach(r => {
+    const store = r[1] || "未填寫";
+    storeMap[store] = (storeMap[store] || 0) + (Number(r[2]) || 0);
+  });
 
-<script>
-const API_URL = "https://script.google.com/macros/s/AKfycbzPaRFw3VFTYd2H_07-6s-qEZvnAHgfmGGPJwI5RT6hI3lhHP6X1VNp1QkOccmF3hANSQ/exec"; // 改成你的 GAS Path
+  const result = {
+    ok: true,
+    type: "query",
+    command: "店家",
+    rows: rows,
+    stores: storeMap,
+    storeList: Object.keys(storeMap)
+  };
 
-document.getElementById("loadBtn").addEventListener("click", async () => {
-  const output = document.getElementById("output");
-  output.textContent = "載入中...";
-  try {
-    const res = await fetch(`${API_URL}?type=query&command=店家`);
-    const data = await res.json();
-    if (data.ok && data.storeList) {
-      output.textContent = "✅ storeList 內容:\n" + JSON.stringify(data.storeList, null, 2);
-    } else {
-      output.textContent = "❌ storeList 沒有值或回傳格式錯誤:\n" + JSON.stringify(data, null, 2);
-    }
-  } catch(err) {
-    output.textContent = "❌ 載入失敗: " + err.message;
-  }
-});
-</script>
-
-</body>
-</html>
+  return ContentService.createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeader("Access-Control-Allow-Origin", "*"); // ✅ 讓前端 fetch 不會被擋
+}
