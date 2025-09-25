@@ -4,118 +4,51 @@
   <meta charset="utf-8">
   <title>零用金支出帳簿</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
   <style>
-    body { font-family: Arial, sans-serif; padding: 50px; }
-    h2 { font-size: 50px; text-align: center; margin-bottom: 50px; }
-    label { font-size: 50px; font-weight: bold; margin-top: 25px; white-space: nowrap; }
-    input, select { font-size: 50px; padding: 25px; width: 70%; margin-top: 5px; border-radius: 8px; border: 1px solid #ccc; }
-    .form-row { display: inline-block; margin: 20px 0; }
-    button { font-size: 50px; padding: 25px; border-radius: 8px; background-color: #4CAF50; color: white; border: none; width: 100%; margin-top: 25px; transition: transform 0.2s ease, box-shadow 0.2s ease; }
-    button:hover { transform: scale(1.05); }
-    button:active { transform: scale(0.97); box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); }
-    .toggle-btn { padding: 8px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 30px; opacity: 0.6; }
-    #btnIncome { background: #000080; color: white; }
-    #btnPayout { background: #f44336; color: white; }
-    .active { opacity: 1; box-shadow: 0 0 6px rgba(0,0,0,0.3); }
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .form-row { margin-bottom: 10px; }
+    label { display: inline-block; width: 60px; }
   </style>
 </head>
 <body>
-
-  <h2 id="title">非記不可.[<span id="version"></span>]</h2>
-
-  <!-- 登錄表單 -->
+  <h3>零用金支出帳簿</h3>
   <form id="expenseForm">
     <div class="form-row">
       <label for="date">日期：</label>
-      <input type="date" id="date" placeholder="選填">
-    </div>    
+      <input type="date" id="date" required>
+    </div>
 
     <div class="form-row">
       <label for="store">店家：</label>
-      <!-- 🔽 綁定 datalist -->
       <input type="text" id="store" list="storeList" placeholder="選填">
       <datalist id="storeList"></datalist>
     </div>
 
-    <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
-      <button type="button" id="btnIncome" class="toggle-btn">收入</button>
-      <button type="button" id="btnPayout" class="toggle-btn active">支出</button>
-      <input type="number" id="income" placeholder="請輸入收入金額" style="width:550px; color:blue; display:none;" step="0.01">
-      <input type="number" id="payout" placeholder="請輸入支出金額" style="width:550px; color:red; display:inline-block;" step="0.01">
-    </div>   
-
     <div class="form-row">
-      <label for="currency">幣別：</label>
-      <select id="currency" required>
-        <option value="">請選擇幣別</option>
-        <option value="1">台幣:1</option>
-        <option value="20">澳幣:20</option>
-      </select>
+      <label for="amount">金額：</label>
+      <input type="number" id="amount" required>
     </div>
 
-    <div class="form-row">
-      <label for="payment">付款：</label>
-      <select id="payment" required>
-        <option value="">請選擇付款</option>
-        <option value="現金">現金</option>
-        <option value="信用卡">信用卡</option>
-        <option value="LINE Pay">LINE Pay</option>
-        <option value="銀行轉帳">銀行轉帳</option>
-      </select>
-    </div>
-
-    <div class="form-row">
-      <label for="type">分類：</label>
-      <select id="type" required>
-        <option value="">請選擇分類</option>
-        <option value="食">食</option>
-        <option value="衣">衣</option>
-        <option value="住">住</option>
-        <option value="行">行</option>
-        <option value="育">育</option>
-        <option value="樂">樂</option>
-        <option value="其他">其他</option>
-        <option value="收入">收入</option>   
-      </select>
-    </div>
-
-    <div class="form-row">
-      <label for="note">附註：</label>
-      <input type="text" id="note" placeholder="選填">
-    </div>
-
-    <div class="form-row">
-      <label for="memo">備註：</label>
-      <input type="text" id="memo" placeholder="選填">
-    </div>
-
-    <button type="submit" id="submitBtn">送出</button>
-    <div id="loadingMsg" style="display:none; font-size:40px; color:red; text-align:center; margin-top:20px;">
-      ⏳ 資料送出中，請稍候...
-    </div>
+    <button type="submit">送出</button>
   </form>
 
-  <!-- LIFF 初始化 + 店家清單 + 登錄送出 -->
-  <script>  
-    const LIFF_ID = "2008096451-3DobjEw8";   // 你的 LIFF ID
-    const VERSION = "V17_#14";               
-    const API_URL = "https://script.google.com/macros/s/AKfycbxYYiOez-4xMhYyXNIdh4MieorwUFd_KXL-dxKUX2hOIihEV2ejGdZkC6WL_Ldhby9ZDQ/exec"; // 你的 GAS URL
+  <div id="result"></div>
 
-    document.getElementById("version").textContent = VERSION;
+  <script>
+    const LIFF_ID = "2008096451-3DobjEw8";   // 換成你的 LIFF ID
+    const API_URL = "https://script.google.com/macros/s/AKfycbxYYiOez-4xMhYyXNIdh4MieorwUFd_KXL-dxKUX2hOIihEV2ejGdZkC6WL_Ldhby9ZDQ/exec";
 
     async function main() {
       await liff.init({ liffId: LIFF_ID });
       if (!liff.isLoggedIn()) liff.login();
 
-      // 預設日期為今天
       document.getElementById("date").valueAsDate = new Date();
 
-      // 讀取店家清單 (GAS 要回傳 { storeList: [...] })
+      // 讀取店家清單
       try {
         const res = await fetch(`${API_URL}?type=query&command=店家`);
         const result = await res.json();
+        console.log("GAS 回傳：", result);  // 👈 確認有沒有 storeList
         if (result.ok && result.storeList) {
           const datalist = document.getElementById("storeList");
           datalist.innerHTML = "";
@@ -129,83 +62,21 @@
         console.error("載入店家清單失敗:", err);
       }
     }
-    main();
 
-    // 收入 / 支出切換
-    const btnIncome = document.getElementById("btnIncome");
-    const btnPayout = document.getElementById("btnPayout");
-    const income = document.getElementById("income");
-    const payout = document.getElementById("payout");
-    function resetButtons() {
-      btnIncome.classList.remove("active");
-      btnPayout.classList.remove("active");
-    }
-    btnIncome.addEventListener("click", () => {
-      resetButtons(); btnIncome.classList.add("active");
-      income.style.display = "inline-block"; payout.style.display = "none";
-      income.value = ""; payout.value = "";
-    });
-    btnPayout.addEventListener("click", () => {
-      resetButtons(); btnPayout.classList.add("active");
-      payout.style.display = "inline-block"; income.style.display = "none";
-      income.value = ""; payout.value = "";
-    });
-
-    // 表單送出
     document.getElementById("expenseForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const submitBtn = document.getElementById("submitBtn");
-      const loadingMsg = document.getElementById("loadingMsg");
-      submitBtn.disabled = true;
-      submitBtn.innerText = "處理中...";
-      loadingMsg.style.display = "block";
-
-      const date = document.getElementById("date").value;
-      const store = document.getElementById("store").value;
-      const incomeVal = document.getElementById("income").value;
-      const payoutVal = document.getElementById("payout").value;
-      const payment = document.getElementById("payment").value;
-      const currency = document.getElementById("currency").value;
-      const type = document.getElementById("type").value;
-      const note = document.getElementById("note").value;
-      const memo = document.getElementById("memo").value;
-      const profile = await liff.getProfile();
-
-      const now = new Date();
-      const taiwanTime = new Date(now.getTime() + (8 * 60 * 60 * 1000))
-        .toISOString().replace("T", " ").split(".")[0]; 
-
-      const payload = {
-        version: VERSION,
-        userId: profile.userId,
-        displayName: profile.displayName,
-        inputDate: date,
-        store: store,
-        income: incomeVal,
-        payout: payoutVal,
-        currency: currency,
-        amount: Math.round((incomeVal - payoutVal) * currency),
-        payment: payment,
-        type: type,
-        note: note,
-        memo: memo,
-        createdAt: taiwanTime
+      const data = {
+        date: document.getElementById("date").value,
+        store: document.getElementById("store").value,
+        amount: document.getElementById("amount").value
       };
+      console.log("送出資料：", data);
 
-      try {
-        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
-        const result = await res.json();
-        alert("✅ 已送出！");
-        document.getElementById("expenseForm").reset();
-        document.getElementById("date").valueAsDate = new Date();
-      } catch(err) {
-        alert("❌ 送出失敗：" + err.message);
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerText = "送出";
-        loadingMsg.style.display = "none";
-      }
+      document.getElementById("result").textContent = "✅ 已送出：" + JSON.stringify(data);
+      // 這裡可改成 fetch API 上傳到 GAS
     });
+
+    main();
   </script>
 </body>
 </html>
