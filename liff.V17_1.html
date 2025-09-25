@@ -1,49 +1,105 @@
-<div style="position:relative;">
-  <input type="text" id="store" placeholder="輸入或選擇店家">
-  <div id="suggestions" style="border:1px solid #ccc; display:none; position:absolute; background:white; z-index:10;"></div>
-</div>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>零用金支出帳簿</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body { font-family: Arial; padding: 50px; }
+    input { font-size: 24px; padding: 10px; width: 400px; }
+    button { font-size: 24px; padding: 10px 20px; margin-top: 20px; }
+    #suggestions { border:1px solid #ccc; display:none; position:absolute; background:white; max-height:200px; overflow-y:auto; z-index:10; }
+    #suggestions div:hover { background:#eee; cursor:pointer; }
+  </style>
+</head>
+<body>
+
+<h2>零用金支出帳簿</h2>
+
+<form id="expenseForm">
+  <div>
+    <label>日期：</label>
+    <input type="date" id="date">
+  </div>
+  <div style="position:relative;">
+    <label>店家：</label>
+    <input type="text" id="store" placeholder="輸入或選擇店家">
+    <div id="suggestions"></div>
+  </div>
+  <div>
+    <label>金額：</label>
+    <input type="number" id="amount" placeholder="輸入金額" step="0.01">
+  </div>
+  <button type="submit">送出</button>
+</form>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycby3FERiRi2KHn6hLWYNvccZVYGRPYX5ckte-HpNnIEGbB47QcROnQrMBSv2BciNFCHztQ/exec";
-const input = document.getElementById("store");
+const API_URL = "https://script.google.com/macros/s/1Z0XR2kRL76MGPbis2hemCSi-Mw3IpMbDqO2QUZxlO48/exec"; // 改成你的 GAS URL
+const storeInput = document.getElementById("store");
 const sugg = document.getElementById("suggestions");
-let storeList = [];
+let allStores = [];
 
+// 載入 storeList
 async function loadStoreList() {
   try {
     const res = await fetch(`${API_URL}?type=query&command=店家`);
     const data = await res.json();
-    if (data.ok && data.storeList) {
-      storeList = data.storeList;
-      console.log("GAS storeList:", storeList); // 測試用
+    if(data.ok && data.storeList) {
+      allStores = data.storeList;
+      console.log("storeList:", allStores);
     }
   } catch(err) {
     console.error("載入店家清單失敗:", err);
   }
 }
+loadStoreList();
 
-input.addEventListener("input", () => {
-  const val = input.value.toLowerCase();
+// 即時提示
+storeInput.addEventListener("input", () => {
+  const val = storeInput.value.toLowerCase();
   sugg.innerHTML = "";
-  if (!val) { sugg.style.display = "none"; return; }
+  if(!val) { sugg.style.display = "none"; return; }
 
-  const matches = storeList.filter(s => s.toLowerCase().includes(val));
-  if (matches.length === 0) { sugg.style.display = "none"; return; }
+  const matches = allStores.filter(s => s.toLowerCase().includes(val));
+  if(matches.length === 0) { sugg.style.display = "none"; return; }
 
   matches.forEach(m => {
     const div = document.createElement("div");
     div.textContent = m;
-    div.style.padding = "5px";
-    div.style.cursor = "pointer";
-    div.onclick = () => { input.value = m; sugg.style.display = "none"; };
+    div.onclick = () => { storeInput.value = m; sugg.style.display = "none"; };
     sugg.appendChild(div);
   });
 
   sugg.style.display = "block";
-  sugg.style.width = input.offsetWidth + "px";
-  sugg.style.top = (input.offsetTop + input.offsetHeight) + "px";
-  sugg.style.left = input.offsetLeft + "px";
+  sugg.style.width = storeInput.offsetWidth + "px";
+  sugg.style.top = (storeInput.offsetTop + storeInput.offsetHeight) + "px";
+  sugg.style.left = storeInput.offsetLeft + "px";
 });
 
-loadStoreList();
+// 送出表單
+document.getElementById("expenseForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const payload = {
+    date: document.getElementById("date").value,
+    store: storeInput.value,
+    amount: document.getElementById("amount").value
+  };
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+    const result = await res.json();
+    alert("✅ 已送出：" + JSON.stringify(result));
+    document.getElementById("expenseForm").reset();
+  } catch(err) {
+    alert("❌ 送出失敗：" + err.message);
+  }
+});
+
+// 預設日期為今天
+document.getElementById("date").valueAsDate = new Date();
 </script>
+
+</body>
+</html>
