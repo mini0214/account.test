@@ -3,125 +3,49 @@
 <head>
   <meta charset="utf-8">
   <title>零用金支出帳簿</title>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 50px; }
-    h2 { font-size: 50px; text-align: center; margin-bottom: 50px; }
-    label { font-size: 50px; font-weight: bold; margin-top: 25px; white-space: nowrap; }
-    input, select { font-size: 50px; padding: 25px; width: 70%; margin-top: 5px; border-radius: 8px; border: 1px solid #ccc; }
-    .form-row { display: inline-block; margin: 20px 0; white-space: nowrap; }
-    .form-row label { margin-right: 20px; }
-    button { font-size: 50px; padding: 25px; border-radius: 8px; background-color: #4CAF50; color: white; border: none; width: 100%; margin-top: 25px; }
-  </style>
 </head>
 <body>
+  <h3>輸入店家</h3>
 
-  <h2 id="title">非記不可.[<span id="version"></span>]</h2>
+  <!-- 輸入框 -->
+  <input list="storeList" id="store" placeholder="輸入或選擇店家">
+  <!-- 自動提示清單 -->
+  <datalist id="storeList"></datalist>
 
-  <!-- 登錄表單 -->
-  <form id="expenseForm">
-    <div class="form-row">
-      <label for="date">日期：</label>
-      <input type="date" id="date" placeholder="選填">
-    </div>    
-
-    <div class="form-row">
-      <label for="store">店家：</label>
-      <!-- ✅ 綁定 datalist -->
-      <input type="text" id="store" placeholder="選填" list="storeList">
-      <datalist id="storeList"></datalist>
-    </div>
-
-    <div class="form-row">
-      <label for="payment">付款：</label>
-      <select id="payment" required>
-        <option value="">請選擇付款</option>
-        <option value="現金">現金</option>
-        <option value="信用卡">信用卡</option>
-        <option value="LINE Pay">LINE Pay</option>
-        <option value="銀行轉帳">銀行轉帳</option>
-      </select>
-    </div>
-
-    <button type="submit" id="submitBtn">送出</button>
-    <div id="loadingMsg" style="display:none; font-size:40px; color:red; text-align:center; margin-top:20px;">
-      ⏳ 資料送出中，請稍候...
-    </div>
-  </form>
+  <button onclick="loadStores()">載入店家清單</button>
 
   <script>
-    const LIFF_ID = "2008096451-3DobjEw8";   // 換成你的 LIFF ID
-    const VERSION = "V17_#15";               // 版本
-    const API_URL = "https://script.google.com/macros/s/AKfycbxYYiOez-4xMhYyXNIdh4MieorwUFd_KXL-dxKUX2hOIihEV2ejGdZkC6WL_Ldhby9ZDQ/exec";  
-
-    document.getElementById("version").textContent = VERSION;
-
-    async function main() {
-      await liff.init({ liffId: LIFF_ID });
-      if (!liff.isLoggedIn()) liff.login();
-
-      document.getElementById("date").valueAsDate = new Date();
-      loadStores(); // ✅ 初始化時載入過去的店家
-    }
-
-    // 從 GAS 載入過去輸入過的店家，放到 datalist
+    // 🔹 向 GAS 取得店家清單
     async function loadStores() {
       try {
-        const res = await fetch(API_URL + "?type=query&command=店家");
-        const data = await res.json();
-        if (!data.ok) return;
-
-        const storeListEl = document.getElementById("storeList");
-        storeListEl.innerHTML = "";
-
-        // 這裡用 data.storeList (GAS 回傳的 Object.keys(storeMap))
-        (data.storeList || []).forEach(store => {
-          const option = document.createElement("option");
-          option.value = store;
-          storeListEl.appendChild(option);
+        const res = await fetch("https://script.google.com/macros/s/你的GAS_ID/exec", {
+          method: "POST",
+          body: JSON.stringify({
+            type: "query",
+            command: "店家",
+            startDate: "2025-01-01",  // 可依需求帶值
+            endDate: "2025-12-31"
+          })
         });
+        const data = await res.json();
+
+        if (data.ok && data.storeList) {
+          const datalist = document.getElementById("storeList");
+          datalist.innerHTML = ""; // 先清空
+          data.storeList.forEach(store => {
+            const option = document.createElement("option");
+            option.value = store;
+            datalist.appendChild(option);
+          });
+          alert("店家清單已載入完成 ✅");
+        } else {
+          alert("查無店家清單");
+        }
       } catch (err) {
-        console.error("載入店家失敗:", err);
+        console.error(err);
+        alert("讀取店家清單失敗 ❌");
       }
     }
-
-    // 表單送出
-    document.getElementById("expenseForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const submitBtn = document.getElementById("submitBtn");
-      const loadingMsg = document.getElementById("loadingMsg");
-
-      submitBtn.disabled = true;
-      submitBtn.innerText = "處理中...";
-      loadingMsg.style.display = "block";
-
-      const payload = {
-        version: VERSION,
-        store: document.getElementById("store").value,
-        payment: document.getElementById("payment").value,
-        inputDate: document.getElementById("date").value
-      };
-
-      try {
-        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
-        const result = await res.json();
-        alert("✅ 已送出！");
-
-        document.getElementById("expenseForm").reset();
-        document.getElementById("date").valueAsDate = new Date();
-        loadStores(); // ✅ 送出成功後重新載入，讓新店家也能下次帶出
-
-      } catch (err) {
-        alert("❌ 送出失敗：" + err.message);
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerText = "送出";
-        loadingMsg.style.display = "none";
-      }
-    });
-
-    main();
   </script>
 </body>
 </html>
