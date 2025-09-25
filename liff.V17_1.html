@@ -7,43 +7,18 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 50px;
-    }
-    h2, h3 { font-size: 50px; text-align: center; margin-bottom: 50px; }
+    body { font-family: Arial, sans-serif; padding: 50px; }
+    h2 { font-size: 50px; text-align: center; margin-bottom: 50px; }
     label { font-size: 50px; font-weight: bold; margin-top: 25px; white-space: nowrap; }
-    input, select {
-      font-size: 50px; padding: 25px; width: 70%;
-      margin-top: 5px; border-radius: 8px; border: 1px solid #ccc;
-    }
-    .form-row, .form-block { margin: 20px 0; display: inline-block; white-space: nowrap; }
-    .form-row label, .form-block label { margin-right: 20px; }
-    button {
-      font-size: 50px; padding: 25px; border-radius: 8px;
-      background-color: #4CAF50; color: white; border: none;
-      width: 100%; margin-top: 25px;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
+    input, select { font-size: 50px; padding: 25px; width: 70%; margin-top: 5px; border-radius: 8px; border: 1px solid #ccc; }
+    .form-row { display: inline-block; margin: 20px 0; }
+    button { font-size: 50px; padding: 25px; border-radius: 8px; background-color: #4CAF50; color: white; border: none; width: 100%; margin-top: 25px; transition: transform 0.2s ease, box-shadow 0.2s ease; }
     button:hover { transform: scale(1.05); }
     button:active { transform: scale(0.97); box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); }
-
-    /* 🔽 自動完成樣式 */
-    #suggestions {
-      border: 1px solid #ccc;
-      background: white;
-      position: absolute;
-      display: none;
-      z-index: 1000;
-      max-height: 300px;
-      overflow-y: auto;
-    }
-    #suggestions div {
-      padding: 10px;
-      cursor: pointer;
-      font-size: 40px;
-    }
-    #suggestions div:hover { background: #f0f0f0; }
+    .toggle-btn { padding: 8px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 30px; opacity: 0.6; }
+    #btnIncome { background: #000080; color: white; }
+    #btnPayout { background: #f44336; color: white; }
+    .active { opacity: 1; box-shadow: 0 0 6px rgba(0,0,0,0.3); }
   </style>
 </head>
 <body>
@@ -52,27 +27,26 @@
 
   <!-- 登錄表單 -->
   <form id="expenseForm">
-    
     <div class="form-row">
       <label for="date">日期：</label>
       <input type="date" id="date" placeholder="選填">
     </div>    
 
-    <div class="form-row" style="position:relative;">
+    <div class="form-row">
       <label for="store">店家：</label>
-      <input type="text" id="store" placeholder="選填" autocomplete="off">
-      <div id="suggestions"></div> <!-- 🔽 自動完成建議清單 -->
+      <!-- 🔽 綁定 datalist -->
+      <input type="text" id="store" list="storeList" placeholder="選填">
+      <datalist id="storeList"></datalist>
     </div>
 
-    <!-- 收入/支出切換 -->
-    <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
+    <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
       <button type="button" id="btnIncome" class="toggle-btn">收入</button>
       <button type="button" id="btnPayout" class="toggle-btn active">支出</button>
       <input type="number" id="income" placeholder="請輸入收入金額" style="width:550px; color:blue; display:none;" step="0.01">
       <input type="number" id="payout" placeholder="請輸入支出金額" style="width:550px; color:red; display:inline-block;" step="0.01">
     </div>   
 
-    <div class="form-block">
+    <div class="form-row">
       <label for="currency">幣別：</label>
       <select id="currency" required>
         <option value="">請選擇幣別</option>
@@ -80,7 +54,7 @@
         <option value="20">澳幣:20</option>
       </select>
     </div>
-  
+
     <div class="form-row">
       <label for="payment">付款：</label>
       <select id="payment" required>
@@ -92,7 +66,7 @@
       </select>
     </div>
 
-    <div class="form-block">
+    <div class="form-row">
       <label for="type">分類：</label>
       <select id="type" required>
         <option value="">請選擇分類</option>
@@ -123,11 +97,11 @@
     </div>
   </form>
 
-  <!-- LIFF 初始化 + 登錄送出 -->
+  <!-- LIFF 初始化 + 店家清單 + 登錄送出 -->
   <script>  
     const LIFF_ID = "2008096451-3DobjEw8";   // 你的 LIFF ID
     const VERSION = "V17_#14";               
-    const API_URL = "https://script.google.com/macros/s/AKfycbxYYiOez-4xMhYyXNIdh4MieorwUFd_KXL-dxKUX2hOIihEV2ejGdZkC6WL_Ldhby9ZDQ/exec";  
+    const API_URL = "https://script.google.com/macros/s/AKfycbxYYiOez-4xMhYyXNIdh4MieorwUFd_KXL-dxKUX2hOIihEV2ejGdZkC6WL_Ldhby9ZDQ/exec"; // 你的 GAS URL
 
     document.getElementById("version").textContent = VERSION;
 
@@ -138,45 +112,46 @@
       // 預設日期為今天
       document.getElementById("date").valueAsDate = new Date();
 
-      // 🚀 載入店家清單
+      // 讀取店家清單 (GAS 要回傳 { storeList: [...] })
       try {
-        const res = await fetch(API_URL + "?type=query&command=店家");
-        const data = await res.json();
-        if (data.ok && data.storeList) {
-          window.storeList = data.storeList; // 全域存起來
+        const res = await fetch(`${API_URL}?type=query&command=店家`);
+        const result = await res.json();
+        if (result.ok && result.storeList) {
+          const datalist = document.getElementById("storeList");
+          datalist.innerHTML = "";
+          result.storeList.forEach(store => {
+            const option = document.createElement("option");
+            option.value = store;
+            datalist.appendChild(option);
+          });
         }
-      } catch(err) {
+      } catch (err) {
         console.error("載入店家清單失敗:", err);
       }
     }
     main();
 
-    // 🔽 自動完成邏輯
-    const input = document.getElementById("store");
-    const sugg = document.getElementById("suggestions");
-
-    input.addEventListener("input", () => {
-      const val = input.value.toLowerCase();
-      sugg.innerHTML = "";
-      if (!val || !window.storeList) { sugg.style.display = "none"; return; }
-
-      const matches = window.storeList.filter(s => s.toLowerCase().includes(val));
-      if (matches.length === 0) { sugg.style.display = "none"; return; }
-
-      matches.forEach(m => {
-        const div = document.createElement("div");
-        div.textContent = m;
-        div.onclick = () => { input.value = m; sugg.style.display = "none"; };
-        sugg.appendChild(div);
-      });
-
-      sugg.style.display = "block";
-      sugg.style.width = input.offsetWidth + "px";
-      sugg.style.top = (input.offsetTop + input.offsetHeight) + "px";
-      sugg.style.left = input.offsetLeft + "px";
+    // 收入 / 支出切換
+    const btnIncome = document.getElementById("btnIncome");
+    const btnPayout = document.getElementById("btnPayout");
+    const income = document.getElementById("income");
+    const payout = document.getElementById("payout");
+    function resetButtons() {
+      btnIncome.classList.remove("active");
+      btnPayout.classList.remove("active");
+    }
+    btnIncome.addEventListener("click", () => {
+      resetButtons(); btnIncome.classList.add("active");
+      income.style.display = "inline-block"; payout.style.display = "none";
+      income.value = ""; payout.value = "";
+    });
+    btnPayout.addEventListener("click", () => {
+      resetButtons(); btnPayout.classList.add("active");
+      payout.style.display = "inline-block"; income.style.display = "none";
+      income.value = ""; payout.value = "";
     });
 
-    // 送出表單
+    // 表單送出
     document.getElementById("expenseForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const submitBtn = document.getElementById("submitBtn");
@@ -185,7 +160,17 @@
       submitBtn.innerText = "處理中...";
       loadingMsg.style.display = "block";
 
+      const date = document.getElementById("date").value;
+      const store = document.getElementById("store").value;
+      const incomeVal = document.getElementById("income").value;
+      const payoutVal = document.getElementById("payout").value;
+      const payment = document.getElementById("payment").value;
+      const currency = document.getElementById("currency").value;
+      const type = document.getElementById("type").value;
+      const note = document.getElementById("note").value;
+      const memo = document.getElementById("memo").value;
       const profile = await liff.getProfile();
+
       const now = new Date();
       const taiwanTime = new Date(now.getTime() + (8 * 60 * 60 * 1000))
         .toISOString().replace("T", " ").split(".")[0]; 
@@ -194,16 +179,16 @@
         version: VERSION,
         userId: profile.userId,
         displayName: profile.displayName,
-        inputDate: document.getElementById("date").value,
-        store: document.getElementById("store").value,
-        income: document.getElementById("income").value,
-        payout: document.getElementById("payout").value,
-        currency: document.getElementById("currency").value,
-        amount: Math.round((document.getElementById("income").value - document.getElementById("payout").value) * document.getElementById("currency").value),
-        payment: document.getElementById("payment").value,
-        type: document.getElementById("type").value,
-        note: document.getElementById("note").value,
-        memo: document.getElementById("memo").value,
+        inputDate: date,
+        store: store,
+        income: incomeVal,
+        payout: payoutVal,
+        currency: currency,
+        amount: Math.round((incomeVal - payoutVal) * currency),
+        payment: payment,
+        type: type,
+        note: note,
+        memo: memo,
         createdAt: taiwanTime
       };
 
