@@ -2,59 +2,17 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>零用金支出帳簿</title>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <title>datalist 測試</title>
 </head>
 <body>
   <h3>輸入店家</h3>
 
-  <!-- 輸入框 + datalist -->
   <input list="storeList" id="store" placeholder="輸入或選擇店家">
-  <datalist id="storeList"></datalist>
-
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      // LIFF 初始化（必要，否則 JS 可能不會跑）
-      liff.init({ liffId: "你的LIFF_ID" })
-        .then(() => {
-          console.log("LIFF 初始化完成 ✅");
-          loadStores(); // 初始化完成後抓店家清單
-        })
-        .catch(err => {
-          console.error("LIFF 初始化失敗 ❌", err);
-        });
-    });
-
-    async function loadStores() {
-      try {
-        const res = await fetch("https://script.google.com/macros/s/AKfycbxxxx/exec", {
-          method: "POST",
-          body: JSON.stringify({
-            type: "query",
-            command: "店家",
-            startDate: "2025-01-01",
-            endDate: "2025-12-31"
-          })
-        });
-        const data = await res.json();
-        console.log("GAS 回傳:", data);
-
-        if (data.ok && data.storeList) {
-          const datalist = document.getElementById("storeList");
-          datalist.innerHTML = "";
-          data.storeList.forEach(store => {
-            const option = document.createElement("option");
-            option.value = store;
-            datalist.appendChild(option);
-          });
-          console.log("已載入店家清單 ✅");
-        } else {
-          console.warn("查無店家清單");
-        }
-      } catch (err) {
-        console.error("讀取店家清單失敗 ❌", err);
-      }
-    }
-  </script>
+  <datalist id="storeList">
+    <option value="Apple">
+    <option value="Coles">
+    <option value="Uber trip">
+    <option value="Big W">
+  </datalist>
 </body>
 </html>
