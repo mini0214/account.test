@@ -1,194 +1,33 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>零用金支出帳簿</title>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <style>
-    body { font-family: Arial; padding: 50px; }
-    label { font-size: 24px; display:inline-block; width:100px; }
-    input, select, button { font-size:24px; padding:8px; margin:5px 0; width:300px; }
-    .toggle-btn { width:140px; cursor:pointer; }
-    .active { background-color:#4CAF50;color:white; }
-  </style>
-</head>
-<body>
+let allStores = []; // 儲存 GAS 回傳完整清單
 
-<h2>零用金支出帳簿</h2>
-
-<form id="expenseForm">
-
-  <div>
-    <label for="date">日期：</label>
-    <input type="date" id="date">
-  </div>
-
-  <div>
-    <label for="store">店家：</label>
-    <input type="text" id="store" list="storeList" placeholder="選填">
-    <datalist id="storeList"></datalist>
-  </div>
-
-  <div>
-    <button type="button" id="btnIncome" class="toggle-btn">收入</button>
-    <button type="button" id="btnPayout" class="toggle-btn active">支出</button>
-  </div>
-
-  <div>
-    <input type="number" id="income" placeholder="收入金額" style="display:none;" step="0.01">
-    <input type="number" id="payout" placeholder="支出金額" style="display:inline-block;" step="0.01">
-  </div>
-
-  <div>
-    <label for="currency">幣別：</label>
-    <select id="currency" required>
-      <option value="">請選幣別</option>
-      <option value="1">台幣</option>
-      <option value="20">澳幣</option>
-    </select>
-  </div>
-
-  <div>
-    <label for="payment">付款：</label>
-    <select id="payment" required>
-      <option value="">請選付款</option>
-      <option value="現金">現金</option>
-      <option value="信用卡">信用卡</option>
-      <option value="LINE Pay">LINE Pay</option>
-      <option value="銀行轉帳">銀行轉帳</option>
-    </select>
-  </div>
-
-  <div>
-    <label for="type">分類：</label>
-    <select id="type" required>
-      <option value="">請選分類</option>
-      <option value="食">食</option>
-      <option value="衣">衣</option>
-      <option value="住">住</option>
-      <option value="行">行</option>
-      <option value="育">育</option>
-      <option value="樂">樂</option>
-      <option value="其他">其他</option>
-      <option value="收入">收入</option>
-    </select>
-  </div>
-
-  <div>
-    <label for="note">附註：</label>
-    <input type="text" id="note" placeholder="選填">
-  </div>
-
-  <div>
-    <label for="memo">備註：</label>
-    <input type="text" id="memo" placeholder="選填">
-  </div>
-
-  <button type="submit" id="submitBtn">送出</button>
-  <div id="loadingMsg" style="display:none;color:red;">⏳ 資料送出中...</div>
-
-</form>
-
-<script>
-const LIFF_ID = "2008096451-3DobjEw8";  // 你的 LIFF ID
-const VERSION = "V17_#14";
-const API_URL = "https://script.google.com/macros/s/YOUR_GAS_ID/exec";
-
-async function main() {
-  await liff.init({ liffId: LIFF_ID });
-  if (!liff.isLoggedIn()) liff.login();
-  document.getElementById("date").valueAsDate = new Date();
-  loadStoreList();
-}
-main();
-
-// 收入/支出切換
-const btnIncome = document.getElementById("btnIncome");
-const btnPayout = document.getElementById("btnPayout");
-const income = document.getElementById("income");
-const payout = document.getElementById("payout");
-
-btnIncome.addEventListener("click", () => {
-  btnIncome.classList.add("active"); btnPayout.classList.remove("active");
-  income.style.display = "inline-block"; payout.style.display = "none"; income.value="";
-});
-btnPayout.addEventListener("click", () => {
-  btnPayout.classList.add("active"); btnIncome.classList.remove("active");
-  payout.style.display = "inline-block"; income.style.display = "none"; payout.value="";
-});
-
-// 讀取 storeList
 async function loadStoreList() {
   try {
     const res = await fetch(`${API_URL}?type=query&command=店家`);
     const data = await res.json();
     if(data.ok && data.storeList){
-      const datalist = document.getElementById("storeList");
-      datalist.innerHTML = "";
-      data.storeList.forEach(s => {
-        const option = document.createElement("option");
-        option.value = s;
-        datalist.appendChild(option);
-      });
+      allStores = data.storeList; // 儲存完整列表
+      updateDatalist("");       // 初始化 datalist
     }
   } catch(err) {
     console.error("載入店家清單失敗:", err);
   }
 }
 
-// submit 表單
-document.getElementById("expenseForm").addEventListener("submit", async e=>{
-  e.preventDefault();
-  const submitBtn = document.getElementById("submitBtn");
-  const loadingMsg = document.getElementById("loadingMsg");
-  submitBtn.disabled=true; loadingMsg.style.display="block";
-
-  const date = document.getElementById("date").value;
-  const store = document.getElementById("store").value;
-  const amt = income.style.display==="inline-block"? income.value : payout.value;
-  const currency = document.getElementById("currency").value;
-  const payment = document.getElementById("payment").value;
-  const type = document.getElementById("type").value;
-  const note = document.getElementById("note").value;
-  const memo = document.getElementById("memo").value;
-
-  const profile = await liff.getProfile();
-  const now = new Date();
-  const taiwanTime = new Date(now.getTime() + 8*3600*1000).toISOString().replace("T"," ").split(".")[0];
-
-  const payload = {
-    version: VERSION,
-    userId: profile.userId,
-    displayName: profile.displayName,
-    inputDate: date,
-    store: store,
-    income: income.value,
-    payout: payout.value,
-    amount: Math.round((income.value-payout.value)*currency),
-    currency: currency,
-    payment: payment,
-    type: type,
-    note: note,
-    memo: memo,
-    createdAt: taiwanTime
-  };
-
-  try{
-    const res = await fetch(API_URL, {method:"POST", body:JSON.stringify(payload)});
-    const result = await res.json();
-    alert("✅ 已送出：" + JSON.stringify(result));
-    document.getElementById("expenseForm").reset();
-    document.getElementById("date").valueAsDate=new Date();
-    // 送出後重新載入 storeList
-    loadStoreList();
-  }catch(err){
-    alert("❌ 送出失敗：" + err.message);
-  }finally{
-    submitBtn.disabled=false;
-    loadingMsg.style.display="none";
-  }
+// 根據輸入即時更新 datalist
+const storeInput = document.getElementById("store");
+storeInput.addEventListener("input", () => {
+  const val = storeInput.value.toLowerCase();
+  updateDatalist(val);
 });
-</script>
 
-</body>
-</html>
+function updateDatalist(filter) {
+  const datalist = document.getElementById("storeList");
+  datalist.innerHTML = ""; // 清空選項
+  allStores
+    .filter(s => s.toLowerCase().includes(filter))  // 過濾
+    .forEach(s => {
+      const option = document.createElement("option");
+      option.value = s;
+      datalist.appendChild(option);
+    });
+}
