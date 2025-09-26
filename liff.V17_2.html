@@ -231,7 +231,8 @@
   
     <div class="form-row">
       <label for="store">店家：</label>
-      <input type="text" id="store" placeholder="選填">
+      <input type="text" id="store" placeholder="選填或選擇店家">
+      <div id="suggestions"></div>
     </div>
 
     <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
@@ -328,9 +329,56 @@
   <!-- LIFF 初始化 + 登錄送出 -->
   <script>  
     const LIFF_ID = "2008096451-3DobjEw8";   // 換成你的 LIFF ID test
-    const VERSION = "V17_#14";                   // 固定版次
-    const API_URL = "https://script.google.com/macros/s/AKfycbxYYiOez-4xMhYyXNIdh4MieorwUFd_KXL-dxKUX2hOIihEV2ejGdZkC6WL_Ldhby9ZDQ/exec";  // 換成你的 GAS PATH
+    const VERSION = "V17_#29";                   // 固定版次
+    const API_URL = "https://script.google.com/macros/s/AKfycbxf3mgdBXeVKB-Z-zYUCFPyYMbsfzcGi5MW_nONg9Oqr0II9yODVOfaom9Y62lg48txOg/exec";  // 換成你的 GAS PATH
 
+    // 輸入店家名稱，會即時提示
+    let storeList = []; // 從 GAS 取得的完整清單
+    const input = document.getElementById("store");
+    const sugg = document.getElementById("suggestions");
+
+    // 取得 storeList
+    async function loadStoreList() {
+      try {
+        const res = await fetch(`${API_URL}?type=query&command=店家`);
+        const data = await res.json();
+        if (data.ok && data.storeList) {
+          storeList = data.storeList;
+          console.log("載入店家清單成功:", storeList);
+        } else {
+          console.error("GAS 回傳格式不正確:", data);
+        }
+      } catch (err) {
+        console.error("載入店家清單失敗:", err);
+      }
+    }
+
+    loadStoreList(); // 頁面載入時呼叫
+
+    // 即時提示
+    input.addEventListener("input", () => {
+      const val = input.value.toLowerCase();
+      sugg.innerHTML = "";
+      if (!val) { sugg.style.display = "none"; return; }
+
+      const matches = storeList.filter(s => s.toLowerCase().includes(val));
+      if (matches.length === 0) { sugg.style.display = "none"; return; }
+
+      matches.forEach(m => {
+        const div = document.createElement("div");
+        div.textContent = m;
+        div.onclick = () => { input.value = m; sugg.style.display = "none"; };
+        sugg.appendChild(div);
+      });
+
+      // 顯示 suggestions
+      sugg.style.display = "block";
+      const rect = input.getBoundingClientRect();
+      sugg.style.width = rect.width + "px";
+      sugg.style.top = (rect.bottom + window.scrollY) + "px";
+      sugg.style.left = (rect.left + window.scrollX) + "px";
+    });
+    
     document.getElementById("version").textContent = VERSION;
 
     async function main() {
@@ -414,5 +462,6 @@
   </script>
 </body>
 </html>
+
 
 
