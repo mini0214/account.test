@@ -25,7 +25,7 @@
 </head>
 <body>
 
-<h3>非看不可.[<span id="version"></span>]</h3>
+<h3>非看不可.[<span id="version">載入中...</span>]</h3>
 
 <div class="date-inputs">
   開始日期：<input type="date" id="startDate"><br>
@@ -56,8 +56,10 @@
 //const VERSION = "V17_#43";             // 固定版次
 const API_URL = "https://script.google.com/macros/s/AKfycbz90yuRC4Bh-XGaqTxUz-ceSVQ3o_BRCmqC1rpSUIxa4ejm5o52e5KkNRop4HrJ2cqSxw/exec";  // 換成你的 GAS PATH
 
-let LIFF_ID = "";   // 從 D12 帶入 query
-let VERSION = "";   // 從 D10 帶入 版次
+let LIFF_ID = "default";   // 先放預設或空字串,從 D12 帶入 query
+let VERSION = "V???";      // ✅ 預設顯示版本號，不要等API,從 D10 帶入 版次
+
+document.getElementById("version").textContent = VERSION;
 
 async function loadConfig() {
   try {
@@ -70,7 +72,7 @@ async function loadConfig() {
     if (cfg.ok) {
       LIFF_ID = cfg.D12;    // 取設定表 D12 query
       VERSION = cfg.D10;    // 取設定表 D10 版次
-      document.getElementById("version").textContent = VERSION; // ✅ 這裡更新
+      document.getElementById("version").textContent = VERSION; // ✅ API回來再更新
       console.log("設定完成:", { LIFF_ID, VERSION });
     } else {
       console.error("讀取設定失敗:", cfg.error);
@@ -505,5 +507,6 @@ loadConfig();
 
 </body>
 </html>
+
 
 
