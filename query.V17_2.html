@@ -64,6 +64,9 @@ let VERSION = "V";      // ✅ 預設顯示版本號，不要等API,從 D10 帶�
 document.getElementById("version").textContent = VERSION;
 
 async function loadConfig() {
+  // ✅ 一開始進來就顯示「載入中」
+  document.getElementById("loading").style.display = "block";
+  
   try {
     const res = await fetch(API_URL, {
       method: "POST",
@@ -504,11 +507,13 @@ chartInstance = new Chart(ctx, {
     });
   }
 }
+// ✅ 呼叫一次
 loadConfig();
 </script>
 
 </body>
 </html>
+
 
 
 
