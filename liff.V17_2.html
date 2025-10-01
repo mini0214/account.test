@@ -358,6 +358,9 @@
     document.getElementById("version").textContent = VERSION;
 
     async function main() {
+      await loadConfig();   // ✅ 先等設定抓完
+      document.getElementById("version").textContent = VERSION;
+      
       await liff.init({ liffId: LIFF_ID });
       if (!liff.isLoggedIn()) liff.login();
 
@@ -440,3 +443,4 @@
   </script>
 </body>
 </html>
+
