@@ -24,8 +24,6 @@
   </style>
 </head>
 <body>
-  <!-- 載入中提示 -->
-  <div id="loading">⏳ 載入中，請稍候...</div>
 
 <h3>非看不可.[<span id="version"></span>]</h3>
 
@@ -63,10 +61,7 @@ let VERSION = "V";      // ✅ 預設顯示版本號，不要等API,從 D10 帶�
 
 document.getElementById("version").textContent = VERSION;
 
-async function loadConfig() {
-  // ✅ 一開始進來就顯示「載入中」
-  document.getElementById("loading").style.display = "block";
-  
+async function loadConfig() { 
   try {
     const res = await fetch(API_URL, {
       method: "POST",
@@ -513,6 +508,7 @@ loadConfig();
 
 </body>
 </html>
+
 
 
 
