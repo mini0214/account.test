@@ -52,10 +52,33 @@
 <canvas id="chartCanvas"></canvas>
 
 <script>
-const LIFF_ID = "2008096451-jPJ50MOY"; // 換成你的 LIFF ID
-const VERSION = "V17_#43";             // 固定版次
+//const LIFF_ID = "2008096451-jPJ50MOY"; // 換成你的 LIFF ID
+//const VERSION = "V17_#43";             // 固定版次
 const API_URL = "https://script.google.com/macros/s/AKfycbz90yuRC4Bh-XGaqTxUz-ceSVQ3o_BRCmqC1rpSUIxa4ejm5o52e5KkNRop4HrJ2cqSxw/exec";  // 換成你的 GAS PATH
 
+let LIFF_ID = "";   // 從 D12 帶入
+let VERSION = "";   // 從 D10 帶入
+
+async function loadConfig() {
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({ type: "config" })
+    });
+    const cfg = await res.json();
+
+    if (cfg.ok) {
+      LIFF_ID = cfg.D12;    // 取設定表 D12
+      VERSION = cfg.D10;    // 取設定表 D10
+      console.log("設定完成:", { LIFF_ID, VERSION });
+    } else {
+      console.error("讀取設定失敗:", cfg.error);
+    }
+  } catch (err) {
+    console.error("載入設定發生錯誤:", err);
+  }
+}
+ 
 let chartInstance = null;
 let currentUser = null;   // ✅ 先定義變數，不要一開始就用 json 登入者的資料
   
@@ -473,13 +496,8 @@ chartInstance = new Chart(ctx, {
     });
   }
 }
+loadConfig();
 </script>
 
 </body>
 </html>
-
-
-
-
-
-
