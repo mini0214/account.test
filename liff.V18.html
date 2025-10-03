@@ -214,16 +214,9 @@
     }
     
     <!--storelist欄位-->
-    .store-row {
-      display: flex;
-      align-items: center;
-      gap: 20px;         /* label 和 input 之間距離 */
-      white-space: nowrap; /* 避免換行 */
-    }
-    
     .input-wrapper {
       position: relative;
-      flex: 1;           /* 讓 input 佔滿剩餘空間 */
+      flex: 1;
     }
     
     #store {
@@ -237,19 +230,20 @@
     
     #suggestions {
       position: absolute;
-      top: 100%;
+      top: 100%;      /* 直接在 input 底下 */
       left: 0;
       right: 0;
       background: white;
       border: 1px solid #ccc;
-      max-height: 150px;
+      max-height: 200px;
       overflow-y: auto;
       display: none;
       z-index: 1000;
     }
     
     #suggestions div {
-      padding: 10px;
+      padding: 20px;       /* 放大一點 */
+      font-size: 50px;     /* 放大文字 */
       cursor: pointer;
     }
     
@@ -278,6 +272,30 @@
         <div id="suggestions"></div>
       </div>
     </div>
+
+    input.addEventListener("input", () => {
+      const val = input.value.toLowerCase();
+      sugg.innerHTML = "";
+      if (!val) { sugg.style.display = "none"; return; }
+    
+      const matches = storeList.filter(s => s.toLowerCase().includes(val));
+      if (matches.length === 0) { sugg.style.display = "none"; return; }
+    
+      matches.forEach(m => {
+        const div = document.createElement("div");
+        div.textContent = m;
+        div.onclick = () => { input.value = m; sugg.style.display = "none"; };
+        sugg.appendChild(div);
+      });
+    
+      sugg.style.display = "block";
+    
+      // 直接套用 input-wrapper 位置
+      const wrapper = input.parentElement;
+      sugg.style.width = wrapper.offsetWidth + "px";
+      sugg.style.top = wrapper.offsetHeight + "px";
+      sugg.style.left = "0";
+    });
 
     <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
       <button type="button" id="btnIncome" class="toggle-btn">收入</button>
@@ -539,6 +557,7 @@
   </script>
 </body>
 </html>
+
 
 
 
