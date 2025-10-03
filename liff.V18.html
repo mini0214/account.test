@@ -244,9 +244,9 @@
     
     #suggestions {
       position: absolute;
-      top: 100%;             /* ✅ 貼在 input 底下 */
+      top: calc(100% - 5px);   /* 貼近 input，下移一點點即可 */
       left: 0;
-      right: 0;              /* ✅ 跟 input 同寬 */
+      right: 0;
       background: #fff;
       border: 1px solid #ccc;
       border-radius: 8px;
@@ -254,7 +254,7 @@
       overflow-y: auto;
       display: none;
       z-index: 1000;
-      font-size: 40px;       /* 比 input 小一點，否則很佔版面 */
+      font-size: 40px;
     }
     
     #suggestions div {
@@ -549,6 +549,7 @@
   </script>
 </body>
 </html>
+
 
 
 
