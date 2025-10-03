@@ -216,34 +216,38 @@
     }
     
     <!--storelist欄位-->
-    .form-row {
-      display: flex;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-    
     .input-wrapper {
-      position: relative;
-      flex: 1;
+      position: relative; /* ⚡ 重要 */
+      width: 70%;         /* 與 form-row input 一致 */
     }
     
     #store {
       width: 100%;
-      padding: 5px;
+      padding: 25px;
+      font-size: 50px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
       box-sizing: border-box;
     }
     
     #suggestions {
       position: absolute;
-      top: 100%;   /* 緊貼在 input 下方 */
+      top: 100%;       /* 緊貼 input 下方 */
       left: 0;
       right: 0;
-      background: #fff;
+      background: white;
       border: 1px solid #ccc;
-      z-index: 1000;
-      display: none;
       max-height: 150px;
       overflow-y: auto;
+      display: none;
+      z-index: 1000;
+    }
+    #suggestions div {
+      padding: 10px;
+      cursor: pointer;
+    }
+    #suggestions div:hover {
+      background-color: #eee;
     }
     
   </style>
@@ -263,25 +267,10 @@
     <div class="form-row">
       <label for="store">店家：</label>
       <div class="input-wrapper">
-        <input type="text" 
-               id="store" 
-               placeholder="選填;可邊輸入邊選擇店家" 
-               oninput="showSuggestions()">
+        <input type="text" id="store" placeholder="選填;可邊輸入邊選擇店家">
         <div id="suggestions"></div>
       </div>
     </div>
-
-    function showSuggestions() {
-      const input = document.getElementById("store");
-      const rect = input.getBoundingClientRect();
-      const suggestions = document.getElementById("suggestions");
-    
-      suggestions.style.position = "absolute";
-      suggestions.style.top = rect.bottom + window.scrollY + "px";
-      suggestions.style.left = rect.left + "px";
-      suggestions.style.width = rect.width + "px";
-      suggestions.style.display = "block";
-    }
 
     <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
       <button type="button" id="btnIncome" class="toggle-btn">收入</button>
@@ -543,6 +532,7 @@
   </script>
 </body>
 </html>
+
 
 
 
