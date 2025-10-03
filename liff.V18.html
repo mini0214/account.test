@@ -215,10 +215,33 @@
       box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
     }
     
-    #store { width: 300px; padding: 8px; font-size: 20px; }
-    #suggestions { border:1px solid #ccc; display:none; position:absolute; background:white; max-height:150px; overflow-y:auto; }
-    #suggestions div { padding:5px; cursor:pointer; }
-    #suggestions div:hover { background:#eee; }
+    .form-row {
+      position: relative;  /* 讓 #suggestions 能相對定位 */
+    }
+    
+    #suggestions {
+      position: absolute;
+      top: calc(100% + 5px);  /* 出現在 input 下方 */
+      left: 100px;            /* 跟 label 對齊，假設 label 寬度 100px */
+      width: 70%;             /* ✅ 跟 input 一樣寬 */
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+      z-index: 1000;
+      font-size: 40px;         /* 建議縮小一點，否則很佔版面 */
+    }
+    
+    #suggestions div {
+      padding: 10px;
+      cursor: pointer;
+    }
+    
+    #suggestions div:hover {
+      background: #f0f0f0;
+    }
 
   </style>
 </head>
@@ -500,6 +523,7 @@
   </script>
 </body>
 </html>
+
 
 
 
