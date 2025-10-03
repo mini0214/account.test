@@ -248,53 +248,7 @@
       <input type="number" id="payout" placeholder="請輸入支出金額" style="width:550px; color:red; display:inline-block;" step="0.01">
     </div>   
     
-    <script>
-      let storeList = []; // 從 GAS 取得的完整清單
-      const input = document.getElementById("store");
-      const sugg = document.getElementById("suggestions");
-  
-      // 取得 storeList
-      async function loadStoreList() {
-        try {
-          const res = await fetch(`${API_URL}?type=query&command=店家`);
-          const data = await res.json();
-          if (data.ok && data.storeList) {
-            storeList = data.storeList;
-            console.log("載入店家清單成功:", storeList);
-          } else {
-            console.error("GAS 回傳格式不正確:", data);
-          }
-        } catch (err) {
-          console.error("載入店家清單失敗:", err);
-        }
-      }
-  
-      loadStoreList(); // 頁面載入時呼叫
-  
-      // 即時提示
-      input.addEventListener("input", () => {
-        const val = input.value.toLowerCase();
-        sugg.innerHTML = "";
-        if (!val) { sugg.style.display = "none"; return; }
-  
-        const matches = storeList.filter(s => s.toLowerCase().includes(val));
-        if (matches.length === 0) { sugg.style.display = "none"; return; }
-  
-        matches.forEach(m => {
-          const div = document.createElement("div");
-          div.textContent = m;
-          div.onclick = () => { input.value = m; sugg.style.display = "none"; };
-          sugg.appendChild(div);
-        });
-  
-        // 顯示 suggestions
-        sugg.style.display = "block";
-        const rect = input.getBoundingClientRect();
-        sugg.style.width = rect.width + "px";
-        sugg.style.top = (rect.bottom + window.scrollY) + "px";
-        sugg.style.left = (rect.left + window.scrollX) + "px";
-      });
-      
+    <script>      
       const btnIncome = document.getElementById("btnIncome");
       const btnPayout = document.getElementById("btnPayout");
       const income = document.getElementById("income");
@@ -408,7 +362,53 @@
         console.error("載入設定發生錯誤:", err);
       }
     }
-    
+
+    // 店家清單
+    let storeList = [];
+    const input = document.getElementById("store");
+    const sugg = document.getElementById("suggestions");
+  
+    async function loadStoreList() {
+      try {
+        console.log("呼叫店家 API:", API_URL);
+        const res = await fetch(`${API_URL}?type=query&command=店家`);
+        const data = await res.json();
+        console.log("GAS 回傳:", data);
+  
+        if (data.ok && data.storeList) {
+          storeList = data.storeList;
+          console.log("載入店家清單成功:", storeList);
+        } else {
+          console.error("GAS 回傳格式不正確:", data);
+        }
+      } catch (err) {
+        console.error("載入店家清單失敗:", err);
+      }
+    }
+  
+    // 即時提示
+    input.addEventListener("input", () => {
+      const val = input.value.toLowerCase();
+      sugg.innerHTML = "";
+      if (!val) { sugg.style.display = "none"; return; }
+  
+      const matches = storeList.filter(s => s.toLowerCase().includes(val));
+      if (matches.length === 0) { sugg.style.display = "none"; return; }
+  
+      matches.forEach(m => {
+        const div = document.createElement("div");
+        div.textContent = m;
+        div.onclick = () => { input.value = m; sugg.style.display = "none"; };
+        sugg.appendChild(div);
+      });
+  
+      sugg.style.display = "block";
+      const rect = input.getBoundingClientRect();
+      sugg.style.width = rect.width + "px";
+      sugg.style.top = (rect.bottom + window.scrollY) + "px";
+      sugg.style.left = (rect.left + window.scrollX) + "px";
+    });
+      
     document.getElementById("version").textContent = VERSION;
 
     async function main() {
@@ -420,6 +420,9 @@
 
       // 預設日期為今天
       document.getElementById("date").valueAsDate = new Date();
+          
+      // 🚀 等設定完成後再載入店家清單
+      await loadStoreList();
     }
     main();
 
@@ -497,6 +500,7 @@
   </script>
 </body>
 </html>
+
 
 
 
