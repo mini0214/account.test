@@ -216,9 +216,16 @@
     }
     
     <!--storelist欄位-->
+    .store-row {
+      display: flex;
+      align-items: center;
+      gap: 20px;         /* label 和 input 之間距離 */
+      white-space: nowrap; /* 避免換行 */
+    }
+    
     .input-wrapper {
-      position: relative; /* ⚡ 重要 */
-      width: 70%;         /* 與 form-row input 一致 */
+      position: relative;
+      flex: 1;           /* 讓 input 佔滿剩餘空間 */
     }
     
     #store {
@@ -232,7 +239,7 @@
     
     #suggestions {
       position: absolute;
-      top: 100%;       /* 緊貼 input 下方 */
+      top: 100%;
       left: 0;
       right: 0;
       background: white;
@@ -242,10 +249,12 @@
       display: none;
       z-index: 1000;
     }
+    
     #suggestions div {
       padding: 10px;
       cursor: pointer;
     }
+    
     #suggestions div:hover {
       background-color: #eee;
     }
@@ -264,7 +273,7 @@
       <input type="date" id="date" placeholder="選填">
     </div>    
   
-    <div class="form-row">
+    <div class="form-row store-row">
       <label for="store">店家：</label>
       <div class="input-wrapper">
         <input type="text" id="store" placeholder="選填;可邊輸入邊選擇店家">
@@ -532,6 +541,7 @@
   </script>
 </body>
 </html>
+
 
 
 
