@@ -215,15 +215,38 @@
       box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
     }
     
+    <!--storelist欄位-->
     .form-row {
-      position: relative;  /* 讓 #suggestions 能相對定位 */
+      display: flex;
+      align-items: flex-start;  /* label 和 input-wrapper 對齊 */
+      margin-bottom: 15px;
+    }
+    
+    .form-row label {
+      width: 100px;   /* 你的 label 固定寬 */
+      font-size: 50px;
+      font-weight: bold;
+      margin-right: 10px;
+    }
+    
+    .input-wrapper {
+      position: relative;   /* ✅ suggestions 會跟著 input 定位 */
+      flex: 1;
+    }
+    
+    .input-wrapper input {
+      font-size: 50px;
+      padding: 25px;
+      width: 100%;          /* ✅ 撐滿 wrapper */
+      border-radius: 8px;
+      border: 1px solid #ccc;
     }
     
     #suggestions {
       position: absolute;
-      top: calc(100% + 5px);  /* 出現在 input 下方 */
-      left: 100px;            /* 跟 label 對齊，假設 label 寬度 100px */
-      width: 70%;             /* ✅ 跟 input 一樣寬 */
+      top: 100%;             /* ✅ 貼在 input 底下 */
+      left: 0;
+      right: 0;              /* ✅ 跟 input 同寬 */
       background: #fff;
       border: 1px solid #ccc;
       border-radius: 8px;
@@ -231,7 +254,7 @@
       overflow-y: auto;
       display: none;
       z-index: 1000;
-      font-size: 40px;         /* 建議縮小一點，否則很佔版面 */
+      font-size: 40px;       /* 比 input 小一點，否則很佔版面 */
     }
     
     #suggestions div {
@@ -242,6 +265,7 @@
     #suggestions div:hover {
       background: #f0f0f0;
     }
+
 
   </style>
 </head>
@@ -259,8 +283,10 @@
   
     <div class="form-row">
       <label for="store">店家：</label>
-      <input type="text" id="store" placeholder="選填;可邊輸入邊選擇店家">
-      <div id="suggestions"></div>
+      <div class="input-wrapper">
+        <input type="text" id="store" placeholder="選填;可邊輸入邊選擇店家">
+        <div id="suggestions"></div>
+      </div>
     </div>
 
     <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
@@ -523,6 +549,7 @@
   </script>
 </body>
 </html>
+
 
 
 
