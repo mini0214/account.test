@@ -289,6 +289,18 @@
       </div>
     </div>
 
+    function showSuggestions() {
+      const input = document.getElementById("store");
+      const rect = input.getBoundingClientRect();
+      const suggestions = document.getElementById("suggestions");
+    
+      suggestions.style.position = "absolute";
+      suggestions.style.top = rect.bottom + window.scrollY + "px";
+      suggestions.style.left = rect.left + "px";
+      suggestions.style.width = rect.width + "px";
+      suggestions.style.display = "block";
+    }
+
     <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
       <button type="button" id="btnIncome" class="toggle-btn">收入</button>
       <button type="button" id="btnPayout" class="toggle-btn active">支出</button>
@@ -549,6 +561,7 @@
   </script>
 </body>
 </html>
+
 
 
 
