@@ -218,55 +218,34 @@
     <!--storelist欄位-->
     .form-row {
       display: flex;
-      align-items: flex-start;  /* label 和 input-wrapper 對齊 */
-      margin-bottom: 15px;
-    }
-    
-    .form-row label {
-      width: 100px;   /* 你的 label 固定寬 */
-      font-size: 50px;
-      font-weight: bold;
-      margin-right: 10px;
+      align-items: center;
+      margin-bottom: 10px;
     }
     
     .input-wrapper {
-      position: relative;   /* ✅ suggestions 會跟著 input 定位 */
-      flex: 1;
+      position: relative;
+      flex: 1; /* 讓輸入框撐開 */
     }
     
-    .input-wrapper input {
-      font-size: 50px;
-      padding: 25px;
-      width: 100%;          /* ✅ 撐滿 wrapper */
-      border-radius: 8px;
-      border: 1px solid #ccc;
+    #store {
+      width: 100%;
+      padding: 5px;
+      box-sizing: border-box;
     }
     
     #suggestions {
       position: absolute;
-      top: calc(100% - 5px);   /* 貼近 input，下移一點點即可 */
+      top: 100%;   /* 緊貼 input 下方 */
       left: 0;
       right: 0;
       background: #fff;
       border: 1px solid #ccc;
-      border-radius: 8px;
-      max-height: 200px;
-      overflow-y: auto;
-      display: none;
       z-index: 1000;
-      font-size: 40px;
+      max-height: 150px;
+      overflow-y: auto;
+      display: none; /* 預設隱藏，有結果再顯示 */
     }
     
-    #suggestions div {
-      padding: 10px;
-      cursor: pointer;
-    }
-    
-    #suggestions div:hover {
-      background: #f0f0f0;
-    }
-
-
   </style>
 </head>
 <body>
@@ -561,6 +540,7 @@
   </script>
 </body>
 </html>
+
 
 
 
