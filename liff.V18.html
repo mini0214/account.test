@@ -224,7 +224,7 @@
     
     .input-wrapper {
       position: relative;
-      flex: 1; /* 讓輸入框撐開 */
+      flex: 1;
     }
     
     #store {
@@ -235,15 +235,15 @@
     
     #suggestions {
       position: absolute;
-      top: 100%;   /* 緊貼 input 下方 */
+      top: 100%;   /* 緊貼在 input 下方 */
       left: 0;
       right: 0;
       background: #fff;
       border: 1px solid #ccc;
       z-index: 1000;
+      display: none;
       max-height: 150px;
       overflow-y: auto;
-      display: none; /* 預設隱藏，有結果再顯示 */
     }
     
   </style>
@@ -263,7 +263,10 @@
     <div class="form-row">
       <label for="store">店家：</label>
       <div class="input-wrapper">
-        <input type="text" id="store" placeholder="選填;可邊輸入邊選擇店家">
+        <input type="text" 
+               id="store" 
+               placeholder="選填;可邊輸入邊選擇店家" 
+               oninput="showSuggestions()">
         <div id="suggestions"></div>
       </div>
     </div>
@@ -540,6 +543,7 @@
   </script>
 </body>
 </html>
+
 
 
 
