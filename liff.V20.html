@@ -310,22 +310,7 @@
     console.error("載入設定發生錯誤:", err);
     alert("❌ 初始化設定失敗：" + err.message);
   }
-}
-        const cfg = await res.json();
-    
-        if (cfg.ok) {
-          LIFF_ID = cfg.D11;    // 取設定表 D11 append
-          VERSION = cfg.D10;    // 取設定表 D10 版次
-          document.getElementById("version").textContent = VERSION; // ✅ 這裡更新
-          console.log("設定完成:", { LIFF_ID, VERSION });
-        } else {
-          console.error("讀取設定失敗:", cfg.error);
-        }
-      } catch (err) {
-        console.error("載入設定發生錯誤:", err);
-      }
-    }
-
+}        
     // 店家清單
     let storeList = []; // [{store, type}]
     const input = document.getElementById("store");
@@ -483,6 +468,7 @@
   </script>
 </body>
 </html>
+
 
 
 
