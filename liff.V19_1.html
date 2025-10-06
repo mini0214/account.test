@@ -439,7 +439,7 @@
       if (!val) { sugg.style.display = "none"; return; }
       
       // 篩選符合的店家
-      const matches = storeList.filter(s => s.toLowerCase().includes(val));
+      const matches = storeList.filter(s => s.store && s.store.toLowerCase().includes(val));
       if (matches.length === 0) { sugg.style.display = "none"; return; }
       
       // 顯示建議
@@ -449,6 +449,7 @@
         div.onclick = () => {
           input.value = m.store;
           sugg.style.display = "none";
+          
           // 自動選中對應 type
           if (m.type) {
             typeSelect.value = m.type;
@@ -565,6 +566,7 @@
   </script>
 </body>
 </html>
+
 
 
 
