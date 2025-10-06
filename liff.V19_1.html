@@ -409,9 +409,10 @@
     }
 
     // 店家清單
-    let storeList = [];
+    let storeList = []; // [{store, type}]
     const input = document.getElementById("store");
     const sugg = document.getElementById("suggestions");
+    const typeSelect = document.getElementById("type");
   
     async function loadStoreList() {
       try {
@@ -420,8 +421,8 @@
         const data = await res.json();
         console.log("GAS 回傳:", data);
   
-        if (data.ok && data.storeList) {
-          storeList = data.storeList;
+        if (data.ok && Array.isArray(data.storeList)) {
+          storeList = data.storeList; // [{store, type}]
           console.log("載入店家清單成功:", storeList);
         } else {
           console.error("GAS 回傳格式不正確:", data);
@@ -431,19 +432,38 @@
       }
     }
   
-    // 即時提示
+    // 即時提示 + 自動帶入 type
     input.addEventListener("input", () => {
       const val = input.value.toLowerCase();
       sugg.innerHTML = "";
       if (!val) { sugg.style.display = "none"; return; }
-  
+      
+      // 篩選符合的店家
       const matches = storeList.filter(s => s.toLowerCase().includes(val));
       if (matches.length === 0) { sugg.style.display = "none"; return; }
-  
+      
+      // 顯示建議
       matches.forEach(m => {
         const div = document.createElement("div");
-        div.textContent = m;
-        div.onclick = () => { input.value = m; sugg.style.display = "none"; };
+        div.textContent = m.store + (m.type ? `（${m.type}）` : "");
+        div.onclick = () => {
+          input.value = m.store;
+          sugg.style.display = "none";
+          // 自動選中對應 type
+          if (m.type) {
+            typeSelect.value = m.type;
+            if (!typeSelect.value) {
+              // 若下拉選單沒有這個分類，就新增
+              const opt = document.createElement("option");
+              opt.value = m.type;
+              opt.textContent = m.type;
+              typeSelect.appendChild(opt);
+              typeSelect.value = m.type;
+            }
+          } else {
+            typeSelect.value = "";
+          }
+        };
         sugg.appendChild(div);
       });
   
@@ -457,7 +477,7 @@
     document.getElementById("version").textContent = VERSION;
 
     async function main() {
-      await loadConfig();   // ✅ 先等設定抓完
+      await loadConfig();   // 先載設定
       document.getElementById("version").textContent = VERSION;
       
       await liff.init({ liffId: LIFF_ID });
@@ -545,6 +565,7 @@
   </script>
 </body>
 </html>
+
 
 
 
