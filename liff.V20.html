@@ -270,6 +270,7 @@
     // 🚀 先從目前的 GAS doGet (例如 ?command=店家) 抓設定表 D6 的 API_URL
     async function initAPI() {
       try {
+        console.log("🔍 讀取設定表 D6 (API_URL)...");
         const res = await fetch(window.location.href + "?command=設定"); 
         const data = await res.json();
 
@@ -277,9 +278,10 @@
           API_URL = data.D6.trim();  // ✅ 從 D6 帶入完整 URL
           console.log("✅ 從設定表 D6 取得 API_URL:", API_URL);
     
-          await loadConfig(); // 再載入其他設定 (D10, D11)
+          await loadConfig();  // ✅ 先載 D10, D11 (版次, LIFF_ID)
+          await main();        // ✅ 再進入主程式（LIFF登入 + 店家清單）
         } else {
-          console.error("⚠️ 無法取得設定表 D6");
+          console.error("⚠️ 無法取得設定表 D6:", data);
         }
       } catch (err) {
         console.error("❌ 載入 API_URL 發生錯誤:", err);
@@ -466,6 +468,7 @@
   </script>
 </body>
 </html>
+
 
 
 
