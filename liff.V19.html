@@ -311,6 +311,18 @@
         income.style.display = "none";
         income.value = "";
       });
+
+      // 假設 payout 是現有的輸入欄位
+      const payout = document.getElementById('payout');
+      const currency = document.getElementById('currency');
+    
+      payout.addEventListener('input', () => {
+        const val = payout.value;
+        // 如果有小數點，就自動選澳幣:20
+        if (val.includes('.')) {
+          currency.value = '20';
+        }
+      });
     </script>      
 
     <div class="form-block">
@@ -533,6 +545,7 @@
   </script>
 </body>
 </html>
+
 
 
 
