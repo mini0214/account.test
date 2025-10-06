@@ -291,10 +291,26 @@
     // 📦 讀取設定（POST 呼叫新的 API_URL）
     async function loadConfig() {
       try {
-        const res = await fetch(API_URL, {
-          method: "POST",
-          body: JSON.stringify({ type: "config" })
-        });
+            // 先向目前執行的 doGet 取得設定 (抓 D6, D10, D11)
+    const currentUrl = window.location.href.split("?")[0];
+    const res = await fetch(`${currentUrl}?command=設定`);
+    const data = await res.json();
+
+    if (!data.ok) throw new Error(data.error || "設定讀取失敗");
+
+    // 讀設定
+    window.API_URL = data.D6;   // ← 自動抓 D6（你的 GAS 部署 ID）
+    window.LIFF_ID = data.D11;
+    window.VERSION = data.D10;
+
+    document.getElementById("version").textContent = VERSION;
+    console.log("✅ 設定完成:", { API_URL, LIFF_ID, VERSION });
+
+  } catch (err) {
+    console.error("載入設定發生錯誤:", err);
+    alert("❌ 初始化設定失敗：" + err.message);
+  }
+}
         const cfg = await res.json();
     
         if (cfg.ok) {
@@ -467,6 +483,7 @@
   </script>
 </body>
 </html>
+
 
 
 
