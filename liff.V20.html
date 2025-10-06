@@ -4,26 +4,18 @@
   <meta charset="utf-8">
   <title>零用金支出帳簿</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>  <!-- 引入 Chart.js 在 <head> 區塊中加入 CDN：-->
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 50px;
-    }
+    body { font-family: Arial, sans-serif; padding: 50px; }
 
-    h2 {
-      font-size: 50px;
-      text-align: center;
-      margin-bottom: 50px;
-    }
+    h2 { font-size: 50px; text-align: center; margin-bottom: 50px; }
 
     label {
       font-size: 50px;
       font-weight: bold;
-      display: inline-block; /* ✅ 換成 inline-block 比較不會被擠下去 */
+      display: inline-block;
       margin-top: 25px;
-      white-space: nowrap;   /* ✅ 關鍵：不允許自動換行 */
+      white-space: nowrap;
     }
 
     input, select  {
@@ -40,9 +32,9 @@
       display: flex;
       align-items: center;
       margin: 20px 0;
-      white-space: nowrap;   /* ✅ 關鍵：不允許自動換行 */
+      white-space: nowrap;
     }     
-  
+
     button {
       font-size: 50px;
       padding: 25px;
@@ -59,44 +51,31 @@
     button:hover { transform: scale(1.05); }
     button:active { transform: scale(0.97); box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); }
 
-     .toggle-btn {
-        padding: 8px 20px;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 30px;
-        opacity: 0.6;       /* 預設暗淡 */
-        transition: opacity 0.2s, box-shadow 0.2s;
-      }
-    
-      #btnIncome { background: #000080; color: white; }
-      #btnPayout { background: #f44336; color: white; }
-    
-      .active {
-        opacity: 1;         /* 選中變亮 */
-        box-shadow: 0 0 6px rgba(0,0,0,0.3);
-      }
-    
-    <!--storelist欄位-->
-    .input-wrapper {
-      position: relative;
-      flex: 1;
+    .toggle-btn {
+      padding: 8px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 30px;
+      opacity: 0.6;
+      transition: opacity 0.2s, box-shadow 0.2s;
     }
-    
-    #store {
-      width: 100%;
-      padding: 25px;
-      font-size: 50px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      box-sizing: border-box;
+
+    #btnIncome { background: #000080; color: white; }
+    #btnPayout { background: #f44336; color: white; }
+
+    .active {
+      opacity: 1;
+      box-shadow: 0 0 6px rgba(0,0,0,0.3);
     }
-    
+
+    /* storelist欄位 */
+    .input-wrapper { position: relative; flex: 1; }
+
+    #store { width: 100%; padding: 25px; font-size: 50px; border-radius: 8px; border: 1px solid #ccc; }
+
     #suggestions {
-      position: absolute;
-      top: 100%;      /* 直接在 input 底下 */
-      left: 0;
-      right: 0;
+      position: absolute; top: 100%; left: 0; right: 0;
       background: white;
       border: 1px solid #ccc;
       max-height: 200px;
@@ -104,323 +83,220 @@
       display: none;
       z-index: 1000;
     }
-    
+
     #suggestions div {
-      padding: 20px;       /* 放大一點 */
-      font-size: 50px;     /* 放大文字 */
+      padding: 20px;
+      font-size: 50px;
       cursor: pointer;
     }
-    
-    #suggestions div:hover {
-      background-color: #eee;
-    }
 
-    .total {
-      margin-top: 10px;
-      font-size: 60px;
-      font-weight: bold;
-      color: #d9534f;
-    }
+    #suggestions div:hover { background-color: #eee; }
 
-    #loadingMsg {
-      display: none;
-      font-size: 40px;
-      color: red;
-      text-align: center;
-      margin-top: 20px;
-    }    
+    .total { margin-top: 10px; font-size: 60px; font-weight: bold; color: #d9534f; }
+
+    #loadingMsg { display: none; font-size: 40px; color: red; text-align: center; margin-top: 20px; }
   </style>
 </head>
 <body>
 
-  <h2 id="title">非記不可.[<span id="version"></span>]</h2>
+<h2 id="title">非記不可.[<span id="version"></span>]</h2>
 
-  <!-- 登錄表單 -->
-  <form id="expenseForm">
-    
-    <div class="form-row">
-      <label for="store">日期：</label>
-      <input type="date" id="date" placeholder="選填">
-    </div>    
-  
-    <div class="form-row store-row">
-      <label for="store">店家：</label>
-      <div class="input-wrapper">
-        <input type="text" id="store" placeholder="選填;可邊輸入邊選擇店家">
-        <div id="suggestions"></div>
-      </div>
+<form id="expenseForm">
+  <div class="form-row">
+    <label for="date">日期：</label>
+    <input type="date" id="date" placeholder="選填">
+  </div>
+
+  <div class="form-row store-row">
+    <label for="store">店家：</label>
+    <div class="input-wrapper">
+      <input type="text" id="store" placeholder="選填;可邊輸入邊選擇店家">
+      <div id="suggestions"></div>
     </div>
+  </div>
 
-    <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
-      <button type="button" id="btnIncome" class="toggle-btn">收入</button>
-      <button type="button" id="btnPayout" class="toggle-btn active">支出</button>
-    
-      <input type="number" id="income" placeholder="請輸入收入金額" style="width:550px; color:blue; display:none;" step="0.01">
-      <input type="number" id="payout" placeholder="請輸入支出金額" style="width:550px; color:red; display:inline-block;" step="0.01">
-    </div>   
-    
-    <script>      
-      const btnIncome = document.getElementById("btnIncome");
-      const btnPayout = document.getElementById("btnPayout");
-      const income = document.getElementById("income");
-      const payout = document.getElementById("payout");
-    
-      function resetButtons() {
-        btnIncome.classList.remove("active");
-        btnPayout.classList.remove("active");
-      }
-    
-      btnIncome.addEventListener("click", () => {
-        resetButtons();
-        btnIncome.classList.add("active");
-    
-        income.style.display = "inline-block";
-        income.value = "";
-        payout.style.display = "none";
-        payout.value = "";
-      });
-    
-      btnPayout.addEventListener("click", () => {
-        resetButtons();
-        btnPayout.classList.add("active");
-    
-        payout.style.display = "inline-block";
-        payout.value = "";
-        income.style.display = "none";
-        income.value = "";
-      });
+  <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+    <button type="button" id="btnIncome" class="toggle-btn">收入</button>
+    <button type="button" id="btnPayout" class="toggle-btn active">支出</button>
+    <input type="number" id="income" placeholder="請輸入收入金額" style="width:550px; color:blue; display:none;" step="0.01">
+    <input type="number" id="payout" placeholder="請輸入支出金額" style="width:550px; color:red; display:inline-block;" step="0.01">
+  </div>
 
-      // ✅ 監聽支出欄位輸入
-      payout.addEventListener("input", () => {
-        const val = payout.value;
-        if (val.includes(".")) {
-          currency.value = "20";  // 有小數點 → 澳幣
-        } else if (val !== "") {
-          currency.value = "1";   // 無小數點 → 台幣
-        } else {
-          currency.value = "";    // 若清空輸入 → 清空幣別
-        }
-      });
-    </script>      
+  <div class="form-block">
+    <label for="currency">幣別：</label>
+    <select id="currency" required>
+      <option value="">請選擇幣別</option>
+      <option value="1">台幣:1</option>
+      <option value="20">澳幣:20</option>
+    </select>
+  </div>
 
-    <div class="form-block">
-      <label for="currency">幣別：</label>
-      <select id="currency" required>
-        <option value="">請選擇幣別</option>
-        <option value="1">台幣:1</option>
-        <option value="20">澳幣:20</option>
-      </select>
-    </div>
-  
-    <div class="form-row">
-      <label for="payment">付款：</label>
-      <select id="payment" required>
-        <option value="">請選擇付款</option>
-        <option value="現金">現金</option>
-        <option value="信用卡">信用卡</option>
-        <option value="LINE Pay">LINE Pay</option>
-        <option value="銀行轉帳">銀行轉帳</option>
-      </select>
-    </div>
+  <div class="form-row">
+    <label for="payment">付款：</label>
+    <select id="payment" required>
+      <option value="">請選擇付款</option>
+      <option value="現金">現金</option>
+      <option value="信用卡">信用卡</option>
+      <option value="LINE Pay">LINE Pay</option>
+      <option value="銀行轉帳">銀行轉帳</option>
+    </select>
+  </div>
 
-    <div class="form-block">
-      <label for="type">分類：</label>
-      <select id="type" required>
-        <option value="">請選擇分類</option>
-        <option value="食">食</option>
-        <option value="衣">衣</option>
-        <option value="住">住</option>
-        <option value="行">行</option>
-        <option value="育">育</option>
-        <option value="樂">樂</option>
-        <option value="其他">其他</option>
-        <option value="收入">收入</option>   
-      </select>
-    </div>
+  <div class="form-block">
+    <label for="type">分類：</label>
+    <select id="type" required>
+      <option value="">請選擇分類</option>
+      <option value="食">食</option>
+      <option value="衣">衣</option>
+      <option value="住">住</option>
+      <option value="行">行</option>
+      <option value="育">育</option>
+      <option value="樂">樂</option>
+      <option value="其他">其他</option>
+      <option value="收入">收入</option>
+    </select>
+  </div>
 
-    <div class="form-row">
-      <label for="store">附註：</label>
-      <input type="text" id="note" placeholder="選填">
-    </div>
+  <div class="form-row">
+    <label for="note">附註：</label>
+    <input type="text" id="note" placeholder="選填">
+  </div>
 
-    <div class="form-row">
-      <label for="store">備註：</label>
-      <input type="text" id="memo" placeholder="選填">
-    </div>
+  <div class="form-row">
+    <label for="memo">備註：</label>
+    <input type="text" id="memo" placeholder="選填">
+  </div>
 
-    <button type="submit" id="submitBtn">送出</button>
-    <div id="loadingMsg" style="display:none; font-size:40px; color:red; text-align:center; margin-top:20px;">
-      ⏳ 資料送出中，請稍候...
-    </div>
-  </form>
+  <button type="submit" id="submitBtn">送出</button>
+  <div id="loadingMsg">⏳ 資料送出中，請稍候...</div>
+</form>
 
-  <!-- LIFF 初始化 + 登錄送出 -->
-  <script>  
-    //const LIFF_ID = "2008096451-3DobjEw8";   // 換成你的 LIFF ID test
-    //const VERSION = "V17_#43";                   // 固定版次
-    //const API_URL = "https://script.google.com/macros/s/AKfycbxm7SlTMzbyB7cOAegTv-37Dj6S_jJ7Og5iDQOlgaYOHK7sJTOehXhst6xMHhjxM4go7g/exec";  // 換成你的 GAS PATH
-    // ✅ 先放暫時的占位符，稍後由 doGet 讀取設定表 D6 帶入
- <script>
-  let API_URL = "";          
-  let LIFF_ID = "default";
-  let VERSION = "V";
-
-  // 預先顯示版次
-  document.getElementById("version").textContent = VERSION;
-
-  // 🚀 從目前的 GAS 讀取設定（D6, D10, D11）
-  async function loadConfig() {
-    try {
-      const currentUrl = window.location.href.split("?")[0];
-      const res = await fetch(`${currentUrl}?command=設定`);
-      const data = await res.json();
-
-      if (!data.ok) throw new Error(data.error || "設定讀取失敗");
-
-      API_URL = data.D6?.trim() || "";
-      LIFF_ID = data.D11?.trim() || "";
-      VERSION = data.D10?.trim() || "V";
-
-      document.getElementById("version").textContent = VERSION;
-      console.log("✅ 設定完成:", { API_URL, LIFF_ID, VERSION });
-    } catch (err) {
-      console.error("❌ 載入設定發生錯誤:", err);
-      alert("初始化設定失敗：" + err.message);
-    }
-  }
-
-  // 🚀 主流程
-  async function main() {
-    try {
-      await loadConfig();  // ✅ 僅呼叫一次
-      await liff.init({ liffId: LIFF_ID });
-      if (!liff.isLoggedIn()) liff.login();
-
-      // 預設日期為今天
-      document.getElementById("date").valueAsDate = new Date();
-      await loadStoreList(); // 載入店家清單
-    } catch (err) {
-      console.error("main() 錯誤:", err);
-    }
-  }
-
-  // 店家清單載入
-  let storeList = [];
+<script>
+  // DOM
+  const btnIncome = document.getElementById("btnIncome");
+  const btnPayout = document.getElementById("btnPayout");
+  const income = document.getElementById("income");
+  const payout = document.getElementById("payout");
+  const currency = document.getElementById("currency");
   const input = document.getElementById("store");
   const sugg = document.getElementById("suggestions");
   const typeSelect = document.getElementById("type");
 
-  async function loadStoreList() {
-    try {
-      if (!API_URL) throw new Error("API_URL 尚未設定");
-      console.log("呼叫店家 API:", API_URL);
-      const res = await fetch(`${API_URL}?type=query&command=店家`);
-      const data = await res.json();
+  // toggle 收入/支出
+  function resetButtons() { btnIncome.classList.remove("active"); btnPayout.classList.remove("active"); }
+  btnIncome.addEventListener("click", () => {
+    resetButtons(); btnIncome.classList.add("active");
+    income.style.display = "inline-block"; income.value = "";
+    payout.style.display = "none"; payout.value = "";
+  });
+  btnPayout.addEventListener("click", () => {
+    resetButtons(); btnPayout.classList.add("active");
+    payout.style.display = "inline-block"; payout.value = "";
+    income.style.display = "none"; income.value = "";
+  });
 
-      if (data.ok && Array.isArray(data.storeList)) {
-        storeList = data.storeList;
-        console.log("載入店家清單成功:", storeList);
-      } else {
-        console.error("GAS 回傳格式不正確:", data);
-      }
-    } catch (err) {
-      console.error("載入店家清單失敗:", err);
-    }
-  }
+  // 自動幣別
+  payout.addEventListener("input", () => {
+    const val = payout.value;
+    if(val.includes(".")) currency.value="20";
+    else if(val) currency.value="1";
+    else currency.value="";
+  });
 
-  // 即時提示 + 自動帶入 type
+  // 店家自動完成
+  let storeList = [];
   input.addEventListener("input", () => {
     const val = input.value.toLowerCase();
     sugg.innerHTML = "";
-    if (!val) { sugg.style.display = "none"; return; }
-    
-    const matches = storeList.filter(s => s.store && s.store.toLowerCase().includes(val));
-    if (matches.length === 0) { sugg.style.display = "none"; return; }
-    
-    matches.forEach(m => {
-      const div = document.createElement("div");
-      div.textContent = m.store + (m.type ? `（${m.type}）` : "");
-      div.onclick = () => {
-        input.value = m.store;
-        sugg.style.display = "none";
-        if (m.type) {
-          typeSelect.value = m.type;
-          if (!typeSelect.value) {
-            const opt = document.createElement("option");
-            opt.value = m.type;
-            opt.textContent = m.type;
-            typeSelect.appendChild(opt);
-            typeSelect.value = m.type;
-          }
-        } else {
-          typeSelect.value = "";
-        }
+    if(!val){ sugg.style.display="none"; return; }
+    const matches = storeList.filter(s=>s.store && s.store.toLowerCase().includes(val));
+    if(matches.length===0){ sugg.style.display="none"; return; }
+    matches.forEach(m=>{
+      const div=document.createElement("div");
+      div.textContent = m.store + (m.type?`（${m.type}）`:"");
+      div.onclick=()=>{
+        input.value = m.store; sugg.style.display="none";
+        if(m.type){ typeSelect.value = m.type; }
       };
       sugg.appendChild(div);
     });
     sugg.style.display = "block";
   });
 
-  // 送出表單
-  document.getElementById("expenseForm").addEventListener("submit", async (e) => {
+  // LIFF / API
+  let API_URL = "";          
+  let LIFF_ID = "default";
+  let VERSION = "V";
+  document.getElementById("version").textContent = VERSION;
+
+  async function loadConfig(){
+    const currentUrl = window.location.href.split("?")[0];
+    const res = await fetch(`${currentUrl}?command=設定`);
+    const data = await res.json();
+    if(!data.ok) throw new Error(data.error || "設定讀取失敗");
+    API_URL = data.D6?.trim()||"";
+    LIFF_ID = data.D11?.trim()||"default";
+    VERSION = data.D10?.trim()||"V";
+    document.getElementById("version").textContent = VERSION;
+  }
+
+  async function loadStoreList(){
+    if(!API_URL) return;
+    const res = await fetch(`${API_URL}?type=query&command=店家`);
+    const data = await res.json();
+    if(data.ok && Array.isArray(data.storeList)) storeList = data.storeList;
+  }
+
+  async function main(){
+    await loadConfig();
+    await liff.init({liffId: LIFF_ID});
+    if(!liff.isLoggedIn()) liff.login();
+    document.getElementById("date").valueAsDate = new Date();
+    await loadStoreList();
+  }
+
+  window.addEventListener("load", main);
+
+  // 表單送出
+  document.getElementById("expenseForm").addEventListener("submit", async (e)=>{
     e.preventDefault();
     const submitBtn = document.getElementById("submitBtn");
     const loadingMsg = document.getElementById("loadingMsg");
+    submitBtn.disabled=true; loadingMsg.style.display="block";
 
-    submitBtn.disabled = true;
-    submitBtn.innerText = "處理中...";
-    loadingMsg.style.display = "block";
-
-    try {
+    try{
       const profile = await liff.getProfile();
       const date = document.getElementById("date").value;
-      const store = document.getElementById("store").value;
-      const income = document.getElementById("income").value;
-      const payout = document.getElementById("payout").value;
-      const payment = document.getElementById("payment").value;
-      const currency = document.getElementById("currency").value;
-      const type = document.getElementById("type").value;
+      const store = input.value;
+      const inc = parseFloat(income.value)||0;
+      const out = parseFloat(payout.value)||0;
+      const pay = document.getElementById("payment").value;
+      const cur = parseFloat(currency.value)||1;
+      const typ = typeSelect.value;
       const note = document.getElementById("note").value;
       const memo = document.getElementById("memo").value;
-
-      const now = new Date();
-      const taiwanTime = new Date(now.getTime() + 8 * 60 * 60 * 1000)
-        .toISOString().replace("T", " ").split(".")[0];
+      const taiwanTime = new Date(Date.now()+8*3600*1000).toISOString().replace("T"," ").split(".")[0];
 
       const payload = {
         version: VERSION,
         userId: profile.userId,
         displayName: profile.displayName,
         inputDate: date,
-        store, income, payout, currency,
-        amount: Math.round((income - payout) * currency),
-        payment, type, note, memo,
+        store, income: inc, payout: out, currency: cur,
+        amount: Math.round((inc-out)*cur),
+        payment: pay, type: typ, note, memo,
         createdAt: taiwanTime
       };
 
-      const res = await fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify(payload)
-      });
-
+      const res = await fetch(API_URL,{method:"POST",body:JSON.stringify(payload)});
       const result = await res.json();
       alert("✅ 已送出！");
       document.getElementById("expenseForm").reset();
       document.getElementById("date").valueAsDate = new Date();
-
-    } catch (err) {
-      alert("❌ 送出失敗：" + err.message);
-    } finally {
-      submitBtn.disabled = false;
-      submitBtn.innerText = "送出";
-      loadingMsg.style.display = "none";
-    }
+    }catch(err){ alert("❌ 送出失敗："+err.message); }
+    finally{ submitBtn.disabled=false; loadingMsg.style.display="none"; }
   });
-
-  // ✅ 頁面載入時只執行 main()
-  window.addEventListener("load", main);
 </script>
 
-  </script>
 </body>
 </html>
