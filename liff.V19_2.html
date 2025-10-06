@@ -18,219 +18,65 @@
       margin-bottom: 50px;
     }
 
-    h3 {
-      font-size: 50px;
-      text-align: center;
-      margin-bottom: 50px;
-    }
-
     label {
       font-size: 50px;
       font-weight: bold;
-      display: inline-block; /* ✅ 換成 inline-block 比較不會被擠下去 */
-      margin-top: 25px;
-      white-space: nowrap;   /* ✅ 關鍵：不允許自動換行 */
-    }
-
-    input {
-      font-size: 50px;
-      padding: 25px;
-      width: 70%;
-      margin-top: 5px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
-
-    select {
-      font-size: 50px;
-      padding: 25px;
-      width: 70%;
-      margin-top: 5px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
-    
-    .form-row {
-      display: flex;
-      align-items: center;
-      margin: 20px 0;
-      white-space: nowrap;   /* ✅ 關鍵：不允許自動換行 */
-    }
-  
-    .form-row label {
-      font-size: 50px;
-      font-weight: bold;
       margin-right: 20px;
       white-space: nowrap;
     }
-  
-    .form-row input {
+
+    input, select {
       font-size: 50px;
       padding: 25px;
       width: 70%;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
-
-    .form-row select {
-      font-size: 50px;
-      padding: 25px;
-      width: 70%;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
-
-    .form-block {
-      display: flex;
-      align-items: center;
-      margin: 20px 0;
-      display: inline-block; /* ✅ 換成 inline-block 比較不會被擠下去 */
-      margin-top: 25px;
-      white-space: nowrap;   /* ✅ 關鍵：不允許自動換行 */
-    }
-  
-    .form-block label {
-      font-size: 50px;
-      font-weight: bold;
-      margin-right: 20px;
-      white-space: nowrap;
-    }
-    
-    .form-block input {
-      font-size: 50px;
-      padding: 25px;
-      width: 70%;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
-
-    .form-block select {
-      font-size: 50px;
-      padding: 25px;
-      width: 70%;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
-    
-    button {
-      font-size: 50px;
-      padding: 25px;
-      border-radius: 8px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      width: 100%;
-      margin-top: 25px;
-    }
-
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 25px;
-    }
-
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: center;
-      font-size: 14px;
-    }
-
-    th {
-      background-color: #f2f2f2;
-    }
-
-    .total {
-      font-size: 50px;
-      margin-top: 25px;
-      font-weight: bold;
-      color: #d9534f;
-    }
-
-    /* 查詢資料大小 ... */  
-    /* ✅ 強化選擇器，確保套用字體大小 */
-    #queryResult table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 15px;
-      font-size: 24px; /* 整張表格預設字體大小 */
-    }
-  
-    #queryResult table th,
-    #queryResult table td {
-      border: 1px solid #ddd;
-      padding: 20px;
-      text-align: center;
-      font-size: 30px !important; /* 強制覆蓋掉舊的 */
-    }
-  
-    #queryResult table th {
-      background-color: #f2f2f2;
-      font-weight: bold;
-    }
-  
-    .total {
-      margin-top: 10px;
-      font-size: 60px;
-      font-weight: bold;
-      color: #d9534f;
-    }
-
-     .toggle-btn {
-        padding: 8px 20px;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 30px;
-        opacity: 0.6;       /* 預設暗淡 */
-        transition: opacity 0.2s, box-shadow 0.2s;
-      }
-      #btnIncome { background: #000080; color: white; }
-      #btnPayout { background: #f44336; color: white; }
-    
-      .active {
-        opacity: 1;         /* 選中變亮 */
-        box-shadow: 0 0 6px rgba(0,0,0,0.3);
-      }
-    
-    <!--按下感CSS微動畫-->
-    button {
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    
-    button:hover {
-      transform: scale(1.05);
-    }
-    
-    button:active {
-      transform: scale(0.97);
-      box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
-    }
-    
-    <!--storelist欄位-->
-    .input-wrapper {
-      position: relative;
-      flex: 1;
-    }
-    
-    #store {
-      width: 100%;
-      padding: 25px;
-      font-size: 50px;
       border-radius: 8px;
       border: 1px solid #ccc;
       box-sizing: border-box;
     }
-    
+
+    .form-row, .form-block {
+      display: flex;
+      align-items: center;
+      margin: 20px 0;
+      white-space: nowrap;
+    }
+
+    button {
+      font-size: 50px;
+      padding: 25px;
+      border-radius: 8px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      width: 100%;
+      margin-top: 25px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      cursor: pointer;
+    }
+
+    button:hover { transform: scale(1.05); }
+    button:active { transform: scale(0.97); box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); }
+
+    .toggle-btn {
+      padding: 8px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 30px;
+      opacity: 0.6;
+      transition: opacity 0.2s, box-shadow 0.2s;
+    }
+
+    #btnIncome { background: #000080; color: white; }
+    #btnPayout { background: #f44336; color: white; }
+    .active { opacity: 1; box-shadow: 0 0 6px rgba(0,0,0,0.3); }
+
+    .input-wrapper { position: relative; flex: 1; }
+    #store { width: 100%; padding: 25px; font-size: 50px; border-radius: 8px; border: 1px solid #ccc; }
+
     #suggestions {
       position: absolute;
-      top: 100%;      /* 直接在 input 底下 */
+      top: 100%;
       left: 0;
       right: 0;
       background: white;
@@ -240,17 +86,29 @@
       display: none;
       z-index: 1000;
     }
-    
+
     #suggestions div {
-      padding: 20px;       /* 放大一點 */
-      font-size: 50px;     /* 放大文字 */
+      padding: 20px;
+      font-size: 50px;
       cursor: pointer;
     }
-    
-    #suggestions div:hover {
-      background-color: #eee;
+
+    #suggestions div:hover { background-color: #eee; }
+
+    .total {
+      margin-top: 10px;
+      font-size: 60px;
+      font-weight: bold;
+      color: #d9534f;
     }
-    
+
+    #loadingMsg {
+      display: none;
+      font-size: 40px;
+      color: red;
+      text-align: center;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
@@ -566,6 +424,7 @@
   </script>
 </body>
 </html>
+
 
 
 
