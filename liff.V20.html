@@ -258,13 +258,26 @@
   <script>  
     //const LIFF_ID = "2008096451-3DobjEw8";   // 換成你的 LIFF ID test
     //const VERSION = "V17_#43";                   // 固定版次
-    const API_URL = "https://script.google.com/macros/s/AKfycbxm7SlTMzbyB7cOAegTv-37Dj6S_jJ7Og5iDQOlgaYOHK7sJTOehXhst6xMHhjxM4go7g/exec";  // 換成你的 GAS PATH
-
+    //const API_URL = "https://script.google.com/macros/s/AKfycbxm7SlTMzbyB7cOAegTv-37Dj6S_jJ7Og5iDQOlgaYOHK7sJTOehXhst6xMHhjxM4go7g/exec";  // 換成你的 GAS PATH
+    // ✅ 先放暫時的占位符，稍後由 doGet 讀取設定表 D6 帶入
+    let API_URL = "";          
     let LIFF_ID = "default";   // 先放預設或空字串,從 D11 帶入 append
     let VERSION = "V";         // ✅ 預設顯示版本號，不要等API,從 D10 帶入 版次
 
+    // 預先顯示版次（避免空白）
     document.getElementById("version").textContent = VERSION;
-    
+
+    if (data.ok && data.API_URL) {
+        API_URL = data.API_URL.trim();  // ✅ 設定為 D6 的完整 URL
+        console.log("✅ 從設定表 D6 取得 API_URL:", API_URL);
+        await loadConfig();              // 再載入 D10、D11 等設定
+      } else {
+        console.error("⚠️ 無法取得設定表 D6 的 API_URL");
+      }
+    } catch (err) {
+      console.error("❌ 載入 API_URL 發生錯誤:", err);
+    }
+  }
     async function loadConfig() {
       try {
         const res = await fetch(API_URL, {
@@ -444,6 +457,7 @@
   </script>
 </body>
 </html>
+
 
 
 
