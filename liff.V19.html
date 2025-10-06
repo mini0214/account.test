@@ -312,11 +312,15 @@
         income.value = "";
       });
 
-      // 假設 payout 是現有的輸入欄位
+      // ✅ 監聽支出欄位輸入
       payout.addEventListener("input", () => {
         const val = payout.value;
         if (val.includes(".")) {
-          currency.value = "20"; // 有小數點 → 自動選澳幣
+          currency.value = "20";  // 有小數點 → 澳幣
+        } else if (val !== "") {
+          currency.value = "1";   // 無小數點 → 台幣
+        } else {
+          currency.value = "";    // 若清空輸入 → 清空幣別
         }
       });
     </script>      
@@ -541,6 +545,7 @@
   </script>
 </body>
 </html>
+
 
 
 
