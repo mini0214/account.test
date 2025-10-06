@@ -267,17 +267,25 @@
     // 預先顯示版次（避免空白）
     document.getElementById("version").textContent = VERSION;
 
-    if (data.ok && data.API_URL) {
-        API_URL = data.API_URL.trim();  // ✅ 設定為 D6 的完整 URL
-        console.log("✅ 從設定表 D6 取得 API_URL:", API_URL);
-        await loadConfig();              // 再載入 D10、D11 等設定
-      } else {
-        console.error("⚠️ 無法取得設定表 D6 的 API_URL");
+    // 🚀 先從目前的 GAS doGet (例如 ?command=店家) 抓設定表 D6 的 API_URL
+    async function initAPI() {
+      try {
+        const res = await fetch("https://script.google.com/macros/s/你的GAS_ID/exec?command=店家");
+        const data = await res.json();
+      
+        if (data.ok && data.API_URL) {
+            API_URL = data.API_URL.trim();  // ✅ 設定為 D6 的完整 URL
+            console.log("✅ 從設定表 D6 取得 API_URL:", API_URL);
+            await loadConfig();              // 再載入 D10、D11 等設定
+          } else {
+            console.error("⚠️ 無法取得設定表 D6 的 API_URL");
+          }
+        } catch (err) {
+          console.error("❌ 載入 API_URL 發生錯誤:", err);
+        }
       }
-    } catch (err) {
-      console.error("❌ 載入 API_URL 發生錯誤:", err);
-    }
-  }
+
+    // 📦 讀取設定（POST 呼叫新的 API_URL）
     async function loadConfig() {
       try {
         const res = await fetch(API_URL, {
@@ -453,10 +461,11 @@
       }
     });
   // 頁面載入時執行
-  loadConfig();
+  window.addEventListener("load", initAPI);
   </script>
 </body>
 </html>
+
 
 
 
