@@ -260,152 +260,119 @@
     //const VERSION = "V17_#43";                   // 固定版次
     //const API_URL = "https://script.google.com/macros/s/AKfycbxm7SlTMzbyB7cOAegTv-37Dj6S_jJ7Og5iDQOlgaYOHK7sJTOehXhst6xMHhjxM4go7g/exec";  // 換成你的 GAS PATH
     // ✅ 先放暫時的占位符，稍後由 doGet 讀取設定表 D6 帶入
-    let API_URL = "";          
-    let LIFF_ID = "default";   // 先放預設或空字串,從 D11 帶入 append
-    let VERSION = "V";         // ✅ 預設顯示版本號，不要等API,從 D10 帶入 版次
+ <script>
+  let API_URL = "";          
+  let LIFF_ID = "default";
+  let VERSION = "V";
 
-    // 預先顯示版次（避免空白）
-    document.getElementById("version").textContent = VERSION;
+  // 預先顯示版次
+  document.getElementById("version").textContent = VERSION;
 
-    // 🚀 先從目前的 GAS doGet (例如 ?command=店家) 抓設定表 D6 的 API_URL
-    async function initAPI() {
-      try {
-        console.log("🔍 讀取設定表 D6 (API_URL)...");
-        const res = await fetch(window.location.href + "?command=設定"); 
-        const data = await res.json();
+  // 🚀 從目前的 GAS 讀取設定（D6, D10, D11）
+  async function loadConfig() {
+    try {
+      const currentUrl = window.location.href.split("?")[0];
+      const res = await fetch(`${currentUrl}?command=設定`);
+      const data = await res.json();
 
-        if (data.ok && data.D6) {
-          API_URL = data.D6.trim();  // ✅ 從 D6 帶入完整 URL
-          console.log("✅ 從設定表 D6 取得 API_URL:", API_URL);
-    
-          await loadConfig();  // ✅ 先載 D10, D11 (版次, LIFF_ID)
-          await main();        // ✅ 再進入主程式（LIFF登入 + 店家清單）
-        } else {
-          console.error("⚠️ 無法取得設定表 D6:", data);
-        }
-      } catch (err) {
-        console.error("❌ 載入 API_URL 發生錯誤:", err);
-      }
-    }
+      if (!data.ok) throw new Error(data.error || "設定讀取失敗");
 
-    // 📦 讀取設定（POST 呼叫新的 API_URL）
-    async function loadConfig() {
-      try {
-            // 先向目前執行的 doGet 取得設定 (抓 D6, D10, D11)
-    const currentUrl = window.location.href.split("?")[0];
-    const res = await fetch(`${currentUrl}?command=設定`);
-    const data = await res.json();
+      API_URL = data.D6?.trim() || "";
+      LIFF_ID = data.D11?.trim() || "";
+      VERSION = data.D10?.trim() || "V";
 
-    if (!data.ok) throw new Error(data.error || "設定讀取失敗");
-
-    // 讀設定
-    window.API_URL = data.D6;   // ← 自動抓 D6（你的 GAS 部署 ID）
-    window.LIFF_ID = data.D11;
-    window.VERSION = data.D10;
-
-    document.getElementById("version").textContent = VERSION;
-    console.log("✅ 設定完成:", { API_URL, LIFF_ID, VERSION });
-
-  } catch (err) {
-    console.error("載入設定發生錯誤:", err);
-    alert("❌ 初始化設定失敗：" + err.message);
-  }
-}        
-    // 店家清單
-    let storeList = []; // [{store, type}]
-    const input = document.getElementById("store");
-    const sugg = document.getElementById("suggestions");
-    const typeSelect = document.getElementById("type");
-  
-    async function loadStoreList() {
-      try {
-        console.log("呼叫店家 API:", API_URL);
-        const res = await fetch(`${API_URL}?type=query&command=店家`);
-        const data = await res.json();
-        console.log("GAS 回傳:", data);
-  
-        if (data.ok && Array.isArray(data.storeList)) {
-          storeList = data.storeList; // [{store, type}]
-          console.log("載入店家清單成功:", storeList);
-        } else {
-          console.error("GAS 回傳格式不正確:", data);
-        }
-      } catch (err) {
-        console.error("載入店家清單失敗:", err);
-      }
-    }
-  
-    // 即時提示 + 自動帶入 type
-    input.addEventListener("input", () => {
-      const val = input.value.toLowerCase();
-      sugg.innerHTML = "";
-      if (!val) { sugg.style.display = "none"; return; }
-      
-      // 篩選符合的店家
-      const matches = storeList.filter(s => s.store && s.store.toLowerCase().includes(val));
-      if (matches.length === 0) { sugg.style.display = "none"; return; }
-      
-      // 顯示建議
-      matches.forEach(m => {
-        const div = document.createElement("div");
-        div.textContent = m.store + (m.type ? `（${m.type}）` : "");
-        div.onclick = () => {
-          input.value = m.store;
-          sugg.style.display = "none";
-          
-          // 自動選中對應 type
-          if (m.type) {
-            typeSelect.value = m.type;
-            if (!typeSelect.value) {
-              // 若下拉選單沒有這個分類，就新增
-              const opt = document.createElement("option");
-              opt.value = m.type;
-              opt.textContent = m.type;
-              typeSelect.appendChild(opt);
-              typeSelect.value = m.type;
-            }
-          } else {
-            typeSelect.value = "";
-          }
-        };
-        sugg.appendChild(div);
-      });
-  
-      sugg.style.display = "block";
-      const rect = input.getBoundingClientRect();
-      sugg.style.width = rect.width + "px";
-      sugg.style.top = (rect.bottom + window.scrollY) + "px";
-      sugg.style.left = (rect.left + window.scrollX) + "px";
-    });
-      
-    document.getElementById("version").textContent = VERSION;
-
-    async function main() {
-      await loadConfig();   // 先載設定
       document.getElementById("version").textContent = VERSION;
-      
+      console.log("✅ 設定完成:", { API_URL, LIFF_ID, VERSION });
+    } catch (err) {
+      console.error("❌ 載入設定發生錯誤:", err);
+      alert("初始化設定失敗：" + err.message);
+    }
+  }
+
+  // 🚀 主流程
+  async function main() {
+    try {
+      await loadConfig();  // ✅ 僅呼叫一次
       await liff.init({ liffId: LIFF_ID });
       if (!liff.isLoggedIn()) liff.login();
 
       // 預設日期為今天
       document.getElementById("date").valueAsDate = new Date();
-          
-      // 🚀 等設定完成後再載入店家清單
-      await loadStoreList();
+      await loadStoreList(); // 載入店家清單
+    } catch (err) {
+      console.error("main() 錯誤:", err);
     }
+  }
 
-    document.getElementById("expenseForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      
-      const submitBtn = document.getElementById("submitBtn");
-      const loadingMsg = document.getElementById("loadingMsg");
+  // 店家清單載入
+  let storeList = [];
+  const input = document.getElementById("store");
+  const sugg = document.getElementById("suggestions");
+  const typeSelect = document.getElementById("type");
 
-      
-      // 🔒 禁用按鈕 + 顯示訊息
-      submitBtn.disabled = true;
-      submitBtn.innerText = "處理中...";
-      loadingMsg.style.display = "block";
-      
+  async function loadStoreList() {
+    try {
+      if (!API_URL) throw new Error("API_URL 尚未設定");
+      console.log("呼叫店家 API:", API_URL);
+      const res = await fetch(`${API_URL}?type=query&command=店家`);
+      const data = await res.json();
+
+      if (data.ok && Array.isArray(data.storeList)) {
+        storeList = data.storeList;
+        console.log("載入店家清單成功:", storeList);
+      } else {
+        console.error("GAS 回傳格式不正確:", data);
+      }
+    } catch (err) {
+      console.error("載入店家清單失敗:", err);
+    }
+  }
+
+  // 即時提示 + 自動帶入 type
+  input.addEventListener("input", () => {
+    const val = input.value.toLowerCase();
+    sugg.innerHTML = "";
+    if (!val) { sugg.style.display = "none"; return; }
+    
+    const matches = storeList.filter(s => s.store && s.store.toLowerCase().includes(val));
+    if (matches.length === 0) { sugg.style.display = "none"; return; }
+    
+    matches.forEach(m => {
+      const div = document.createElement("div");
+      div.textContent = m.store + (m.type ? `（${m.type}）` : "");
+      div.onclick = () => {
+        input.value = m.store;
+        sugg.style.display = "none";
+        if (m.type) {
+          typeSelect.value = m.type;
+          if (!typeSelect.value) {
+            const opt = document.createElement("option");
+            opt.value = m.type;
+            opt.textContent = m.type;
+            typeSelect.appendChild(opt);
+            typeSelect.value = m.type;
+          }
+        } else {
+          typeSelect.value = "";
+        }
+      };
+      sugg.appendChild(div);
+    });
+    sugg.style.display = "block";
+  });
+
+  // 送出表單
+  document.getElementById("expenseForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const submitBtn = document.getElementById("submitBtn");
+    const loadingMsg = document.getElementById("loadingMsg");
+
+    submitBtn.disabled = true;
+    submitBtn.innerText = "處理中...";
+    loadingMsg.style.display = "block";
+
+    try {
+      const profile = await liff.getProfile();
       const date = document.getElementById("date").value;
       const store = document.getElementById("store").value;
       const income = document.getElementById("income").value;
@@ -416,86 +383,44 @@
       const note = document.getElementById("note").value;
       const memo = document.getElementById("memo").value;
 
-      const profile = await liff.getProfile();
-      
       const now = new Date();
-      const taiwanTime = new Date(now.getTime() + (8 * 60 * 60 * 1000))
-        .toISOString()
-        .replace("T", " ")
-        .split(".")[0]; 
-      
+      const taiwanTime = new Date(now.getTime() + 8 * 60 * 60 * 1000)
+        .toISOString().replace("T", " ").split(".")[0];
+
       const payload = {
         version: VERSION,
         userId: profile.userId,
         displayName: profile.displayName,
         inputDate: date,
-        store: store,
-        income: income,
-        payout: payout,
-        currency: currency,
-        amount: Math.round((income-payout)*currency),
-        payment: payment,
-        type: type,
-        note: note,
-        memo: memo,
+        store, income, payout, currency,
+        amount: Math.round((income - payout) * currency),
+        payment, type, note, memo,
         createdAt: taiwanTime
       };
 
-      const apiUrl = API_URL; 
-      try {
-        const res = await fetch(apiUrl, {
-          method: "POST",
-          body: JSON.stringify(payload)
-        });
+      const res = await fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
 
-        const result = await res.json();
-        alert("✅ 已送出！");
+      const result = await res.json();
+      alert("✅ 已送出！");
+      document.getElementById("expenseForm").reset();
+      document.getElementById("date").valueAsDate = new Date();
 
-        document.getElementById("expenseForm").reset();
-        document.getElementById("date").valueAsDate = new Date();
+    } catch (err) {
+      alert("❌ 送出失敗：" + err.message);
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerText = "送出";
+      loadingMsg.style.display = "none";
+    }
+  });
 
-      } catch(err) {
-        alert("❌ 送出失敗：" + err.message);
-      } finally {
-        // ✅ 無論成功失敗都恢復按鈕 & 隱藏訊息
-        submitBtn.disabled = false;
-        submitBtn.innerText = "送出";
-        loadingMsg.style.display = "none";
-      }
-    });
-  // 頁面載入時執行
-  window.addEventListener("load", initAPI);
+  // ✅ 頁面載入時只執行 main()
+  window.addEventListener("load", main);
+</script>
+
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
