@@ -14,7 +14,8 @@
     button { font-size: 50px; padding: 25px; border-radius: 8px; background-color: #4CAF50; color: white; border: none; width: 100%; margin-top: 25px; cursor: pointer; transition: .15s; }
     button:hover { transform: scale(1.02); }
     .toggle-btn { padding: 8px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 30px; opacity: 0.6; }
-    #btnIncome { background: #000080; color: white; } #btnPayout { background: #f44336; color: white; }
+    #btnIncome { background: #000080; color: white; } 
+    #btnPayout { background: #f44336; color: white; }
     .active { opacity: 1; box-shadow: 0 0 6px rgba(0,0,0,0.2); }
     .input-wrapper { position: relative; flex: 1; }
     #store { width: 100%; padding: 25px; font-size: 50px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
@@ -98,46 +99,10 @@
   </form>
 
 <script>
-  // 預設 D6 設定值（防止讀不到）
+// ----------------------------------------------------
+// ✅ 全域設定
+// ----------------------------------------------------
 const FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbw2Jupv_aGQubSn__Gmcf9nsHaRB3ke-7X7ZlEuoH8iM8xX50MKommoLYwStpxa00YPBA/exec";
-
-async function loadConfig() {
-  try {
-    const url = API_URL || FALLBACK_GAS_SETTINGS_URL;
-    console.log("🔗 呼叫設定 API:", url);
-
-    const res = await fetch(url, {
-      method: "POST",
-      body: JSON.stringify({ type: "config" })
-    });
-
-    const text = await res.text();
-    console.log("設定 API 回傳原始內容:", text);
-
-    // 如果不是 JSON（可能是 HTML）
-    if (text.startsWith("<!DOCTYPE")) {
-      throw new Error("GAS 回傳 HTML（可能權限錯誤或跨網域），請確認部署設定。");
-    }
-
-    const cfg = JSON.parse(text);
-    if (cfg.ok) {
-      LIFF_ID = cfg.D11;
-      VERSION = cfg.D10;
-      document.getElementById("version").textContent = VERSION;
-      console.log("✅ 設定完成:", cfg);
-    } else {
-      console.error("讀取設定失敗:", cfg.error);
-    }
-  } catch (err) {
-    console.error("初始化設定失敗：", err.message);
-  }
-}
-/*
-  如果你不是從同一支 GAS 的 web app URL 開啟頁面（例如你是本地打開或從其他 host），
-  請把你的「設定用 GAS 的執行路徑 (D6)」貼到下面這個常數，格式像：
-  "https://script.google.com/macros/s/AKfy.../exec"
-*/
-const FALLBACK_GAS_SETTINGS_URL = ""; // <-- 若不在同一 GAS web app 下，請在此貼上 D6（必填或部署為同一web app）
 
 let API_URL = "";
 let LIFF_ID = "";
@@ -152,197 +117,169 @@ const incomeEl = document.getElementById("income");
 const payoutEl = document.getElementById("payout");
 let storeList = [];
 
-// 切換收入/支出
-function resetButtons(){ btnIncome.classList.remove("active"); btnPayout.classList.remove("active"); }
-btnIncome.addEventListener("click", ()=>{ resetButtons(); btnIncome.classList.add("active"); incomeEl.style.display="inline-block"; incomeEl.value=""; payoutEl.style.display="none"; payoutEl.value=""; });
-btnPayout.addEventListener("click", ()=>{ resetButtons(); btnPayout.classList.add("active"); payoutEl.style.display="inline-block"; payoutEl.value=""; incomeEl.style.display="none"; incomeEl.value=""; });
-
-// 幣別自動判斷
-payoutEl.addEventListener("input", ()=>{
-  const v = payoutEl.value;
-  const currency = document.getElementById("currency");
-  if (v.includes(".")) currency.value = "20";
-  else if (v !== "") currency.value = "1";
-  else currency.value = "";
-});
-
-// helper: try fetch and return {ok:true, json} or {ok:false, text}
+// ----------------------------------------------------
+// ✅ 設定載入
+// ----------------------------------------------------
 async function tryFetchText(url){
   const r = await fetch(url, { cache: 'no-store' });
   const text = await r.text();
-  // 嘗試轉 JSON
-  try { const j = JSON.parse(text); return { ok: true, json: j }; } 
+  try { const j = JSON.parse(text); return { ok: true, json: j }; }
   catch(e){ return { ok: false, text }; }
 }
 
 async function loadSettings(){
   const currentUrl = window.location.href.split('?')[0];
-
-  // 如果是在 file:// 協定下（本地開啟），直接使用 FALLBACK（若有）
-  if (location.protocol === 'file:') {
-    if (!FALLBACK_GAS_SETTINGS_URL) throw new Error("目前從本機開啟 (file://)，請把你在設定表 D6 的 GAS exec URL 貼到 FALLBACK_GAS_SETTINGS_URL。");
-    const r = await tryFetchText(`${FALLBACK_GAS_SETTINGS_URL}?command=設定`);
-    if (!r.ok) throw new Error("從 FALLBACK GAS 取得設定失敗：" + (r.text||""));
-    return r.json;
-  }
-
-  // 否則嘗試用 currentUrl?command=設定（當你把 HTML 放在同一個 GAS web app 下可用）
   let res = await tryFetchText(`${currentUrl}?command=設定`);
-  if (res.ok && res.json && res.json.ok) {
-    return res.json;
-  }
 
-  // 如果回傳 HTML（或其它），嘗試使用 FALLBACK_GAS_SETTINGS_URL（如果你有填）
-  const raw = res.text || "";
-  if ((raw||"").trim().startsWith("<")) {
-    if (!FALLBACK_GAS_SETTINGS_URL) {
-      throw new Error("從當前 URL 讀取到 HTML（不是 JSON）。若要自動讀取設定，請把此頁部署成同一支 GAS Web App 或在程式中填入 FALLBACK_GAS_SETTINGS_URL（即設定表 D6）。");
-    }
+  // 若主頁面非同一支 GAS，回傳 HTML，改用 FALLBACK
+  if (!res.ok || (res.text && res.text.startsWith("<"))) {
     const r2 = await tryFetchText(`${FALLBACK_GAS_SETTINGS_URL}?command=設定`);
-    if (!r2.ok) throw new Error("從 FALLBACK GAS 取得設定失敗：" + (r2.text||""));
+    if (!r2.ok) throw new Error("設定 GAS 讀取失敗：" + (r2.text || ""));
     return r2.json;
   }
 
-  // 其他情況（如 JSON 但 ok=false）
-  if (res.ok && res.json) return res.json;
-  throw new Error("讀取設定失敗：" + (res.text || JSON.stringify(res.json || {})));
+  return res.json;
 }
 
+// ----------------------------------------------------
+// ✅ 初始化
+// ----------------------------------------------------
 async function initApp(){
   try {
     const settings = await loadSettings();
-    if (!settings || !settings.ok) throw new Error("設定回傳格式錯誤：" + JSON.stringify(settings));
-    // settings 範例如： { ok:true, D6: "...", D10: "V..", D11: "LIFF_ID" }
+    if (!settings || !settings.ok) throw new Error("設定格式錯誤");
+
     API_URL = (settings.D6 || "").trim();
     VERSION = (settings.D10 || "V").trim();
     LIFF_ID = (settings.D11 || "").trim();
 
     document.getElementById("version").textContent = VERSION;
-    console.log("載入設定成功:", { API_URL, LIFF_ID, VERSION });
+    console.log("✅ 設定成功:", { API_URL, LIFF_ID, VERSION });
 
-    if (!API_URL) console.warn("API_URL (D6) 空白，請檢查設定表 D6。");
-    if (!LIFF_ID) {
-      alert("❌ LIFF ID 尚未設定，請確認 GAS 設定表 D11 欄位！");
-      return;
-    }
+    if (!LIFF_ID) throw new Error("❌ LIFF ID 尚未設定，請確認設定表 D11");
 
-    // 初始化 LIFF
     await liff.init({ liffId: LIFF_ID });
     if (!liff.isLoggedIn()) liff.login();
 
-    // 設定日期為今天
     document.getElementById("date").valueAsDate = new Date();
 
-    // 載入店家清單（若 API_URL 有值）
     if (API_URL) await loadStoreList();
+
   } catch (err) {
     console.error("初始化設定失敗：", err);
     alert("初始化設定失敗：" + err.message);
   }
 }
 
+// ----------------------------------------------------
+// ✅ 店家清單
+// ----------------------------------------------------
 async function loadStoreList(){
   try {
-    if (!API_URL) { console.warn("API_URL 未設定，略過載入店家清單"); return; }
-    console.log("呼叫店家 API:", API_URL);
-    // doGet 回傳 storeList
+    if (!API_URL) return;
     const res = await fetch(`${API_URL}?type=query&command=店家`);
     const data = await res.json();
-    if (data.ok && Array.isArray(data.storeList)) {
-      storeList = data.storeList;
-      console.log("店家清單：", storeList);
-    } else {
-      console.warn("店家 API 回傳格式不正確：", data);
-    }
+    if (data.ok && Array.isArray(data.storeList)) storeList = data.storeList;
+    console.log("店家清單", storeList);
   } catch (err) {
-    console.error("載入店家清單失敗：", err);
+    console.error("載入店家清單失敗", err);
   }
 }
 
-// store 即時提示
+// ----------------------------------------------------
+// ✅ 其他功能
+// ----------------------------------------------------
+
+// 收支切換
+function resetButtons(){ btnIncome.classList.remove("active"); btnPayout.classList.remove("active"); }
+btnIncome.addEventListener("click", ()=>{ resetButtons(); btnIncome.classList.add("active"); incomeEl.style.display="inline-block"; payoutEl.style.display="none"; });
+btnPayout.addEventListener("click", ()=>{ resetButtons(); btnPayout.classList.add("active"); payoutEl.style.display="inline-block"; incomeEl.style.display="none"; });
+
+// 幣別自動切換
+payoutEl.addEventListener("input", ()=>{
+  const v = payoutEl.value;
+  const currency = document.getElementById("currency");
+  if (v.includes(".")) currency.value = "20";
+  else if (v) currency.value = "1";
+  else currency.value = "";
+});
+
+// 店家提示
 input.addEventListener("input", ()=>{
   const val = input.value.toLowerCase();
   sugg.innerHTML = "";
   if (!val) { sugg.style.display = "none"; return; }
   const matches = storeList.filter(s => s.store && s.store.toLowerCase().includes(val));
   if (matches.length === 0) { sugg.style.display = "none"; return; }
+
   matches.forEach(m => {
     const div = document.createElement("div");
     div.textContent = m.store + (m.type ? `（${m.type}）` : "");
     div.onclick = () => {
-      input.value = m.store; sugg.style.display = "none";
+      input.value = m.store;
+      sugg.style.display = "none";
       if (m.type) {
-        // 若下拉沒有該 type 就新增
         if (![...typeSelect.options].some(o => o.value === m.type)) {
           const opt = document.createElement("option");
-          opt.value = m.type; opt.textContent = m.type; typeSelect.appendChild(opt);
+          opt.value = m.type;
+          opt.textContent = m.type;
+          typeSelect.appendChild(opt);
         }
         typeSelect.value = m.type;
-      } else typeSelect.value = "";
+      }
     };
     sugg.appendChild(div);
   });
   sugg.style.display = "block";
 });
 
-// 送出表單
+// ----------------------------------------------------
+// ✅ 表單送出
+// ----------------------------------------------------
 document.getElementById("expenseForm").addEventListener("submit", async (e)=>{
   e.preventDefault();
   const submitBtn = document.getElementById("submitBtn");
   const loadingMsg = document.getElementById("loadingMsg");
-  submitBtn.disabled = true; submitBtn.innerText = "處理中...";
-  loadingMsg.style.display = "block";
+  submitBtn.disabled = true; loadingMsg.style.display = "block";
 
   try {
-    if (!LIFF_ID) throw new Error("LIFF 尚未初始化");
     const profile = await liff.getProfile();
-    const date = document.getElementById("date").value;
-    const store = document.getElementById("store").value;
-    const income = document.getElementById("income").value || "";
-    const payout = document.getElementById("payout").value || "";
-    const payment = document.getElementById("payment").value;
-    const currency = document.getElementById("currency").value;
-    const type = document.getElementById("type").value;
-    const note = document.getElementById("note").value;
-    const memo = document.getElementById("memo").value;
-
-    const now = new Date();
-    const taiwanTime = new Date(now.getTime() + 8*60*60*1000).toISOString().replace("T"," ").split(".")[0];
-
     const payload = {
       version: VERSION,
       userId: profile.userId,
       displayName: profile.displayName,
-      inputDate: date,
-      store, income, payout, currency,
-      amount: Math.round((Number(income||0) - Number(payout||0)) * (Number(currency)||1)),
-      payment, type, note, memo,
-      createdAt: taiwanTime
+      inputDate: date.value,
+      store: store.value,
+      income: incomeEl.value || "",
+      payout: payoutEl.value || "",
+      currency: currency.value,
+      amount: Math.round((Number(incomeEl.value||0) - Number(payoutEl.value||0)) * (Number(currency.value)||1)),
+      payment: payment.value,
+      type: typeSelect.value,
+      note: note.value,
+      memo: memo.value,
+      createdAt: new Date(Date.now() + 8*3600*1000).toISOString().replace("T"," ").split(".")[0]
     };
-
-    if (!API_URL) throw new Error("API_URL 未設定，無法送出。請檢查設定表 D6 或 FALLBACK_GAS_SETTINGS_URL。");
 
     const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
     const result = await res.json();
-    if (result && result.ok) {
+    if (result.ok) {
       alert("✅ 已送出！");
-      document.getElementById("expenseForm").reset();
+      e.target.reset();
       document.getElementById("date").valueAsDate = new Date();
-    } else {
-      throw new Error(result && result.error ? result.error : "GAS 未回傳 ok:true");
-    }
+    } else throw new Error(result.error || "GAS 未回傳 ok:true");
+
   } catch (err) {
-    console.error("送出失敗：", err);
     alert("❌ 送出失敗：" + err.message);
   } finally {
-    submitBtn.disabled = false; submitBtn.innerText = "送出";
-    loadingMsg.style.display = "none";
+    submitBtn.disabled = false; loadingMsg.style.display = "none";
   }
 });
 
-// 啟動
+// ----------------------------------------------------
+// ✅ 啟動
+// ----------------------------------------------------
 window.addEventListener("load", initApp);
 </script>
 </body>
 </html>
-
