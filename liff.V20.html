@@ -4,129 +4,31 @@
   <meta charset="utf-8">
   <title>零用金支出帳簿</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 50px;
-    }
-
-    h2 {
-      font-size: 50px;
-      text-align: center;
-      margin-bottom: 50px;
-    }
-
-    label {
-      font-size: 50px;
-      font-weight: bold;
-      display: inline-block;
-      margin-top: 25px;
-      white-space: nowrap;
-    }
-
-    input, select {
-      font-size: 50px;
-      padding: 25px;
-      width: 70%;
-      margin-top: 5px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      box-sizing: border-box;
-    }
-
-    .form-row, .form-block {
-      display: flex;
-      align-items: center;
-      margin: 20px 0;
-      white-space: nowrap;
-    }
-
-    button {
-      font-size: 50px;
-      padding: 25px;
-      border-radius: 8px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      width: 100%;
-      margin-top: 25px;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-      cursor: pointer;
-    }
-
+    body { font-family: Arial, sans-serif; padding: 50px; }
+    h2 { font-size: 50px; text-align: center; margin-bottom: 50px; }
+    label { font-size: 50px; font-weight: bold; display: inline-block; margin-top: 25px; white-space: nowrap; }
+    input, select { font-size: 50px; padding: 25px; width: 70%; margin-top: 5px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
+    .form-row, .form-block { display: flex; align-items: center; margin: 20px 0; white-space: nowrap; }
+    button { font-size: 50px; padding: 25px; border-radius: 8px; background-color: #4CAF50; color: white; border: none; width: 100%; margin-top: 25px; transition: transform 0.2s ease, box-shadow 0.2s ease; cursor: pointer; }
     button:hover { transform: scale(1.05); }
     button:active { transform: scale(0.97); box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); }
 
-    .toggle-btn {
-      padding: 8px 20px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 30px;
-      opacity: 0.6;
-      transition: opacity 0.2s, box-shadow 0.2s;
-    }
-
+    .toggle-btn { padding: 8px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 30px; opacity: 0.6; transition: opacity 0.2s, box-shadow 0.2s; }
     #btnIncome { background: #000080; color: white; }
     #btnPayout { background: #f44336; color: white; }
+    .active { opacity: 1; box-shadow: 0 0 6px rgba(0,0,0,0.3); }
 
-    .active {
-      opacity: 1;
-      box-shadow: 0 0 6px rgba(0,0,0,0.3);
-    }
+    .input-wrapper { position: relative; flex: 1; }
+    #store { width: 100%; padding: 25px; font-size: 50px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
+    #suggestions { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ccc; max-height: 200px; overflow-y: auto; display: none; z-index: 1000; }
+    #suggestions div { padding: 20px; font-size: 50px; cursor: pointer; }
+    #suggestions div:hover { background-color: #eee; }
 
-    .input-wrapper {
-      position: relative;
-      flex: 1;
-    }
-
-    #store {
-      width: 100%;
-      padding: 25px;
-      font-size: 50px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      box-sizing: border-box;
-    }
-
-    #suggestions {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      right: 0;
-      background: white;
-      border: 1px solid #ccc;
-      max-height: 200px;
-      overflow-y: auto;
-      display: none;
-      z-index: 1000;
-    }
-
-    #suggestions div {
-      padding: 20px;
-      font-size: 50px;
-      cursor: pointer;
-    }
-
-    #suggestions div:hover {
-      background-color: #eee;
-    }
-
-    .total {
-      margin-top: 10px;
-      font-size: 60px;
-      font-weight: bold;
-      color: #d9534f;
-    }
-
-    #loadingMsg {
-      display: none;
-      font-size: 40px;
-      color: red;
-      text-align: center;
-      margin-top: 20px;
-    }
+    .total { margin-top: 10px; font-size: 60px; font-weight: bold; color: #d9534f; }
+    #loadingMsg { display: none; font-size: 40px; color: red; text-align: center; margin-top: 20px; }    
   </style>
 </head>
 <body>
@@ -135,9 +37,9 @@
 
   <form id="expenseForm">
     <div class="form-row">
-      <label for="date">日期：</label>
+      <label for="store">日期：</label>
       <input type="date" id="date" placeholder="選填">
-    </div>
+    </div>    
 
     <div class="form-row store-row">
       <label for="store">店家：</label>
@@ -150,10 +52,9 @@
     <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
       <button type="button" id="btnIncome" class="toggle-btn">收入</button>
       <button type="button" id="btnPayout" class="toggle-btn active">支出</button>
-
       <input type="number" id="income" placeholder="請輸入收入金額" style="width:550px; color:blue; display:none;" step="0.01">
       <input type="number" id="payout" placeholder="請輸入支出金額" style="width:550px; color:red; display:inline-block;" step="0.01">
-    </div>
+    </div>   
 
     <div class="form-block">
       <label for="currency">幣別：</label>
@@ -186,17 +87,17 @@
         <option value="育">育</option>
         <option value="樂">樂</option>
         <option value="其他">其他</option>
-        <option value="收入">收入</option>
+        <option value="收入">收入</option>   
       </select>
     </div>
 
     <div class="form-row">
-      <label for="note">附註：</label>
+      <label for="store">附註：</label>
       <input type="text" id="note" placeholder="選填">
     </div>
 
     <div class="form-row">
-      <label for="memo">備註：</label>
+      <label for="store">備註：</label>
       <input type="text" id="memo" placeholder="選填">
     </div>
 
@@ -204,181 +105,159 @@
     <div id="loadingMsg">⏳ 資料送出中，請稍候...</div>
   </form>
 
-  <script>
-    let API_URL = "";
-    let LIFF_ID = "default";
-    let VERSION = "V";
+<script>
+  let API_URL = "";
+  let LIFF_ID = "";
+  let VERSION = "";
 
-    const btnIncome = document.getElementById("btnIncome");
-    const btnPayout = document.getElementById("btnPayout");
-    const income = document.getElementById("income");
-    const payout = document.getElementById("payout");
+  const input = document.getElementById("store");
+  const sugg = document.getElementById("suggestions");
+  const typeSelect = document.getElementById("type");
+  let storeList = [];
+
+  const btnIncome = document.getElementById("btnIncome");
+  const btnPayout = document.getElementById("btnPayout");
+  const income = document.getElementById("income");
+  const payout = document.getElementById("payout");
+
+  // 切換收入/支出
+  function resetButtons() {
+    btnIncome.classList.remove("active");
+    btnPayout.classList.remove("active");
+  }
+  btnIncome.addEventListener("click", () => {
+    resetButtons();
+    btnIncome.classList.add("active");
+    income.style.display = "inline-block"; income.value = "";
+    payout.style.display = "none"; payout.value = "";
+  });
+  btnPayout.addEventListener("click", () => {
+    resetButtons();
+    btnPayout.classList.add("active");
+    payout.style.display = "inline-block"; payout.value = "";
+    income.style.display = "none"; income.value = "";
+  });
+
+  payout.addEventListener("input", () => {
+    const val = payout.value;
     const currency = document.getElementById("currency");
-    const input = document.getElementById("store");
-    const sugg = document.getElementById("suggestions");
-    const typeSelect = document.getElementById("type");
+    if (val.includes(".")) { currency.value = "20"; }
+    else if (val !== "") { currency.value = "1"; }
+    else { currency.value = ""; }
+  });
 
-    document.getElementById("version").textContent = VERSION;
+  // 載入 GAS 設定
+  async function loadConfig() {
+    try {
+      const currentUrl = window.location.href.split("?")[0];
+      const res = await fetch(`${currentUrl}?command=設定`);
+      const data = await res.json();
+      if (!data.ok) throw new Error("設定讀取失敗");
 
-    function resetButtons() {
-      btnIncome.classList.remove("active");
-      btnPayout.classList.remove("active");
+      API_URL = data.D6?.trim();
+      LIFF_ID = data.D11?.trim();
+      VERSION = data.D10?.trim();
+      document.getElementById("version").textContent = VERSION;
+      console.log("✅ 設定完成:", { API_URL, LIFF_ID, VERSION });
+    } catch (err) {
+      console.error("❌ 載入設定失敗:", err);
+      alert("初始化設定失敗：" + err.message);
     }
+  }
 
-    btnIncome.addEventListener("click", () => {
-      resetButtons();
-      btnIncome.classList.add("active");
-      income.style.display = "inline-block";
-      income.value = "";
-      payout.style.display = "none";
-      payout.value = "";
+  async function loadStoreList() {
+    try {
+      if (!API_URL) throw new Error("API_URL 尚未設定");
+      const res = await fetch(`${API_URL}?type=query&command=店家`);
+      const data = await res.json();
+      if (data.ok && Array.isArray(data.storeList)) storeList = data.storeList;
+    } catch (err) { console.error("載入店家清單失敗:", err); }
+  }
+
+  input.addEventListener("input", () => {
+    const val = input.value.toLowerCase();
+    sugg.innerHTML = "";
+    if (!val) { sugg.style.display = "none"; return; }
+    const matches = storeList.filter(s => s.store && s.store.toLowerCase().includes(val));
+    if (matches.length === 0) { sugg.style.display = "none"; return; }
+
+    matches.forEach(m => {
+      const div = document.createElement("div");
+      div.textContent = m.store + (m.type ? `（${m.type}）` : "");
+      div.onclick = () => {
+        input.value = m.store;
+        sugg.style.display = "none";
+        if (m.type) {
+          typeSelect.value = m.type;
+          if (!typeSelect.value) {
+            const opt = document.createElement("option");
+            opt.value = m.type; opt.textContent = m.type;
+            typeSelect.appendChild(opt); typeSelect.value = m.type;
+          }
+        } else typeSelect.value = "";
+      };
+      sugg.appendChild(div);
     });
+    sugg.style.display = "block";
+  });
 
-    btnPayout.addEventListener("click", () => {
-      resetButtons();
-      btnPayout.classList.add("active");
-      payout.style.display = "inline-block";
-      payout.value = "";
-      income.style.display = "none";
-      income.value = "";
-    });
+  document.getElementById("expenseForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const submitBtn = document.getElementById("submitBtn");
+    const loadingMsg = document.getElementById("loadingMsg");
+    submitBtn.disabled = true; submitBtn.innerText = "處理中...";
+    loadingMsg.style.display = "block";
 
-    payout.addEventListener("input", () => {
-      const val = payout.value;
-      if (val.includes(".")) currency.value = "20";
-      else if (val !== "") currency.value = "1";
-      else currency.value = "";
-    });
+    try {
+      const profile = await liff.getProfile();
+      const date = document.getElementById("date").value;
+      const store = document.getElementById("store").value;
+      const incomeVal = document.getElementById("income").value || 0;
+      const payoutVal = document.getElementById("payout").value || 0;
+      const payment = document.getElementById("payment").value;
+      const currencyVal = document.getElementById("currency").value;
+      const type = document.getElementById("type").value;
+      const note = document.getElementById("note").value;
+      const memo = document.getElementById("memo").value;
 
-    async function loadConfig() {
-      try {
-        const currentUrl = window.location.href.split("?")[0];
-        const res = await fetch(`${currentUrl}?command=設定`);
-        const data = await res.json();
+      const now = new Date();
+      const taiwanTime = new Date(now.getTime() + 8*60*60*1000).toISOString().replace("T"," ").split(".")[0];
 
-        if (!data.ok) throw new Error(data.error || "設定讀取失敗");
+      const payload = {
+        version: VERSION,
+        userId: profile.userId,
+        displayName: profile.displayName,
+        inputDate: date,
+        store, income: incomeVal, payout: payoutVal, currency: currencyVal,
+        amount: Math.round((incomeVal - payoutVal) * currencyVal),
+        payment, type, note, memo,
+        createdAt: taiwanTime
+      };
 
-        API_URL = data.D6?.trim() || "";
-        LIFF_ID = data.D11?.trim() || "";
-        VERSION = data.D10?.trim() || "V";
-        document.getElementById("version").textContent = VERSION;
-        console.log("✅ 設定完成:", { API_URL, LIFF_ID, VERSION });
-      } catch (err) {
-        console.error("❌ 載入設定發生錯誤:", err);
-        alert("初始化設定失敗：" + err.message);
-      }
-    }
-
-    let storeList = [];
-    async function loadStoreList() {
-      try {
-        if (!API_URL) throw new Error("API_URL 尚未設定");
-        const res = await fetch(`${API_URL}?type=query&command=店家`);
-        const data = await res.json();
-        if (data.ok && Array.isArray(data.storeList)) {
-          storeList = data.storeList;
-          console.log("載入店家清單成功:", storeList);
-        } else console.error("GAS 回傳格式不正確:", data);
-      } catch (err) {
-        console.error("載入店家清單失敗:", err);
-      }
-    }
-
-    input.addEventListener("input", () => {
-      const val = input.value.toLowerCase();
-      sugg.innerHTML = "";
-      if (!val) { sugg.style.display = "none"; return; }
-
-      const matches = storeList.filter(s => s.store && s.store.toLowerCase().includes(val));
-      if (matches.length === 0) { sugg.style.display = "none"; return; }
-
-      matches.forEach(m => {
-        const div = document.createElement("div");
-        div.textContent = m.store + (m.type ? `（${m.type}）` : "");
-        div.onclick = () => {
-          input.value = m.store;
-          sugg.style.display = "none";
-          if (m.type) {
-            typeSelect.value = m.type;
-            if (!typeSelect.value) {
-              const opt = document.createElement("option");
-              opt.value = m.type;
-              opt.textContent = m.type;
-              typeSelect.appendChild(opt);
-              typeSelect.value = m.type;
-            }
-          } else typeSelect.value = "";
-        };
-        sugg.appendChild(div);
-      });
-      sugg.style.display = "block";
-    });
-
-    document.getElementById("expenseForm").addEventListener("submit", async e => {
-      e.preventDefault();
-      const submitBtn = document.getElementById("submitBtn");
-      const loadingMsg = document.getElementById("loadingMsg");
-      submitBtn.disabled = true;
-      submitBtn.innerText = "處理中...";
-      loadingMsg.style.display = "block";
-
-      try {
-        if (!LIFF_ID || LIFF_ID === "default") throw new Error("LIFF_ID 尚未設定！");
-        await liff.init({ liffId: LIFF_ID });
-        if (!liff.isLoggedIn()) liff.login();
-        const profile = await liff.getProfile();
-
-        const date = document.getElementById("date").value;
-        const store = input.value;
-        const incomeVal = parseFloat(income.value) || 0;
-        const payoutVal = parseFloat(payout.value) || 0;
-        const payload = {
-          version: VERSION,
-          userId: profile.userId,
-          displayName: profile.displayName,
-          inputDate: date,
-          store,
-          income: incomeVal,
-          payout: payoutVal,
-          currency: parseFloat(currency.value) || 1,
-          amount: Math.round((incomeVal - payoutVal) * (parseFloat(currency.value) || 1)),
-          payment: document.getElementById("payment").value,
-          type: typeSelect.value,
-          note: document.getElementById("note").value,
-          memo: document.getElementById("memo").value,
-          createdAt: new Date(new Date().getTime() + 8*60*60*1000).toISOString().replace("T"," ").split(".")[0]
-        };
-
-        const res = await fetch(API_URL, {
-          method: "POST",
-          body: JSON.stringify(payload)
-        });
-
-        const result = await res.json();
-        alert("✅ 已送出！");
-        document.getElementById("expenseForm").reset();
-        document.getElementById("date").valueAsDate = new Date();
-      } catch (err) {
-        alert("❌ 送出失敗：" + err.message);
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerText = "送出";
-        loadingMsg.style.display = "none";
-      }
-    });
-
-    async function main() {
-      await loadConfig();
-      if (!LIFF_ID || LIFF_ID === "default") {
-        alert("❌ LIFF ID 尚未設定，請確認 GAS 設定表 D11 欄位！");
-        return;
-      }
+      const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
+      const result = await res.json();
+      alert("✅ 已送出！");
+      document.getElementById("expenseForm").reset();
       document.getElementById("date").valueAsDate = new Date();
-      await loadStoreList();
+
+    } catch(err) {
+      alert("❌ 送出失敗：" + err.message);
+    } finally {
+      submitBtn.disabled = false; submitBtn.innerText = "送出";
+      loadingMsg.style.display = "none";
     }
+  });
 
-    window.addEventListener("load", main);
-  </script>
+  async function main() {
+    await loadConfig();
+    if (!LIFF_ID) { alert("❌ LIFF ID 尚未設定"); return; }
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isLoggedIn()) liff.login();
+    document.getElementById("date").valueAsDate = new Date();
+    await loadStoreList();
+  }
 
+  window.addEventListener("load", main);
+</script>
 </body>
 </html>
