@@ -98,6 +98,40 @@
   </form>
 
 <script>
+  // 預設 D6 設定值（防止讀不到）
+const FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbw2Jupv_aGQubSn__Gmcf9nsHaRB3ke-7X7ZlEuoH8iM8xX50MKommoLYwStpxa00YPBA/exec";
+
+async function loadConfig() {
+  try {
+    const url = API_URL || FALLBACK_GAS_SETTINGS_URL;
+    console.log("🔗 呼叫設定 API:", url);
+
+    const res = await fetch(url, {
+      method: "POST",
+      body: JSON.stringify({ type: "config" })
+    });
+
+    const text = await res.text();
+    console.log("設定 API 回傳原始內容:", text);
+
+    // 如果不是 JSON（可能是 HTML）
+    if (text.startsWith("<!DOCTYPE")) {
+      throw new Error("GAS 回傳 HTML（可能權限錯誤或跨網域），請確認部署設定。");
+    }
+
+    const cfg = JSON.parse(text);
+    if (cfg.ok) {
+      LIFF_ID = cfg.D11;
+      VERSION = cfg.D10;
+      document.getElementById("version").textContent = VERSION;
+      console.log("✅ 設定完成:", cfg);
+    } else {
+      console.error("讀取設定失敗:", cfg.error);
+    }
+  } catch (err) {
+    console.error("初始化設定失敗：", err.message);
+  }
+}
 /*
   如果你不是從同一支 GAS 的 web app URL 開啟頁面（例如你是本地打開或從其他 host），
   請把你的「設定用 GAS 的執行路徑 (D6)」貼到下面這個常數，格式像：
@@ -311,3 +345,4 @@ window.addEventListener("load", initApp);
 </script>
 </body>
 </html>
+
