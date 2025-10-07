@@ -261,6 +261,36 @@ document.getElementById("expenseForm").addEventListener("submit", async (e)=>{
       createdAt: new Date(Date.now() + 8*3600*1000).toISOString().replace("T"," ").split(".")[0]
     };
 
+    // ✅ 載入分類加總
+    async function loadCategorySummary() {
+      try {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = now.getMonth() + 1;
+        const start = `${y}-${String(m).padStart(2, '0')}-01`;
+        const endDate = new Date(y, m, 0).getDate(); // 本月最後一天
+        const end = `${y}-${String(m).padStart(2, '0')}-${String(endDate).padStart(2, '0')}`;
+
+        const url = `${API_URL}?type=query&command=分類&start=${start}&end=${end}`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        const summaryDiv = document.getElementById("categorySummary");
+        if (data.ok && data.categories) {
+          let html = "分類明細：";
+          for (const [cat, amt] of Object.entries(data.categories)) {
+            html += `${cat}:${amt}　`;
+          }
+          summaryDiv.innerHTML = html;
+        } else {
+          summaryDiv.innerHTML = "⚠️ 找不到分類資料";
+        }
+      } catch (err) {
+        console.error(err);
+        document.getElementById("categorySummary").innerHTML = "⚠️ 資料讀取失敗";
+      }
+    }
+    // ✅ 發送訊息到 LINE 聊天
     const detailText = `${typeSelect.value}：${payload.amount}`;
     const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
     const result = await res.json();
@@ -302,6 +332,7 @@ window.addEventListener("load", initApp);
 </script>
 </body>
 </html>
+
 
 
 
