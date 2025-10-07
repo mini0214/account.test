@@ -99,103 +99,79 @@
   </form>
 
 <script>
-// ----------------------------------------------------
-// ✅ 全域設定
-// ----------------------------------------------------
 const FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbw2Jupv_aGQubSn__Gmcf9nsHaRB3ke-7X7ZlEuoH8iM8xX50MKommoLYwStpxa00YPBA/exec";
 
 let API_URL = "";
 let LIFF_ID = "";
 let VERSION = "V";
-
-const input = document.getElementById("store");
-const sugg = document.getElementById("suggestions");
-const typeSelect = document.getElementById("type");
-const btnIncome = document.getElementById("btnIncome");
-const btnPayout = document.getElementById("btnPayout");
-const incomeEl = document.getElementById("income");
-const payoutEl = document.getElementById("payout");
 let storeList = [];
 
 // ----------------------------------------------------
-// ✅ 設定載入
+// ✅ 初始化設定
 // ----------------------------------------------------
-async function tryFetchText(url){
+async function tryFetchText(url) {
   const r = await fetch(url, { cache: 'no-store' });
   const text = await r.text();
-  try { const j = JSON.parse(text); return { ok: true, json: j }; }
-  catch(e){ return { ok: false, text }; }
+  try { return { ok: true, json: JSON.parse(text) }; }
+  catch { return { ok: false, text }; }
 }
 
-async function loadSettings(){
+async function loadSettings() {
   const currentUrl = window.location.href.split('?')[0];
   let res = await tryFetchText(`${currentUrl}?command=設定`);
-
-  // 若主頁面非同一支 GAS，回傳 HTML，改用 FALLBACK
   if (!res.ok || (res.text && res.text.startsWith("<"))) {
-    const r2 = await tryFetchText(`${FALLBACK_GAS_SETTINGS_URL}?command=設定`);
-    if (!r2.ok) throw new Error("設定 GAS 讀取失敗：" + (r2.text || ""));
-    return r2.json;
+    res = await tryFetchText(`${FALLBACK_GAS_SETTINGS_URL}?command=設定`);
+    if (!res.ok) throw new Error("設定 GAS 讀取失敗");
   }
-
   return res.json;
 }
 
-// ----------------------------------------------------
-// ✅ 初始化
-// ----------------------------------------------------
-async function initApp(){
+async function initApp() {
   try {
     const settings = await loadSettings();
     if (!settings || !settings.ok) throw new Error("設定格式錯誤");
-
-    API_URL = (settings.D6 || "").trim();
-    VERSION = (settings.D10 || "V").trim();
-    LIFF_ID = (settings.D11 || "").trim();
-
+    API_URL = settings.D6.trim();
+    LIFF_ID = settings.D11.trim();
+    VERSION = settings.D10.trim();
     document.getElementById("version").textContent = VERSION;
-    console.log("✅ 設定成功:", { API_URL, LIFF_ID, VERSION });
-
-    if (!LIFF_ID) throw new Error("❌ LIFF ID 尚未設定，請確認設定表 D11");
 
     await liff.init({ liffId: LIFF_ID });
     if (!liff.isLoggedIn()) liff.login();
 
     document.getElementById("date").valueAsDate = new Date();
-
-    if (API_URL) await loadStoreList();
-
+    await loadStoreList();
   } catch (err) {
-    console.error("初始化設定失敗：", err);
-    alert("初始化設定失敗：" + err.message);
+    alert("初始化失敗：" + err.message);
   }
 }
 
 // ----------------------------------------------------
 // ✅ 店家清單
 // ----------------------------------------------------
-async function loadStoreList(){
+async function loadStoreList() {
   try {
-    if (!API_URL) return;
     const res = await fetch(`${API_URL}?type=query&command=店家`);
     const data = await res.json();
-    if (data.ok && Array.isArray(data.storeList)) storeList = data.storeList;
-    console.log("店家清單", storeList);
+    if (data.ok) storeList = data.storeList;
   } catch (err) {
-    console.error("載入店家清單失敗", err);
+    console.error("店家清單載入失敗", err);
   }
 }
 
 // ----------------------------------------------------
-// ✅ 其他功能
+// ✅ 收支切換
 // ----------------------------------------------------
+const btnIncome = document.getElementById("btnIncome");
+const btnPayout = document.getElementById("btnPayout");
+const incomeEl = document.getElementById("income");
+const payoutEl = document.getElementById("payout");
+function resetButtons() { btnIncome.classList.remove("active"); btnPayout.classList.remove("active"); }
+btnIncome.addEventListener("click", () => { resetButtons(); btnIncome.classList.add("active"); incomeEl.style.display="inline-block"; payoutEl.style.display="none"; });
+btnPayout.addEventListener("click", () => { resetButtons(); btnPayout.classList.add("active"); payoutEl.style.display="inline-block"; incomeEl.style.display="none"; });
 
-// 收支切換
-function resetButtons(){ btnIncome.classList.remove("active"); btnPayout.classList.remove("active"); }
-btnIncome.addEventListener("click", ()=>{ resetButtons(); btnIncome.classList.add("active"); incomeEl.style.display="inline-block"; payoutEl.style.display="none"; });
-btnPayout.addEventListener("click", ()=>{ resetButtons(); btnPayout.classList.add("active"); payoutEl.style.display="inline-block"; incomeEl.style.display="none"; });
-
-// 幣別自動切換
+// ----------------------------------------------------
+// ✅ 幣別自動切換
+// ----------------------------------------------------
 payoutEl.addEventListener("input", ()=>{
   const v = payoutEl.value;
   const currency = document.getElementById("currency");
@@ -204,43 +180,14 @@ payoutEl.addEventListener("input", ()=>{
   else currency.value = "";
 });
 
-// 店家提示
-input.addEventListener("input", ()=>{
-  const val = input.value.toLowerCase();
-  sugg.innerHTML = "";
-  if (!val) { sugg.style.display = "none"; return; }
-  const matches = storeList.filter(s => s.store && s.store.toLowerCase().includes(val));
-  if (matches.length === 0) { sugg.style.display = "none"; return; }
-
-  matches.forEach(m => {
-    const div = document.createElement("div");
-    div.textContent = m.store + (m.type ? `（${m.type}）` : "");
-    div.onclick = () => {
-      input.value = m.store;
-      sugg.style.display = "none";
-      if (m.type) {
-        if (![...typeSelect.options].some(o => o.value === m.type)) {
-          const opt = document.createElement("option");
-          opt.value = m.type;
-          opt.textContent = m.type;
-          typeSelect.appendChild(opt);
-        }
-        typeSelect.value = m.type;
-      }
-    };
-    sugg.appendChild(div);
-  });
-  sugg.style.display = "block";
-});
-
 // ----------------------------------------------------
 // ✅ 表單送出
 // ----------------------------------------------------
-document.getElementById("expenseForm").addEventListener("submit", async (e)=>{
+document.getElementById("expenseForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const submitBtn = document.getElementById("submitBtn");
-  const loadingMsg = document.getElementById("loadingMsg");
-  submitBtn.disabled = true; loadingMsg.style.display = "block";
+  const btn = document.getElementById("submitBtn");
+  const loading = document.getElementById("loadingMsg");
+  btn.disabled = true; loading.style.display = "block";
 
   try {
     const profile = await liff.getProfile();
@@ -255,73 +202,57 @@ document.getElementById("expenseForm").addEventListener("submit", async (e)=>{
       currency: currency.value,
       amount: Math.round((Number(incomeEl.value||0) - Number(payoutEl.value||0)) * (Number(currency.value)||1)),
       payment: payment.value,
-      type: typeSelect.value,
+      type: type.value,
       note: note.value,
       memo: memo.value,
       createdAt: new Date(Date.now() + 8*3600*1000).toISOString().replace("T"," ").split(".")[0]
     };
 
-    // ✅ 載入分類加總
-    async function loadCategorySummary() {
-      try {
-        const now = new Date();
-        const y = now.getFullYear();
-        const m = now.getMonth() + 1;
-        const start = `${y}-${String(m).padStart(2, '0')}-01`;
-        const endDate = new Date(y, m, 0).getDate(); // 本月最後一天
-        const end = `${y}-${String(m).padStart(2, '0')}-${String(endDate).padStart(2, '0')}`;
-
-        const url = `${API_URL}?type=query&command=分類&start=${start}&end=${end}`;
-        const res = await fetch(url);
-        const data = await res.json();
-
-        const summaryDiv = document.getElementById("categorySummary");
-        if (data.ok && data.categories) {
-          let html = "分類明細：";
-          for (const [cat, amt] of Object.entries(data.categories)) {
-            html += `${cat}:${amt}　`;
-          }
-          summaryDiv.innerHTML = html;
-        } else {
-          summaryDiv.innerHTML = "⚠️ 找不到分類資料";
-        }
-      } catch (err) {
-        console.error(err);
-        document.getElementById("categorySummary").innerHTML = "⚠️ 資料讀取失敗";
-      }
-    }
-    // ✅ 發送訊息到 LINE 聊天
-    const detailText = `${typeSelect.value}：${payload.amount}`;
+    // ✅ 先送出主資料
     const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
     const result = await res.json();
-    
-    if (result.ok) {
-      // ✅ 發送訊息到 LINE 聊天
-      await liff.sendMessages([
-        {
-          type: "text",
-          text:
-            `📒 非記不可.記帳成功！\n` +
-            `日期：${payload.inputDate}\n` +
-            `店家：${payload.store || "（未填）"}\n` +
-            `收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
-            `幣別：${payload.currency}\n` +
-            `金額：${payload.amount}\n` +
-            `付款：${payload.payment}\n` +
-            `分類：${payload.type}\n` +   
-            `附註：${payload.note || "（無）"}\n` +
-            `分類明細：\n${detailText}`
-        }
-      ]);
-      alert("✅ 已送出！");
-      e.target.reset();
-      document.getElementById("date").valueAsDate = new Date();
-    } else throw new Error(result.error || "GAS 未回傳 ok:true");
+    if (!result.ok) throw new Error(result.error || "GAS 未回傳 ok:true");
+
+    // ✅ 再查詢本月分類加總
+    const now = new Date();
+    const y = now.getFullYear(), m = now.getMonth() + 1;
+    const start = `${y}-${String(m).padStart(2,"0")}-01`;
+    const end = `${y}-${String(m).padStart(2,"0")}-${String(new Date(y,m,0).getDate()).padStart(2,"0")}`;
+    const url = `${API_URL}?type=query&command=分類&start=${start}&end=${end}`;
+    const sumRes = await fetch(url);
+    const sumData = await sumRes.json();
+
+    let categorySummary = "";
+    if (sumData.ok && sumData.categories) {
+      const parts = Object.entries(sumData.categories).map(([k,v]) => `${k}:${v}`).join("　");
+      categorySummary = `\n分類加總：${parts}`;
+    }
+
+    // ✅ 發送訊息至 LINE
+    await liff.sendMessages([
+      {
+        type: "text",
+        text:
+          `📒 非記不可.記帳成功！\n` +
+          `日期：${payload.inputDate}\n` +
+          `店家：${payload.store || "（未填）"}\n` +
+          `收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
+          `幣別：${payload.currency}\n` +
+          `金額：${payload.amount}\n` +
+          `付款：${payload.payment}\n` +
+          `分類：${payload.type}\n` +
+          `附註：${payload.note || "（無）"}${categorySummary}`
+      }
+    ]);
+
+    alert("✅ 已送出！");
+    e.target.reset();
+    document.getElementById("date").valueAsDate = new Date();
 
   } catch (err) {
     alert("❌ 送出失敗：" + err.message);
   } finally {
-    submitBtn.disabled = false; loadingMsg.style.display = "none";
+    btn.disabled = false; loading.style.display = "none";
   }
 });
 
@@ -332,6 +263,7 @@ window.addEventListener("load", initApp);
 </script>
 </body>
 </html>
+
 
 
 
