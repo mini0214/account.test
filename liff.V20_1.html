@@ -276,7 +276,7 @@ document.getElementById("expenseForm").addEventListener("submit", async (e)=>{
             `金額：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
             `幣別：${payload.currency}\n` +
             `付款：${payload.payment}\n` +
-            `分類：${payload.type}\n` +
+            `分類：${payload.type}\n` +   // ✅ 注意這個加號非常重要
             `附註：${payload.note || "（無）"}`
         }
       ]);
@@ -299,6 +299,7 @@ window.addEventListener("load", initApp);
 </script>
 </body>
 </html>
+
 
 
 
