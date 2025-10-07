@@ -270,7 +270,7 @@ document.getElementById("expenseForm").addEventListener("submit", async (e)=>{
         {
           type: "text",
           text:
-            `📒 記帳成功！\n` +
+            `📒 非記不可.記帳成功！\n` +
             `日期：${payload.inputDate}\n` +
             `店家：${payload.store || "（未填）"}\n` +
             `金額：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
@@ -278,8 +278,7 @@ document.getElementById("expenseForm").addEventListener("submit", async (e)=>{
             `付款：${payload.payment}\n` +
             `分類：${payload.type}\n` +   // ✅ 注意這個加號非常重要
             `附註：${payload.note || "（無）"}` +
-            `分類明細：\n` +
-            `- ${payload.type}: ${payload.amount}`
+            `分類明細：\n${detailText}`
         }
       ]);
       alert("✅ 已送出！");
@@ -301,6 +300,7 @@ window.addEventListener("load", initApp);
 </script>
 </body>
 </html>
+
 
 
 
