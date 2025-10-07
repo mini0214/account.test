@@ -261,6 +261,7 @@ document.getElementById("expenseForm").addEventListener("submit", async (e)=>{
       createdAt: new Date(Date.now() + 8*3600*1000).toISOString().replace("T"," ").split(".")[0]
     };
 
+    const detailText = `${typeSelect.value}：${payload.amount}`;
     const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
     const result = await res.json();
     
@@ -301,6 +302,7 @@ window.addEventListener("load", initApp);
 </script>
 </body>
 </html>
+
 
 
 
