@@ -264,23 +264,22 @@ document.getElementById("expenseForm").addEventListener("submit", async (e)=>{
     const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
     const result = await res.json();
     
-    // ✅ 若成功送出，也發訊息到 LINE
-    await liff.sendMessages([
-      {
-        type: "text",
-        text:
-          `📒 記帳成功！\n` +
-          `日期：${payload.inputDate}\n` +
-          `分類：${payload.type}\n` +
-          `店家：${payload.store || "（未填）"}\n` +
-          `金額：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
-          `付款：${payload.payment}\n` +
-          `幣別：${payload.currency}\n` +
-          `備註：${payload.memo || "（無）"}`
-      }
-    ]);
-
     if (result.ok) {
+      // ✅ 發送訊息到 LINE 聊天
+      await liff.sendMessages([
+        {
+          type: "text",
+          text:
+            `📒 記帳成功！\n` +
+            `日期：${payload.inputDate}\n` +
+            `店家：${payload.store || "（未填）"}\n` +
+            `金額：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
+            `幣別：${payload.currency}\n` +
+            `付款：${payload.payment}\n` +
+            `分類：${payload.type}\n` 
+            `附註：${payload.note || "（無）"}`
+        }
+      ]);
       alert("✅ 已送出！");
       e.target.reset();
       document.getElementById("date").valueAsDate = new Date();
@@ -300,4 +299,5 @@ window.addEventListener("load", initApp);
 </script>
 </body>
 </html>
+
 
