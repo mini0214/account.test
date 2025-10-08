@@ -427,12 +427,12 @@
         const result = await res.json();
         
         if (result.ok) {
-          const currentUser = payload.display_name || "未填寫"; // 這邊抓送出者名稱
+          const currentUser = payload.displayName  || "未填寫"; // 這邊抓送出者名稱
           const users = result.users || {};   // ✅ 防止 users 為 undefined
           const lastUsers = result.lastUsers || {}; // ✅ 防止 lastUsers 為 undefined
           
-          const userAmount = result.users[currentUser] || 0;
-          const lastAmount = result.lastUsers ? result.lastUsers[currentUser] || 0 : 0; // 若你有回傳上期資料
+          const userAmount = users[currentUser] || 0;
+          const lastAmount = lastUsers[currentUser] || 0;
       
           const extraText = `\n本期總額 $${userAmount} 元\n上期總額 $${lastAmount} 元`;
           // ✅ 發送訊息到 LINE 聊天
@@ -491,6 +491,7 @@
   </script>
 </body>
 </html>
+
 
 
 
