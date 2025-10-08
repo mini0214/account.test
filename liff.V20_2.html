@@ -194,17 +194,9 @@
         if (!settings || !settings.ok) throw new Error("設定格式錯誤");
     
         API_URL = (settings.D6 || "").trim();
-        VERSION = (settings.D10 || "V").trim();
-        LIFF_ID = (settings.D11 || "").trim();
-    
-        document.getElementById("version").textContent = VERSION;
-        console.log("✅ 設定成功:", { API_URL, LIFF_ID, VERSION });
-    
-        if (!LIFF_ID) throw new Error("❌ LIFF ID 尚未設定，請確認設定表 D11");
-    
-        await liff.init({ liffId: LIFF_ID });
-        if (!liff.isLoggedIn()) liff.login();
-    
+
+        console.log("✅ 設定成功:", { API_URL });
+       
         document.getElementById("date").valueAsDate = new Date();
     
         if (API_URL) await loadStoreList();
@@ -396,3 +388,4 @@
   </script>
 </body>
 </html>
+
