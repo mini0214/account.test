@@ -1,5 +1,7 @@
+<script>
 async function testQuery記帳者() {
-  const apiUrl = "https://script.google.com/macros/s/AKfycbw_sGZN1eGjvPTg1SGA_8C56bC26lpL96cm8m-PiiYOnkNTB7VZMflj1oxfdPkl8M4E-g/exec"; // 你的 GAS Web App URL
+  const apiUrl = "https://script.google.com/macros/s/AKfycbw_sGZN1eGjvPTg1SGA_8C56bC26lpL96cm8m-PiiYOnkNTB7VZMflj1oxfdPkl8M4E-g/exec";
+
   const payload = {
     type: "query",
     command: "記帳者",
@@ -7,15 +9,30 @@ async function testQuery記帳者() {
     endDate: "2025-10-31"
   };
 
-  const res = await fetch(apiUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
+  try {
+    // 呼叫 doPost()
+    const res = await fetch(apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
 
-  const data = await res.json();
-  console.log("回傳資料：", data);
+    // 解析回傳
+    const data = await res.json();
+    console.log("✅ 回傳資料：", data);
 
-  // 顯示在網頁上
-  document.getElementById("resultBox").innerText = JSON.stringify(data.fixedUsers, null, 2);
+    // 顯示 fixedUsers 結果（每位記帳者上期 vs 本期）
+    if (data.fixedUsers) {
+      document.getElementById("resultBox").innerText =
+        JSON.stringify(data.fixedUsers, null, 2);
+    } else {
+      document.getElementById("resultBox").innerText =
+        "⚠️ 沒有收到 fixedUsers，請檢查 GAS 程式。";
+    }
+
+  } catch (err) {
+    console.error("❌ 發生錯誤：", err);
+    document.getElementById("resultBox").innerText = "發生錯誤：" + err.message;
+  }
 }
+</script>
