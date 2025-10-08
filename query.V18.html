@@ -37,7 +37,7 @@
 <div style="text-align:center">
   <button id="queryMonthBtn">📊 明細</button>
   <button id="queryMonthPayBtn">💳 付款</button>
-  <button id="queryMonthTypeBtn">⭕ 分類</button>
+  <button id="queryMonthTypeBtn">📂 分類</button>
   <button id="queryMonthStoreBtn">📋 店家</button>
   <button id="queryMonthUserBtn">👤 記帳者</button>
 </div>
@@ -261,7 +261,7 @@ function renderResult(command, json) {
 
   // 分類、付款、店家、記帳者
   const sections = [
-    { cmd: "分類", key: 6, title: "⭕ 選擇分類統計;標題按下即可排序" },
+    { cmd: "分類", key: 6, title: "📂 選擇分類統計;標題按下即可排序" },
     { cmd: "付款", key: 7, title: "💳 選擇付款統計;標題按下即可排序" },
     { cmd: "店家", key: 8, title: "📋 選擇店家統計;標題按下即可排序" },
     { cmd: "記帳者", key: 3, title: "👤 選擇記帳者統計;標題按下即可排序" }
@@ -508,6 +508,7 @@ loadConfig();
 
 </body>
 </html>
+
 
 
 
