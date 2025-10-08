@@ -1,42 +1,60 @@
-<script>
-async function testQuery記帳者() {
-  const apiUrl = "https://script.google.com/macros/s/AKfycbw_sGZN1eGjvPTg1SGA_8C56bC26lpL96cm8m-PiiYOnkNTB7VZMflj1oxfdPkl8M4E-g/exec";
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>記帳者測試</title>
+</head>
+<body style="font-family: Arial; padding: 20px;">
 
-  const payload = {
-    type: "query",
-    command: "記帳者",
-    startDate: "2025-10-01",
-    endDate: "2025-10-31"
-  };
+  <h2>📊 測試記帳者查詢</h2>
+  <button onclick="testQuery記帳者()">🔍 測試查詢記帳者</button>
 
-  try {
-    // 呼叫 doPost()
-    const res = await fetch(apiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
+  <pre id="resultBox" style="
+    margin-top:15px;
+    padding:10px;
+    background:#f8f8f8;
+    border-radius:8px;
+    border:1px solid #ccc;
+    white-space: pre-wrap;
+    font-size:14px;
+  "></pre>
 
-    // 解析回傳
-    const data = await res.json();
-    console.log("✅ 回傳資料：", data);
+  <script>
+  async function testQuery記帳者() {
+    const apiUrl = "https://script.google.com/macros/s/AKfycbw_sGZN1eGjvPTg1SGA_8C56bC26lpL96cm8m-PiiYOnkNTB7VZMflj1oxfdPkl8M4E-g/exec";
 
-    // 顯示 fixedUsers 結果（每位記帳者上期 vs 本期）
-    if (data.fixedUsers) {
+    const payload = {
+      type: "query",
+      command: "記帳者",
+      startDate: "2025-10-01",
+      endDate: "2025-10-31"
+    };
+
+    try {
+      const res = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      console.log("✅ 回傳資料：", data);
+
+      if (data.fixedUsers) {
+        document.getElementById("resultBox").innerText =
+          JSON.stringify(data.fixedUsers, null, 2);
+      } else {
+        document.getElementById("resultBox").innerText =
+          "⚠️ 沒有收到 fixedUsers，請檢查 GAS 程式。";
+      }
+
+    } catch (err) {
+      console.error("❌ 發生錯誤：", err);
       document.getElementById("resultBox").innerText =
-        JSON.stringify(data.fixedUsers, null, 2);
-    } else {
-      document.getElementById("resultBox").innerText =
-        "⚠️ 沒有收到 fixedUsers，請檢查 GAS 程式。";
+        "發生錯誤：" + err.message;
     }
-
-  } catch (err) {
-    console.error("❌ 發生錯誤：", err);
-    document.getElementById("resultBox").innerText = "發生錯誤：" + err.message;
   }
-}
+  </script>
 
-<button onclick="testQuery記帳者()">🔍 測試查詢記帳者</button>
-<pre id="resultBox" style="margin-top:10px; padding:10px; background:#f4f4f4; border-radius:8px;"></pre>
-</script>
-
+</body>
+</html>
