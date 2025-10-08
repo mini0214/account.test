@@ -139,7 +139,7 @@
   <form id="expenseForm">
     
     <div class="form-row">
-      <label for="store">日期：</label>
+      <label for="date">日期：</label>
       <input type="date" id="date" placeholder="選填">
     </div>    
   
@@ -436,13 +436,13 @@
                     text:
                       `📒 非記不可.記帳成功！\n` +
                       `日期：${payload.inputDate}\n` +
-                      `店家：${payload.store || "（未填）"}\n` +
+                      `店家：${payload.store || " "}\n` +
                       `收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
                       `幣別：${payload.currency}\n` +
                       `金額：${payload.amount}\n` +
                       `付款：${payload.payment}\n` +
                       `分類：${payload.type}\n` +
-                      `附註：${payload.note || "（無）"}`
+                      `附註：${payload.note || " "}`
                   }
                 ]);
             } catch (err) {
@@ -454,13 +454,13 @@
           alert(
                 `📒 非記不可.記帳成功！\n` +
                 `日期：${payload.inputDate}\n` +
-                `店家：${payload.store || "（未填）"}\n` +
+                `店家：${payload.store || " "}\n` +
                 `收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
                 `幣別：${payload.currency}\n` +
                 `金額：${payload.amount}\n` +
                 `付款：${payload.payment}\n` +
                 `分類：${payload.type}\n` +
-                `附註：${payload.note || "（無）"}`
+                `附註：${payload.note || " "}`
             );
         } 
         
@@ -481,5 +481,3 @@
   </script>
 </body>
 </html>
-
-
