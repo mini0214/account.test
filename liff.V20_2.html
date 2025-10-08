@@ -451,17 +451,69 @@
         }
 
           // ✅ 同步顯示在畫面 alert
-          alert(
-                `📒 非記不可.記帳成功！\n` +
-                `日期：${payload.inputDate}\n` +
-                `店家：${payload.store || "（未填）"}\n` +
-                `收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
-                `幣別：${payload.currency}\n` +
-                `金額：${payload.amount}\n` +
-                `付款：${payload.payment}\n` +
-                `分類：${payload.type}\n` +
-                `附註：${payload.note || "（無）"}`
-            );
+          await liff.sendMessages([
+            {
+              type: "flex",
+              altText: "📒 非記不可.記帳成功！",
+              contents: {
+                type: "bubble",
+                body: {
+                  type: "box",
+                  layout: "vertical",
+                  contents: [
+                    {
+                      type: "text",
+                      text: "📒 非記不可.記帳成功！",
+                      weight: "bold",
+                      size: "lg",
+                      align: "start" // ✅ 靠左顯示
+                    },
+                    {
+                      type: "text",
+                      text: `日期：${payload.inputDate}`,
+                      align: "start"
+                    },
+                    {
+                      type: "text",
+                      text: `店家：${payload.store || " "}`,
+                      align: "start"
+                    },
+                    {
+                      type: "text",
+                      text: `收支：${payload.payout ? `-${payload.payout}` : payload.income}`,
+                      align: "start"
+                    },
+                    {
+                      type: "text",
+                      text: `幣別：${payload.currency}`,
+                      align: "start"
+                    },
+                    {
+                      type: "text",
+                      text: `金額：${payload.amount}`,
+                      align: "start"
+                    },
+                    {
+                      type: "text",
+                      text: `付款：${payload.payment}`,
+                      align: "start"
+                    },
+                    {
+                      type: "text",
+                      text: `分類：${payload.type}`,
+                      align: "start"
+                    },
+                    {
+                      type: "text",
+                      text: `附註：${payload.note || " "}`,
+                      align: "start"
+                    }
+                  ]
+                }
+              }
+            }
+          ]);
+
         } 
         
         document.getElementById("expenseForm").reset();
@@ -481,5 +533,6 @@
   </script>
 </body>
 </html>
+
 
 
