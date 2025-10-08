@@ -428,6 +428,9 @@
         
         if (result.ok) {
           const currentUser = payload.userName || "未填寫"; // 這邊抓送出者名稱
+          const users = result.users || {};   // ✅ 防止 users 為 undefined
+          const lastUsers = result.lastUsers || {}; // ✅ 防止 lastUsers 為 undefined
+          
           const userAmount = result.users[currentUser] || 0;
           const lastAmount = result.lastUsers ? result.lastUsers[currentUser] || 0 : 0; // 若你有回傳上期資料
       
@@ -488,4 +491,5 @@
   </script>
 </body>
 </html>
+
 
