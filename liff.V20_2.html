@@ -425,24 +425,6 @@
         });
 
         const result = await res.json();
-            
-        if (result.ok) {
-          // ✅ 發送訊息到 LINE 聊天
-          await liff.sendMessages([
-            {
-              type: "text",
-              text:
-                `📒 非記不可.記帳成功！\n` +
-                `日期：${payload.inputDate}\n` +
-                `店家：${payload.store || "（未填）"}\n` +
-                `收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
-                `幣別：${payload.currency}\n` +
-                `金額：${payload.amount}\n` +
-                `付款：${payload.payment}\n` +
-                `分類：${payload.type}\n` +   
-                `附註：${payload.note || "（無）"}\n` 
-            }
-          ]);
         alert("✅ 已送出！");
 
         document.getElementById("expenseForm").reset();
@@ -462,7 +444,6 @@
   </script>
 </body>
 </html>
-
 
 
 
