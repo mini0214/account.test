@@ -427,12 +427,25 @@
         const result = await res.json();
         
         if (result.ok) {
-          const currentUser = payload.displayName  || "未填寫"; // 這邊抓送出者名稱
-          const users = result.users || {};   // ✅ 防止 users 為 undefined
-          const lastUsers = result.lastUsers || {}; // ✅ 防止 lastUsers 為 undefined
-          
-          const userAmount = users[currentUser] || 0;
-          const lastAmount = lastUsers[currentUser] || 0;
+          const currentUser = payload.displayName || "未填寫";
+          const users = result.users || {};
+          const lastUsers = result.lastUsers || {};
+      
+          // 🔹 安全抓取本期金額
+          let userAmount = 0;
+          if (users[currentUser] !== undefined) {
+            userAmount = users[currentUser];
+          } else if (Object.keys(users).length > 0) {
+            userAmount = users[Object.keys(users)[0]]; // fallback: 第一筆資料
+          }
+      
+          // 🔹 安全抓取上期金額
+          let lastAmount = 0;
+          if (lastUsers[currentUser] !== undefined) {
+            lastAmount = lastUsers[currentUser];
+          } else if (Object.keys(lastUsers).length > 0) {
+            lastAmount = lastUsers[Object.keys(lastUsers)[0]]; // fallback: 第一筆資料
+          }
       
           const extraText = `\n本期總額: $${userAmount} 元\n上期總額: $${lastAmount} 元`;
           // ✅ 發送訊息到 LINE 聊天
@@ -491,6 +504,7 @@
   </script>
 </body>
 </html>
+
 
 
 
