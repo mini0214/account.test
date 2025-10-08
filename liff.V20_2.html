@@ -417,109 +417,75 @@
         createdAt: taiwanTime
       };
 
-      const apiUrl = API_URL; 
+      const apiUrl = API_URL;
       try {
         const res = await fetch(apiUrl, {
           method: "POST",
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         });
-
+      
         const result = await res.json();
-        
+      
         if (result.ok) {
-          // ✅ 發送訊息到 LINE 聊天
-            if (liff.isInClient()) {
-              try {
-                await liff.sendMessages([
-                  {
-                    type: "text",
-                    text:
-                      `📒 非記不可.記帳成功！\n` +
-                      `日期：${payload.inputDate}\n` +
-                      `店家：${payload.store || "（未填）"}\n` +
-                      `收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
-                      `幣別：${payload.currency}\n` +
-                      `金額：${payload.amount}\n` +
-                      `付款：${payload.payment}\n` +
-                      `分類：${payload.type}\n` +
-                      `附註：${payload.note || "（無）"}`
-                  }
-                ]);
+          if (liff.isInClient()) {
+            // ✅ LINE App 內：發送 Flex message（靠左）
+            try {
+              await liff.sendMessages([
+                {
+                  type: "flex",
+                  altText: "📒 非記不可.記帳成功！",
+                  contents: {
+                    type: "bubble",
+                    body: {
+                      type: "box",
+                      layout: "vertical",
+                      contents: [
+                        {
+                          type: "text",
+                          text: "📒 非記不可.記帳成功！",
+                          weight: "bold",
+                          size: "lg",
+                          align: "start",
+                        },
+                        { type: "text", text: `日期：${payload.inputDate}`, align: "start" },
+                        { type: "text", text: `店家：${payload.store || " "}`, align: "start" },
+                        { type: "text", text: `收支：${payload.payout ? `-${payload.payout}` : payload.income}`, align: "start" },
+                        { type: "text", text: `幣別：${payload.currency}`, align: "start" },
+                        { type: "text", text: `金額：${payload.amount}`, align: "start" },
+                        { type: "text", text: `付款：${payload.payment}`, align: "start" },
+                        { type: "text", text: `分類：${payload.type}`, align: "start" },
+                        { type: "text", text: `附註：${payload.note || " "}`, align: "start" },
+                      ],
+                    },
+                  },
+                },
+              ]);
             } catch (err) {
-            console.warn("sendMessages 錯誤：", err.message);
-          }
-        }
-
-          // ✅ 同步顯示在畫面 alert
-          await liff.sendMessages([
-            {
-              type: "flex",
-              altText: "📒 非記不可.記帳成功！",
-              contents: {
-                type: "bubble",
-                body: {
-                  type: "box",
-                  layout: "vertical",
-                  contents: [
-                    {
-                      type: "text",
-                      text: "📒 非記不可.記帳成功！",
-                      weight: "bold",
-                      size: "lg",
-                      align: "start" // ✅ 靠左顯示
-                    },
-                    {
-                      type: "text",
-                      text: `日期：${payload.inputDate}`,
-                      align: "start"
-                    },
-                    {
-                      type: "text",
-                      text: `店家：${payload.store || " "}`,
-                      align: "start"
-                    },
-                    {
-                      type: "text",
-                      text: `收支：${payload.payout ? `-${payload.payout}` : payload.income}`,
-                      align: "start"
-                    },
-                    {
-                      type: "text",
-                      text: `幣別：${payload.currency}`,
-                      align: "start"
-                    },
-                    {
-                      type: "text",
-                      text: `金額：${payload.amount}`,
-                      align: "start"
-                    },
-                    {
-                      type: "text",
-                      text: `付款：${payload.payment}`,
-                      align: "start"
-                    },
-                    {
-                      type: "text",
-                      text: `分類：${payload.type}`,
-                      align: "start"
-                    },
-                    {
-                      type: "text",
-                      text: `附註：${payload.note || " "}`,
-                      align: "start"
-                    }
-                  ]
-                }
-              }
+              console.warn("sendMessages 錯誤：", err.message);
             }
-          ]);
-
-        } 
-        
+          } else {
+            // ✅ 外部瀏覽器：只顯示 alert，不發送訊息
+            alert(
+              `📒 非記不可.記帳成功！\n` +
+              `日期：${payload.inputDate}\n` +
+              `店家：${payload.store || " "}\n` +
+              `收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
+              `幣別：${payload.currency}\n` +
+              `金額：${payload.amount}\n` +
+              `付款：${payload.payment}\n` +
+              `分類：${payload.type}\n` +
+              `附註：${payload.note || " "}`
+            );
+          }
+        } else {
+          alert("⚠️ 送出失敗：" + (result.error || "未知錯誤"));
+        }
+      
+        // ✅ 重設表單
         document.getElementById("expenseForm").reset();
         document.getElementById("date").valueAsDate = new Date();
-
-      } catch(err) {
+      
+      } catch (err) {
         alert("❌ 送出失敗：" + err.message);
       } finally {
         // ✅ 無論成功失敗都恢復按鈕 & 隱藏訊息
@@ -533,6 +499,3 @@
   </script>
 </body>
 </html>
-
-
-
