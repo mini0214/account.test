@@ -435,14 +435,14 @@
                     type: "text",
                     text:
                       `📒 非記不可.記帳成功！\n` +
-                      `日期：${payload.inputDate}\n` +
-                      `店家：${payload.store || " "}\n` +
-                      `收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
-                      `幣別：${payload.currency}\n` +
-                      `金額：${payload.amount}\n` +
-                      `付款：${payload.payment}\n` +
-                      `分類：${payload.type}\n` +
-                      `附註：${payload.note || " "}`
+                      `📅 日期：${payload.inputDate}\n` +
+                      `📋 店家：${payload.store || " "}\n` +
+                      `💰 收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
+                      `💰 幣別：${payload.currency}\n` +
+                      `💰 金額：${payload.amount}\n` +
+                      `💳 付款：${payload.payment}\n` +
+                      `⭕ 分類：${payload.type}\n` +
+                      `📝 附註：${payload.note || " "}`
                   }
                 ]);
             } catch (err) {
@@ -453,14 +453,14 @@
           // ✅ 同步顯示在畫面 alert
           alert(
                 `📒 非記不可.記帳成功！\n` +
-                `日期：${payload.inputDate}\n` +
-                `店家：${payload.store || " "}\n` +
-                `收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
-                `幣別：${payload.currency}\n` +
-                `金額：${payload.amount}\n` +
-                `付款：${payload.payment}\n` +
-                `分類：${payload.type}\n` +
-                `附註：${payload.note || " "}`
+                `📅 日期：${payload.inputDate}\n` +
+                `📋 店家：${payload.store || " "}\n` +
+                `💰 收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
+                `💰 幣別：${payload.currency}\n` +
+                `💰 金額：${payload.amount}\n` +
+                `💳 付款：${payload.payment}\n` +
+                `⭕ 分類：${payload.type}\n` +
+                `📝 附註：${payload.note || " "}`
             );
         } 
         
@@ -481,3 +481,4 @@
   </script>
 </body>
 </html>
+
