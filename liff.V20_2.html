@@ -33,7 +33,7 @@
   <form id="expenseForm">
     
     <div class="form-row">
-      <label for="store">日期：</label>
+      <label for="date">日期：</label>
       <input type="date" id="date" placeholder="選填">
     </div>    
   
@@ -152,12 +152,68 @@
   <script>  
     //const LIFF_ID = "2008096451-3DobjEw8";   // 換成你的 LIFF ID test
     //const VERSION = "V17_#43";                   // 固定版次
-    const API_URL = "https://script.google.com/macros/s/AKfycbxm7SlTMzbyB7cOAegTv-37Dj6S_jJ7Og5iDQOlgaYOHK7sJTOehXhst6xMHhjxM4go7g/exec";  // 換成你的 GAS PATH
+    //const API_URL = "https://script.google.com/macros/s/AKfycbxm7SlTMzbyB7cOAegTv-37Dj6S_jJ7Og5iDQOlgaYOHK7sJTOehXhst6xMHhjxM4go7g/exec";  // 換成你的 GAS PATH
+    const FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbz3S5uuYaWyjg0-OFPmNu_ZYntukI4lXpa5gJ5JJ74sGSzSKvwCT1Gq9iYDUNkg8LkiEg/exec";
 
+    let API_URL = "";
     let LIFF_ID = "default";   // 先放預設或空字串,從 D11 帶入 append
     let VERSION = "V";         // ✅ 預設顯示版本號，不要等API,從 D10 帶入 版次
 
     document.getElementById("version").textContent = VERSION;
+
+    // ----------------------------------------------------
+    // ✅ 設定載入
+    // ----------------------------------------------------
+    async function tryFetchText(url){
+      const r = await fetch(url, { cache: 'no-store' });
+      const text = await r.text();
+      try { const j = JSON.parse(text); return { ok: true, json: j }; }
+      catch(e){ return { ok: false, text }; }
+    }
+    
+    async function loadSettings(){
+      const currentUrl = window.location.href.split('?')[0];
+      let res = await tryFetchText(`${currentUrl}?command=設定`);
+    
+      // 若主頁面非同一支 GAS，回傳 HTML，改用 FALLBACK
+      if (!res.ok || (res.text && res.text.startsWith("<"))) {
+        const r2 = await tryFetchText(`${FALLBACK_GAS_SETTINGS_URL}?command=設定`);
+        if (!r2.ok) throw new Error("設定 GAS 讀取失敗：" + (r2.text || ""));
+        return r2.json;
+      }
+    
+      return res.json;
+    }
+
+    // ----------------------------------------------------
+    // ✅ 初始化
+    // ----------------------------------------------------
+    async function initApp(){
+      try {
+        const settings = await loadSettings();
+        if (!settings || !settings.ok) throw new Error("設定格式錯誤");
+    
+        API_URL = (settings.D6 || "").trim();
+        VERSION = (settings.D10 || "V").trim();
+        LIFF_ID = (settings.D11 || "").trim();
+    
+        document.getElementById("version").textContent = VERSION;
+        console.log("✅ 設定成功:", { API_URL, LIFF_ID, VERSION });
+    
+        if (!LIFF_ID) throw new Error("❌ LIFF ID 尚未設定，請確認設定表 D11");
+    
+        await liff.init({ liffId: LIFF_ID });
+        if (!liff.isLoggedIn()) liff.login();
+    
+        document.getElementById("date").valueAsDate = new Date();
+    
+        if (API_URL) await loadStoreList();
+    
+      } catch (err) {
+        console.error("初始化設定失敗：", err);
+        alert("初始化設定失敗：" + err.message);
+      }
+    }
     
     async function loadConfig() {
       try {
@@ -333,33 +389,10 @@
         loadingMsg.style.display = "none";
       }
     });
-  // 頁面載入時執行
-  loadConfig();
+    // ----------------------------------------------------
+    // ✅ 啟動
+    // ----------------------------------------------------
+    window.addEventListener("load", initApp);
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
