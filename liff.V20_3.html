@@ -434,7 +434,7 @@
           const userAmount = users[currentUser] || 0;
           const lastAmount = lastUsers[currentUser] || 0;
       
-          const extraText = `\n本期總額 $${userAmount} 元\n上期總額 $${lastAmount} 元`;
+          const extraText = `\n本期總額: $$ {userAmount} 元\n上期總額: $$ {lastAmount} 元`;
           // ✅ 發送訊息到 LINE 聊天
             if (liff.isInClient()) {
               try {
@@ -491,6 +491,7 @@
   </script>
 </body>
 </html>
+
 
 
 
