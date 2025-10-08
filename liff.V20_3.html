@@ -258,7 +258,7 @@
   <script>  
     //const LIFF_ID = "2008096451-3DobjEw8";   // 換成你的 LIFF ID test
     //const VERSION = "V17_#43";                   // 固定版次
-    const API_URL = "https://script.google.com/macros/s/AKfycbxjabl0PowLW9gPCPOCGs4SKNolTMMpF4y-LAJ7hSBOU59P1Oh4Bo_lM_L2-vTY_4uN2Q/exec";  // 換成你的 GAS PATH
+    const API_URL = "https://script.google.com/macros/s/AKfycbze7k8_XNSZHkC8o0aOzJbpGnlrf328rlOTB4CHAKcj_GmjxJLjqs-Ag8WkiAwqaR8Wkw/exec";  // 換成你的 GAS PATH
 
     let LIFF_ID = "default";   // 先放預設或空字串,從 D11 帶入 append
     let VERSION = "V";         // ✅ 預設顯示版本號，不要等API,從 D10 帶入 版次
@@ -427,15 +427,15 @@
         const result = await res.json();
         
         if (result.ok) {
-          const currentUser = payload.displayName || "未填寫";
+          const currentUser = (payload.displayName || "未填寫").trim();
           const users = result.users || {};
           const lastUsers = result.lastUsers || {};
-      
+          
           // 🔹 安全抓取本期金額
           const userAmount = users[currentUser] ?? 0;
           // 🔹 安全抓取上期金額
           const lastAmount = lastUsers[currentUser] ?? 0;
-      
+          
           const extraText = `\n本期總額: $${userAmount} 元\n上期總額: $${lastAmount} 元`;
           
           // ✅ 發送訊息到 LINE 聊天
@@ -494,6 +494,7 @@
   </script>
 </body>
 </html>
+
 
 
 
