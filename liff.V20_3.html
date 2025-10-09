@@ -258,7 +258,7 @@
   <script>  
     //const LIFF_ID = "2008096451-3DobjEw8";   // 換成你的 LIFF ID test
     //const VERSION = "V17_#43";                   // 固定版次
-    const API_URL = "https://script.google.com/macros/s/AKfycbyUMsMeqA4Su0G6BKE8AYTTnz5wHzNbwtNCYPFQoWwAu7IJ9fV5YOUT_gL49RiCa44GIA/exec";  // 換成你的 GAS PATH
+    const API_URL = "https://script.google.com/macros/s/AKfycbw5KeCqOIv_iKEZiZ4rN2l4FyRlAwLYzdN2P4mVZmi9JHfz8xzsG3BsYV1VFThVR0nfAw/exec";  // 換成你的 GAS PATH
 
     let LIFF_ID = "default";   // 先放預設或空字串,從 D11 帶入 append
     let VERSION = "V";         // ✅ 預設顯示版本號，不要等API,從 D10 帶入 版次
@@ -456,6 +456,7 @@
                     type: "text",
                     text:
                       `非記不可.記帳成功！\n` +
+                      `👤 記帳者：${payload.displayName}\n` +
                       `📅 日期：${payload.inputDate}\n` +
                       `📋 店家：${payload.store || " "}\n` +
                       `💰 收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
@@ -464,7 +465,6 @@
                       `💳 付款：${payload.payment}\n` +
                       `📂 分類：${payload.type}\n` +
                       `📝 附註：${payload.note || " "}\n\n` +
-                      `🧪 登錄者：${payload.displayName}\n` +
                       `📆 本期總額：💰${thisTotal.toLocaleString()}\n` +
                       `📅 上期總額：💰${lastTotal.toLocaleString()}`
                   }
@@ -477,6 +477,7 @@
           // ✅ 同步顯示在畫面 alert
           alert(
                 `非記不可.記帳成功！\n` +
+                `👤 記帳者：${payload.displayName}\n` +
                 `📅 日期：${payload.inputDate}\n` +
                 `📋 店家：${payload.store || " "}\n` +
                 `💰 收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
@@ -485,7 +486,6 @@
                 `💳 付款：${payload.payment}\n` +
                 `📂 分類：${payload.type}\n` +
                 `📝 附註：${payload.note || " "}\n\n` +
-                `🧪 登錄者：${payload.displayName}\n` +
                 `📆 本期總額：💰${thisTotal.toLocaleString()}\n` +
                 `📅 上期總額：💰${lastTotal.toLocaleString()}`
             );
@@ -508,17 +508,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
