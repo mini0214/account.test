@@ -1,44 +1,72 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>測試 GAS 總額 API</title>
+  <meta charset="utf-8">
+  <title>總額測試</title>
 </head>
 <body>
-  <h2>測試 GAS 總額 API</h2>
-  <button id="testBtn">查詢總額</button>
-
-  <pre id="resultBox"></pre>
+  <h2>記帳測試</h2>
+  <form id="expenseForm">
+    <label>日期：<input type="date" id="date" /></label><br><br>
+    <label>店家：<input type="text" id="store" value="7eleven" /></label><br><br>
+    <label>收入：<input type="number" id="income" value="0" /></label><br><br>
+    <label>支出：<input type="number" id="payout" value="100" /></label><br><br>
+    <label>幣別：<input type="text" id="currency" value="TWD" /></label><br><br>
+    <label>付款：<input type="text" id="payment" value="現金" /></label><br><br>
+    <label>分類：<input type="text" id="type" value="食" /></label><br><br>
+    <label>附註：<input type="text" id="note" value="測試" /></label><br><br>
+    <button type="submit" id="submitBtn">送出</button>
+  </form>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbyUMsMeqA4Su0G6BKE8AYTTnz5wHzNbwtNCYPFQoWwAu7IJ9fV5YOUT_gL49RiCa44GIA/exec"; // 🔹 換成你的 GAS Web App URL
+    const API_URL = "https://script.google.com/macros/s/AKfycbyUMsMeqA4Su0G6BKE8AYTTnz5wHzNbwtNCYPFQoWwAu7IJ9fV5YOUT_gL49RiCa44GIA/exec";
 
-    document.getElementById("testBtn").addEventListener("click", async () => {
-      const resultBox = document.getElementById("resultBox");
-      resultBox.textContent = "查詢中...";
+    document.getElementById("expenseForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const payload = {
+        inputDate: document.getElementById("date").value,
+        store: document.getElementById("store").value,
+        income: Number(document.getElementById("income").value),
+        payout: Number(document.getElementById("payout").value),
+        currency: document.getElementById("currency").value,
+        amount: Number(document.getElementById("income").value) - Number(document.getElementById("payout").value),
+        payment: document.getElementById("payment").value,
+        type: document.getElementById("type").value,
+        note: document.getElementById("note").value,
+        displayName: "Betty Yi"  // 測試登入者名稱
+      };
 
       try {
-        const res = await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            type: "query",
-            command: "總額",
-            user: "Betty Yi"   // 🔹 直接測試用
-          })
-        });
+        // ✅ 先模擬送出記帳資料
+        alert("已送出資料給 GAS (模擬)：" + JSON.stringify(payload));
 
-        if (!res.ok) throw new Error("HTTP 錯誤: " + res.status);
+        // 🟦 讀取本期 / 上期總額 (直接 GET)
+        const queryUrl = `${API_URL}?type=query&command=總額&user=${encodeURIComponent(payload.displayName)}`;
+        const res = await fetch(queryUrl);
+        const totalData = await res.json();
 
-        const data = await res.json();
-        resultBox.textContent = JSON.stringify(data, null, 2);
-        alert("查詢結果:\n" + JSON.stringify(data, null, 2));
-      } catch (err) {
-        resultBox.textContent = "❌ 查詢失敗: " + err.message;
+        const thisTotal = Number(totalData?.thisMonth?.total) || 0;
+        const lastTotal = Number(totalData?.lastMonth?.total) || 0;
+
+        // ✅ 顯示結果
+        alert(
+          `📋 登錄者：${payload.displayName}\n` +
+          `📅 日期：${payload.inputDate}\n` +
+          `📂 分類：${payload.type}\n` +
+          `💰 收支：${payload.amount}\n` +
+          `📝 附註：${payload.note}\n\n` +
+          `📆 本期總額：💰${thisTotal.toLocaleString()}\n` +
+          `📅 上期總額：💰${lastTotal.toLocaleString()}`
+        );
+
+      } catch(err) {
         alert("❌ 查詢失敗: " + err.message);
       }
     });
+
+    // 頁面載入時自動填入今天日期
+    document.getElementById("date").valueAsDate = new Date();
   </script>
 </body>
 </html>
-
