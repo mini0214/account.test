@@ -258,7 +258,7 @@
   <script>  
     //const LIFF_ID = "2008096451-3DobjEw8";   // 換成你的 LIFF ID test
     //const VERSION = "V17_#43";                   // 固定版次
-    const API_URL = "https://script.google.com/macros/s/AKfycbwMtiEf7Y8y96O7C4lTqMa9ung8Pdoxro5uy72LtPSPUjxs78VASaAJ8gkXSE4K8khH5Q/exec";  // 換成你的 GAS PATH
+    const API_URL = "https://script.google.com/macros/s/AKfycby3NGYsY2v-DDRrECfwsIyokcFcpvOU7n1xqVczBLUvyMxoDDYR04y_4dU6FTxg7A5riw/exec";  // 換成你的 GAS PATH
 
     let LIFF_ID = "default";   // 先放預設或空字串,從 D11 帶入 append
     let VERSION = "V";         // ✅ 預設顯示版本號，不要等API,從 D10 帶入 版次
@@ -432,29 +432,12 @@
         
           try {
             const user = encodeURIComponent(payload.displayName); // 或固定 "Betty Yi"
-            const totalRes = await fetch(`${API_URL}?type=query&command=總額&user=${user}`); // WEB Path 值
+            const totalRes = await fetch(`${API_URL}?type=query&command=總額&user=${user}`);
             const totalData = await totalRes.json();
             console.log("totalData:", totalData);
           
             thisTotal = totalData?.thisMonth?.total || "0";
             lastTotal = totalData?.lastMonth?.total || "0";
-
-            // 百分比變化 = ((本期 - 上期) / |上期|) × 100% 
-            // changeText
-            const thisNum = Number(thisTotal);
-            const lastNum = Number(lastTotal);
-            let changeText = "";
-            if (!isNaN(thisNum) && !isNaN(lastNum) && lastNum !== 0) {
-              const percentChange = ((thisNum - lastNum) / Math.abs(lastNum)) * 100;
-              const sign = percentChange > 0 ? "🔺" : percentChange < 0 ? "🔻" : "⏺";
-              changeText = ` ${sign} ${Math.abs(percentChange).toFixed(1)}%`;
-            } else {
-              changeText = " (無法計算)";
-            }
-          
-          } catch (err) {
-            console.warn("查詢總額失敗：", err.message);
-          }
           
           } catch (err) {
             console.warn("查詢總額失敗：", err.message);
