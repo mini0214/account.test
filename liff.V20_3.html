@@ -434,10 +434,11 @@
           try {
             const totalRes = await fetch(API_URL, {
               method: "POST",
+              headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 type: "query",
                 command: "總額",
-                user: loginUser || payload.display_name || "未知使用者" // ✅ 改成實際登入者名稱
+                user: "Betty Yi"  // 直接用固定測試名稱
               })
             });
             const totalData = await totalRes.json();
@@ -505,6 +506,7 @@
   </script>
 </body>
 </html>
+
 
 
 
