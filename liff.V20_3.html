@@ -441,8 +441,8 @@
               })
             });
             const totalData = await totalRes.json();
-            thisTotal = totalData?.thisMonth?.total || 0;
-            lastTotal = totalData?.lastMonth?.total || 0;
+            thisTotal = Number(totalData?.thisMonth?.total) || 0;
+            lastTotal = Number(totalData?.lastMonth?.total) || 0;
           } catch (err) {
             console.warn("查詢總額失敗：", err.message);
           }
@@ -505,6 +505,7 @@
   </script>
 </body>
 </html>
+
 
 
 
