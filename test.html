@@ -21,23 +21,32 @@
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwTh42EN0Oe8YQ8T_LvGG0iIPoNcRfyjJTE22F-AmA_DFlsScwfbzPUlk16aKNr46f6BQ/exec";
 
-    // 🔹 JSONP callback 必須先定義
-    window.handleTotalDataWrapper = function(totalData, payload) {
-      const thisTotal = Number(totalData?.thisMonth?.total) || 0;
-      const lastTotal = Number(totalData?.lastMonth?.total) || 0;
+    async function fetchTotal(payload) {
+      try {
+        const queryUrl = `${API_URL}?type=query&command=總額&user=${encodeURIComponent(payload.displayName)}`;
+        const res = await fetch(queryUrl);
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        const totalData = await res.json();
 
-      alert(
-        `📋 登錄者：${payload.displayName}\n` +
-        `📅 日期：${payload.inputDate}\n` +
-        `📂 分類：${payload.type}\n` +
-        `💰 收支：${payload.amount}\n` +
-        `📝 附註：${payload.note}\n\n` +
-        `📆 本期總額：💰${thisTotal.toLocaleString()}\n` +
-        `📅 上期總額：💰${lastTotal.toLocaleString()}`
-      );
-    };
+        const thisTotal = Number(totalData?.thisMonth?.total) || 0;
+        const lastTotal = Number(totalData?.lastMonth?.total) || 0;
 
-    document.getElementById("expenseForm").addEventListener("submit", (e) => {
+        alert(
+          `📋 登錄者：${payload.displayName}\n` +
+          `📅 日期：${payload.inputDate}\n` +
+          `📂 分類：${payload.type}\n` +
+          `💰 收支：${payload.amount}\n` +
+          `📝 附註：${payload.note}\n\n` +
+          `📆 本期總額：💰${thisTotal.toLocaleString()}\n` +
+          `📅 上期總額：💰${lastTotal.toLocaleString()}`
+        );
+
+      } catch (err) {
+        alert("❌ 查詢失敗: " + err.message);
+      }
+    }
+
+    document.getElementById("expenseForm").addEventListener("submit", async (e) => {
       e.preventDefault();
 
       const payload = {
@@ -50,23 +59,13 @@
         payment: document.getElementById("payment").value,
         type: document.getElementById("type").value,
         note: document.getElementById("note").value,
-        displayName: "Betty Yi"
+        displayName: "Betty Yi" // 測試登入者名稱
       };
 
       alert("已送出資料給 GAS (模擬)：" + JSON.stringify(payload));
 
-      // 🔹 使用 JSONP 方式避免 CORS
-      const script = document.createElement("script");
-      // 注意：callback 必須是全域函式名稱
-      script.src = `${API_URL}?type=query&command=總額&user=${encodeURIComponent(payload.displayName)}&callback=handleTotalDataWrapperWrapper`;
-      document.body.appendChild(script);
-
-      // 包裝函式，帶上 payload 參數
-      window.handleTotalDataWrapperWrapper = function(totalData) {
-        window.handleTotalDataWrapper(totalData, payload);
-        document.body.removeChild(script); // 使用後移除 <script>
-        delete window.handleTotalDataWrapperWrapper; // 清理
-      };
+      // ✅ 直接 fetch 本期 / 上期總額
+      await fetchTotal(payload);
     });
 
     // 頁面載入時自動填入今天日期
