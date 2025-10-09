@@ -437,7 +437,7 @@
               body: JSON.stringify({
                 type: "query",
                 command: "總額",
-                user: payload.user   // 🔹 記得這裡用記帳者名稱
+                user: loginUser || payload.display_name || "未知使用者" // ✅ 改成實際登入者名稱
               })
             });
             const totalData = await totalRes.json();
@@ -463,8 +463,8 @@
                       `💳 付款：${payload.payment}\n` +
                       `📂 分類：${payload.type}\n` +
                       `📝 附註：${payload.note || " "}\n\n` +
-                      `📆 本期總額：${thisTotal.toLocaleString()}\n` +
-                      `📅 上期總額：${lastTotal.toLocaleString()}`
+                      `📆 本期總額：💰${thisTotal.toLocaleString()}\n` +
+                      `📅 上期總額：💰${lastTotal.toLocaleString()}`
                   }
                 ]);
             } catch (err) {
@@ -483,8 +483,8 @@
                 `💳 付款：${payload.payment}\n` +
                 `📂 分類：${payload.type}\n` +
                 `📝 附註：${payload.note || " "}\n\n` +
-                `📆 本期總額：${thisTotal.toLocaleString()}\n` +
-                `📅 上期總額：${lastTotal.toLocaleString()}`
+                `📆 本期總額：💰${thisTotal.toLocaleString()}\n` +
+                `📅 上期總額：💰${lastTotal.toLocaleString()}`
             );
         } 
         
@@ -505,6 +505,7 @@
   </script>
 </body>
 </html>
+
 
 
 
