@@ -441,6 +441,7 @@
               })
             });
             const totalData = await totalRes.json();
+            console.log("totalData:", totalData);  // <- 先看這裡
             thisTotal = Number(totalData?.thisMonth?.total) || 0;
             lastTotal = Number(totalData?.lastMonth?.total) || 0;
           } catch (err) {
@@ -506,6 +507,7 @@
   </script>
 </body>
 </html>
+
 
 
 
