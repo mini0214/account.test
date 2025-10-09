@@ -427,6 +427,26 @@
         const result = await res.json();
         
         if (result.ok) {
+          // 🟦 先查詢總額
+          let thisTotal = 0;
+          let lastTotal = 0;
+        
+          try {
+            const totalRes = await fetch(API_URL, {
+              method: "POST",
+              body: JSON.stringify({
+                type: "query",
+                command: "總額",
+                user: payload.user   // 🔹 記得這裡用記帳者名稱
+              })
+            });
+            const totalData = await totalRes.json();
+            thisTotal = totalData?.thisMonth?.total || 0;
+            lastTotal = totalData?.lastMonth?.total || 0;
+          } catch (err) {
+            console.warn("查詢總額失敗：", err.message);
+          }
+          
           // ✅ 發送訊息到 LINE 聊天
             if (liff.isInClient()) {
               try {
@@ -442,7 +462,9 @@
                       `💰 金額：${payload.amount}\n` +
                       `💳 付款：${payload.payment}\n` +
                       `📂 分類：${payload.type}\n` +
-                      `📝 附註：${payload.note || " "}`
+                      `📝 附註：${payload.note || " "}\n\n` +
+                      `📆 本期總額：${thisTotal.toLocaleString()}\n` +
+                      `📅 上期總額：${lastTotal.toLocaleString()}`;
                   }
                 ]);
             } catch (err) {
@@ -460,7 +482,9 @@
                 `💰 金額：${payload.amount}\n` +
                 `💳 付款：${payload.payment}\n` +
                 `📂 分類：${payload.type}\n` +
-                `📝 附註：${payload.note || " "}`
+                `📝 附註：${payload.note || " "}\n\n` +
+                `📆 本期總額：${thisTotal.toLocaleString()}\n` +
+                `📅 上期總額：${lastTotal.toLocaleString()}`;
             );
         } 
         
@@ -481,4 +505,5 @@
   </script>
 </body>
 </html>
+
 
