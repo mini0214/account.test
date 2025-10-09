@@ -19,9 +19,24 @@
   </form>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbyUMsMeqA4Su0G6BKE8AYTTnz5wHzNbwtNCYPFQoWwAu7IJ9fV5YOUT_gL49RiCa44GIA/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbxKMTfmmJZPx_KJAzASQLIwdoBg-YonQvqjSiUeSjsh0HkR5wJR-mL6VBXe_AedlnUaEg/exec";
 
-    document.getElementById("expenseForm").addEventListener("submit", async (e) => {
+    function handleTotalData(totalData, payload) {
+      const thisTotal = Number(totalData?.thisMonth?.total) || 0;
+      const lastTotal = Number(totalData?.lastMonth?.total) || 0;
+
+      alert(
+        `📋 登錄者：${payload.displayName}\n` +
+        `📅 日期：${payload.inputDate}\n` +
+        `📂 分類：${payload.type}\n` +
+        `💰 收支：${payload.amount}\n` +
+        `📝 附註：${payload.note}\n\n` +
+        `📆 本期總額：💰${thisTotal.toLocaleString()}\n` +
+        `📅 上期總額：💰${lastTotal.toLocaleString()}`
+      );
+    }
+
+    document.getElementById("expenseForm").addEventListener("submit", (e) => {
       e.preventDefault();
 
       const payload = {
@@ -34,35 +49,21 @@
         payment: document.getElementById("payment").value,
         type: document.getElementById("type").value,
         note: document.getElementById("note").value,
-        displayName: "Betty Yi"  // 測試登入者名稱
+        displayName: "Betty Yi" // 測試登入者名稱
       };
 
-      try {
-        // ✅ 先模擬送出記帳資料
-        alert("已送出資料給 GAS (模擬)：" + JSON.stringify(payload));
+      alert("已送出資料給 GAS (模擬)：" + JSON.stringify(payload));
 
-        // 🟦 讀取本期 / 上期總額 (直接 GET)
-        const queryUrl = `${API_URL}?type=query&command=總額&user=${encodeURIComponent(payload.displayName)}`;
-        const res = await fetch(queryUrl);
-        const totalData = await res.json();
+      // 使用 JSONP 方式避免 CORS
+      const script = document.createElement("script");
+      script.src = `${API_URL}?type=query&command=總額&user=${encodeURIComponent(payload.displayName)}&callback=handleTotalDataWrapper`;
+      document.body.appendChild(script);
 
-        const thisTotal = Number(totalData?.thisMonth?.total) || 0;
-        const lastTotal = Number(totalData?.lastMonth?.total) || 0;
-
-        // ✅ 顯示結果
-        alert(
-          `📋 登錄者：${payload.displayName}\n` +
-          `📅 日期：${payload.inputDate}\n` +
-          `📂 分類：${payload.type}\n` +
-          `💰 收支：${payload.amount}\n` +
-          `📝 附註：${payload.note}\n\n` +
-          `📆 本期總額：💰${thisTotal.toLocaleString()}\n` +
-          `📅 上期總額：💰${lastTotal.toLocaleString()}`
-        );
-
-      } catch(err) {
-        alert("❌ 查詢失敗: " + err.message);
-      }
+      // JSONP callback wrapper
+      window.handleTotalDataWrapper = function(totalData) {
+        handleTotalData(totalData, payload);
+        document.body.removeChild(script); // 使用後移除 <script>
+      };
     });
 
     // 頁面載入時自動填入今天日期
