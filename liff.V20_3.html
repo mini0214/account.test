@@ -431,19 +431,14 @@
           let lastTotal = 0;
         
           try {
-            const totalRes = await fetch(API_URL, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                type: "query",
-                command: "總額",
-                user: "Betty Yi"  // 直接用固定測試名稱
-              })
-            });
+            const user = encodeURIComponent(payload.displayName); // 或固定 "Betty Yi"
+            const totalRes = await fetch(`${API_URL}?type=query&command=總額&user=${user}`);
             const totalData = await totalRes.json();
-            alert("totalData: " + JSON.stringify(totalData));  // <- 先看這裡
-            thisTotal = Number(totalData?.thisMonth?.total) || "0";
-            lastTotal = Number(totalData?.lastMonth?.total) || 0;
+            console.log("totalData:", totalData);
+          
+            thisTotal = totalData?.thisMonth?.total || "0";
+            lastTotal = totalData?.lastMonth?.total || "0";
+          
           } catch (err) {
             console.warn("查詢總額失敗：", err.message);
           }
@@ -465,8 +460,8 @@
                       `💳 付款：${payload.payment}\n` +
                       `📂 分類：${payload.type}\n` +
                       `📝 附註：${payload.note || " "}\n\n` +
-                      `📆 本期總額：💰${thisTotal.toLocaleString()}\n` +
-                      `📅 上期總額：💰${lastTotal.toLocaleString()}`
+                      `📆 本期總額：💰${thisTotal}\n` +
+                      `📅 上期總額：💰${lastTotal}`
                   }
                 ]);
             } catch (err) {
@@ -486,8 +481,8 @@
                 `💳 付款：${payload.payment}\n` +
                 `📂 分類：${payload.type}\n` +
                 `📝 附註：${payload.note || " "}\n\n` +
-                `📆 本期總額：💰${thisTotal.toLocaleString()}\n` +
-                `📅 上期總額：💰${lastTotal.toLocaleString()}`
+                `📆 本期總額：💰${thisTotal}\n` +
+                `📅 上期總額：💰${lastTotal}`
             );
         } 
         
@@ -508,5 +503,3 @@
   </script>
 </body>
 </html>
-
-
