@@ -429,15 +429,17 @@
           // 🟦 先查詢總額
           let thisTotal = 0;
           let lastTotal = 0;
+          let changeText = "";
         
           try {
             const user = encodeURIComponent(payload.displayName); // 或固定 "Betty Yi"
-            const totalRes = await fetch(`${API_URL}?type=query&command=總額&user=${user}`);
+            const totalRes = await fetch(`${API_URL}?type=query&command=總額&user=${user}`); //GAS Web Path
             const totalData = await totalRes.json();
             console.log("totalData:", totalData);
           
             thisTotal = totalData?.thisMonth?.total || "0";
             lastTotal = totalData?.lastMonth?.total || "0";
+            const changeText = totalData?.changeText || "";
           
           } catch (err) {
             console.warn("查詢總額失敗：", err.message);
