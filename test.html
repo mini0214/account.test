@@ -21,7 +21,8 @@
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwTh42EN0Oe8YQ8T_LvGG0iIPoNcRfyjJTE22F-AmA_DFlsScwfbzPUlk16aKNr46f6BQ/exec";
 
-    function handleTotalData(totalData, payload) {
+    // 🔹 JSONP callback 必須先定義
+    window.handleTotalDataWrapper = function(totalData, payload) {
       const thisTotal = Number(totalData?.thisMonth?.total) || 0;
       const lastTotal = Number(totalData?.lastMonth?.total) || 0;
 
@@ -34,7 +35,7 @@
         `📆 本期總額：💰${thisTotal.toLocaleString()}\n` +
         `📅 上期總額：💰${lastTotal.toLocaleString()}`
       );
-    }
+    };
 
     document.getElementById("expenseForm").addEventListener("submit", (e) => {
       e.preventDefault();
@@ -49,20 +50,22 @@
         payment: document.getElementById("payment").value,
         type: document.getElementById("type").value,
         note: document.getElementById("note").value,
-        displayName: "Betty Yi" // 測試登入者名稱
+        displayName: "Betty Yi"
       };
 
       alert("已送出資料給 GAS (模擬)：" + JSON.stringify(payload));
 
-      // 使用 JSONP 方式避免 CORS
+      // 🔹 使用 JSONP 方式避免 CORS
       const script = document.createElement("script");
-      script.src = `${API_URL}?type=query&command=總額&user=${encodeURIComponent(payload.displayName)}&callback=handleTotalDataWrapper`;
+      // 注意：callback 必須是全域函式名稱
+      script.src = `${API_URL}?type=query&command=總額&user=${encodeURIComponent(payload.displayName)}&callback=handleTotalDataWrapperWrapper`;
       document.body.appendChild(script);
 
-      // JSONP callback wrapper
-      window.handleTotalDataWrapper = function(totalData) {
-        handleTotalData(totalData, payload);
+      // 包裝函式，帶上 payload 參數
+      window.handleTotalDataWrapperWrapper = function(totalData) {
+        window.handleTotalDataWrapper(totalData, payload);
         document.body.removeChild(script); // 使用後移除 <script>
+        delete window.handleTotalDataWrapperWrapper; // 清理
       };
     });
 
@@ -71,4 +74,3 @@
   </script>
 </body>
 </html>
-
