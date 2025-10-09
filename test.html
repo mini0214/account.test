@@ -2,75 +2,42 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>總額測試</title>
+  <title>測試本期/上期總額</title>
 </head>
 <body>
-  <h2>記帳測試</h2>
-  <form id="expenseForm">
-    <label>日期：<input type="date" id="date" /></label><br><br>
-    <label>店家：<input type="text" id="store" value="7eleven" /></label><br><br>
-    <label>收入：<input type="number" id="income" value="0" /></label><br><br>
-    <label>支出：<input type="number" id="payout" value="100" /></label><br><br>
-    <label>幣別：<input type="text" id="currency" value="TWD" /></label><br><br>
-    <label>付款：<input type="text" id="payment" value="現金" /></label><br><br>
-    <label>分類：<input type="text" id="type" value="食" /></label><br><br>
-    <label>附註：<input type="text" id="note" value="測試" /></label><br><br>
-    <button type="submit" id="submitBtn">送出</button>
-  </form>
+  <h2>本期/上期總額測試</h2>
+
+  <button id="fetchBtn">取得總額</button>
+
+  <div style="margin-top:20px;">
+    <p>記帳者：<span id="userName">Betty Yi</span></p>
+    <p>本期總額：<span id="thisMonthTotal">-</span></p>
+    <p>上期總額：<span id="lastMonthTotal">-</span></p>
+  </div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwi-pyfZwiGaz3EE3X4CkSsdMFFQFfLLKzbFDyk_W08ZYGu1mTnWen9BrD8kkE_OxL_0A/exec";
+    document.getElementById("fetchBtn").addEventListener("click", async () => {
+      const user = encodeURIComponent("Betty Yi");
+      const apiUrl = `https://script.google.com/macros/s/AKfycbw5KeCqOIv_iKEZiZ4rN2l4FyRlAwLYzdN2P4mVZmi9JHfz8xzsG3BsYV1VFThVR0nfAw/exec?type=query&command=總額&user=${user}`;
 
-    async function fetchTotal(payload) {
       try {
-        const queryUrl = `${API_URL}?type=query&command=總額&user=${encodeURIComponent(payload.displayName)}`;
-        const res = await fetch(queryUrl);
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        const totalData = await res.json();
+        const res = await fetch(apiUrl); // GET 方式
+        const data = await res.json();
+        console.log("totalData:", data);
 
-        const thisTotal = Number(totalData?.thisMonth?.total) || 0;
-        const lastTotal = Number(totalData?.lastMonth?.total) || 0;
+        // 直接當字串顯示
+        const thisTotal = data?.thisMonth?.total || "0";
+        const lastTotal = data?.lastMonth?.total || "0";
 
-        alert(
-          `📋 登錄者：${payload.displayName}\n` +
-          `📅 日期：${payload.inputDate}\n` +
-          `📂 分類：${payload.type}\n` +
-          `💰 收支：${payload.amount}\n` +
-          `📝 附註：${payload.note}\n\n` +
-          `📆 本期總額：💰${thisTotal.toLocaleString()}\n` +
-          `📅 上期總額：💰${lastTotal.toLocaleString()}`
-        );
+        document.getElementById("thisMonthTotal").textContent = thisTotal;
+        document.getElementById("lastMonthTotal").textContent = lastTotal;
 
+        alert(`totalData: ${JSON.stringify(data)}`);
       } catch (err) {
-        alert("❌ 查詢失敗: " + err.message);
+        console.error("抓總額失敗：", err);
+        alert("抓總額失敗：" + err.message);
       }
-    }
-
-    document.getElementById("expenseForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const payload = {
-        inputDate: document.getElementById("date").value,
-        store: document.getElementById("store").value,
-        income: Number(document.getElementById("income").value),
-        payout: Number(document.getElementById("payout").value),
-        currency: document.getElementById("currency").value,
-        amount: Number(document.getElementById("income").value) - Number(document.getElementById("payout").value),
-        payment: document.getElementById("payment").value,
-        type: document.getElementById("type").value,
-        note: document.getElementById("note").value,
-        displayName: "Betty Yi" // 測試登入者名稱
-      };
-
-      alert("已送出資料給 GAS (模擬)：" + JSON.stringify(payload));
-
-      // ✅ 直接 fetch 本期 / 上期總額
-      await fetchTotal(payload);
     });
-
-    // 頁面載入時自動填入今天日期
-    document.getElementById("date").valueAsDate = new Date();
   </script>
 </body>
 </html>
-
