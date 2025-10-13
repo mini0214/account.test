@@ -495,10 +495,11 @@
           
                 // 🔹 只有當上期總額不為 0 時，才加上這兩行
                 if (lastTotal != 0) {
-                  msg +=
+                  alertMsg +=
                     `📆 上期總額：💰${lastTotal}\n` +
                     `🧮 總額佔比：${changeText}`;
                 }
+          
         alert(alertMsg);
 
         // ✅ 重設表單
@@ -519,6 +520,7 @@
   </script>
 </body>
 </html>
+
 
 
 
