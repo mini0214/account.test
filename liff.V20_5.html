@@ -365,6 +365,10 @@
     // 🚀 Step 2：主流程
     async function main() {
       await loadSettingConfig();   // 先載設定
+
+      if (!API_URL) throw new Error("API_URL 尚未設定");
+      if (!LIFF_IDa) throw new Error("LIFF_ID 尚未設定");
+      
       document.getElementById("version").textContent = VERSION;
 
       // ✅ 初始化 LIFF（使用 D11）
@@ -377,7 +381,7 @@
       // 🚀 等設定完成後再載入店家清單
       await loadStoreList();
     }
-    main();
+    window.addEventListener("load", main);
 
     document.getElementById("expenseForm").addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -517,6 +521,7 @@
   </script>
 </body>
 </html>
+
 
 
 
