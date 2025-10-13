@@ -284,7 +284,7 @@
     }
     
     async function loadSettings(){
-      const res = await tryFetchText(FALLBACK_GAS_SETTINGS_URL + "?command=設定");
+      const res = await tryFetchText(FALLBACK_GAS_SETTINGS_URL + "?type=query&command=設定");
           
       if (!res.ok) throw new Error("設定 GAS 讀取失敗：" + res.text);
 
@@ -297,7 +297,7 @@
       
       // 如果缺少 ok 或 data，也用 fallback
       if (!res.json.ok || !res.json.data) {
-        const r2 = await tryFetchText(FALLBACK_GAS_SETTINGS_URL + "?command=設定");
+        const r2 = await tryFetchText(FALLBACK_GAS_SETTINGS_URL + "?type=query&command=設定");
         if (!r2.ok) throw new Error("設定 GAS 格式錯誤：" + (r2.text || ""));
         return r2.json;
       }
@@ -567,4 +567,5 @@
   </script>
 </body>
 </html>
+
 
