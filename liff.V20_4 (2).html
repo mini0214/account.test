@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>零用金支出帳簿</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>  <!-- 引入 Chart.js 在 <head> 區塊中加入 CDN：-->
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 50px;
+    }
+
+    h2 {
+      font-size: 50px;
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    label {
+      font-size: 50px;
+      font-weight: bold;
+      display: inline-block; /* ✅ 換成 inline-block 比較不會被擠下去 */
+      margin-top: 25px;
+      white-space: nowrap;   /* ✅ 關鍵：不允許自動換行 */
+    }
+
+    input, select  {
+      font-size: 50px;
+      padding: 25px;
+      width: 70%;
+      margin-top: 5px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    
+    .form-row, .form-block {
+      display: flex;
+      align-items: center;
+      margin: 20px 0;
+      white-space: nowrap;   /* ✅ 關鍵：不允許自動換行 */
+    }     
+  
+    button {
+      font-size: 50px;
+      padding: 25px;
+      border-radius: 8px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      width: 100%;
+      margin-top: 25px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      cursor: pointer;
+    }
+    
+    button:hover { transform: scale(1.05); }
+    button:active { transform: scale(0.97); box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); }
+
+     .toggle-btn {
+        padding: 8px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 30px;
+        opacity: 0.6;       /* 預設暗淡 */
+        transition: opacity 0.2s, box-shadow 0.2s;
+      }
+    
+      #btnIncome { background: #000080; color: white; }
+      #btnPayout { background: #f44336; color: white; }
+    
+      .active {
+        opacity: 1;         /* 選中變亮 */
+        box-shadow: 0 0 6px rgba(0,0,0,0.3);
+      }
+    
+    <!--storelist欄位-->
+    .input-wrapper {
+      position: relative;
+      flex: 1;
+    }
+    
+    #store {
+      width: 100%;
+      padding: 25px;
+      font-size: 50px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    
+    #suggestions {
+      position: absolute;
+      top: 100%;      /* 直接在 input 底下 */
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #ccc;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+      z-index: 1000;
+    }
+    
+    #suggestions div {
+      padding: 20px;       /* 放大一點 */
+      font-size: 50px;     /* 放大文字 */
+      cursor: pointer;
+    }
+    
+    #suggestions div:hover {
+      background-color: #eee;
+    }
+
+    .total {
+      margin-top: 10px;
+      font-size: 60px;
+      font-weight: bold;
+      color: #d9534f;
+    }
+
+    #loadingMsg {
+      display: none;
+      font-size: 40px;
+      color: red;
+      text-align: center;
+      margin-top: 20px;
+    }    
+  </style>
+</head>
+<body>
+
+  <h2 id="title">非記不可.[<span id="version"></span>]</h2>
+
+  <!-- 登錄表單 -->
+  <form id="expenseForm">
+    
+    <div class="form-row">
+      <label for="date">日期：</label>
+      <input type="date" id="date" placeholder="選填">
+    </div>    
+  
+    <div class="form-row store-row">
+      <label for="store">店家：</label>
+      <div class="input-wrapper">
+        <input type="text" id="store" placeholder="選填;可邊輸入邊選擇店家">
+        <div id="suggestions"></div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+      <button type="button" id="btnIncome" class="toggle-btn">收入</button>
+      <button type="button" id="btnPayout" class="toggle-btn active">支出</button>
+    
+      <input type="number" id="income" placeholder="請輸入收入金額" style="width:550px; color:blue; display:none;" step="0.01">
+      <input type="number" id="payout" placeholder="請輸入支出金額" style="width:550px; color:red; display:inline-block;" step="0.01">
+    </div>   
+    
+    <script>      
+      const btnIncome = document.getElementById("btnIncome");
+      const btnPayout = document.getElementById("btnPayout");
+      const income = document.getElementById("income");
+      const payout = document.getElementById("payout");
+    
+      function resetButtons() {
+        btnIncome.classList.remove("active");
+        btnPayout.classList.remove("active");
+      }
+    
+      btnIncome.addEventListener("click", () => {
+        resetButtons();
+        btnIncome.classList.add("active");
+    
+        income.style.display = "inline-block";
+        income.value = "";
+        payout.style.display = "none";
+        payout.value = "";
+      });
+    
+      btnPayout.addEventListener("click", () => {
+        resetButtons();
+        btnPayout.classList.add("active");
+    
+        payout.style.display = "inline-block";
+        payout.value = "";
+        income.style.display = "none";
+        income.value = "";
+      });
+
+      // ✅ 監聽支出欄位輸入
+      payout.addEventListener("input", () => {
+        const val = payout.value;
+        if (val.includes(".")) {
+          currency.value = "20";  // 有小數點 → 澳幣
+        } else if (val !== "") {
+          currency.value = "1";   // 無小數點 → 台幣
+        } else {
+          currency.value = "";    // 若清空輸入 → 清空幣別
+        }
+      });
+    </script>      
+
+    <div class="form-block">
+      <label for="currency">幣別：</label>
+      <select id="currency" required>
+        <option value="">請選擇幣別</option>
+        <option value="1">台幣:1</option>
+        <option value="20">澳幣:20</option>
+      </select>
+    </div>
+  
+    <div class="form-row">
+      <label for="payment">付款：</label>
+      <select id="payment" required>
+        <option value="">請選擇付款</option>
+        <option value="現金">現金</option>
+        <option value="信用卡">信用卡</option>
+        <option value="LINE Pay">LINE Pay</option>
+        <option value="銀行轉帳">銀行轉帳</option>
+      </select>
+    </div>
+
+    <div class="form-block">
+      <label for="type">分類：</label>
+      <select id="type" required>
+        <option value="">請選擇分類</option>
+        <option value="食">食</option>
+        <option value="衣">衣</option>
+        <option value="住">住</option>
+        <option value="行">行</option>
+        <option value="育">育</option>
+        <option value="樂">樂</option>
+        <option value="其他">其他</option>
+        <option value="收入">收入</option>   
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label for="store">附註：</label>
+      <input type="text" id="note" placeholder="選填">
+    </div>
+
+    <div class="form-row">
+      <label for="store">備註：</label>
+      <input type="text" id="memo" placeholder="選填">
+    </div>
+
+    <button type="submit" id="submitBtn">送出</button>
+    <div id="loadingMsg" style="display:none; font-size:40px; color:red; text-align:center; margin-top:20px;">
+      ⏳ 資料送出中，請稍候...
+    </div>
+  </form>
+
+  <!-- LIFF 初始化 + 登錄送出 -->
+  <script>  
+    //const LIFF_ID = "2008096451-3DobjEw8";   // 換成你的 LIFF ID test
+    //const VERSION = "V17_#43";                   // 固定版次
+    const API_URL = "https://script.google.com/macros/s/AKfycbwnF9XjRuGi-wwcVHVIyAyOSvOPs3-w6CE3SiRmAtRWR6R8zdPX9j4JCAfhF_0bRoXEgQ/exec";  // 換成你的 GAS PATH
+
+    let LIFF_ID = "default";   // 先放預設或空字串,從 D11 帶入 append
+    let VERSION = "V";         // ✅ 預設顯示版本號，不要等API,從 D10 帶入 版次
+
+    document.getElementById("version").textContent = VERSION;
+    
+    async function loadConfig() {
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          body: JSON.stringify({ type: "config" })
+        });
+        const cfg = await res.json();
+    
+        if (cfg.ok) {
+          LIFF_ID = cfg.D11;    // 取設定表 D11 append
+          VERSION = cfg.D10;    // 取設定表 D10 版次
+          document.getElementById("version").textContent = VERSION; // ✅ 這裡更新
+          console.log("設定完成:", { LIFF_ID, VERSION });
+        } else {
+          console.error("讀取設定失敗:", cfg.error);
+        }
+      } catch (err) {
+        console.error("載入設定發生錯誤:", err);
+      }
+    }
+
+    // 店家清單
+    let storeList = []; // [{store, type}]
+    const input = document.getElementById("store");
+    const sugg = document.getElementById("suggestions");
+    const typeSelect = document.getElementById("type");
+  
+    async function loadStoreList() {
+      try {
+        console.log("呼叫店家 API:", API_URL);
+        const res = await fetch(`${API_URL}?type=query&command=店家`);
+        const data = await res.json();
+        console.log("GAS 回傳:", data);
+  
+        if (data.ok && Array.isArray(data.storeList)) {
+          storeList = data.storeList; // [{store, type}]
+          console.log("載入店家清單成功:", storeList);
+        } else {
+          console.error("GAS 回傳格式不正確:", data);
+        }
+      } catch (err) {
+        console.error("載入店家清單失敗:", err);
+      }
+    }
+  
+    // 即時提示 + 自動帶入 type
+    input.addEventListener("input", () => {
+      const val = input.value.toLowerCase();
+      sugg.innerHTML = "";
+      if (!val) { sugg.style.display = "none"; return; }
+      
+      // 篩選符合的店家
+      const matches = storeList.filter(s => s.store && s.store.toLowerCase().includes(val));
+      if (matches.length === 0) { sugg.style.display = "none"; return; }
+      
+      // 顯示建議
+      matches.forEach(m => {
+        const div = document.createElement("div");
+        div.textContent = m.store + (m.type ? `（${m.type}）` : "");
+        div.onclick = () => {
+          input.value = m.store;
+          sugg.style.display = "none";
+          
+          // 自動選中對應 type
+          if (m.type) {
+            typeSelect.value = m.type;
+            if (!typeSelect.value) {
+              // 若下拉選單沒有這個分類，就新增
+              const opt = document.createElement("option");
+              opt.value = m.type;
+              opt.textContent = m.type;
+              typeSelect.appendChild(opt);
+              typeSelect.value = m.type;
+            }
+          } else {
+            typeSelect.value = "";
+          }
+        };
+        sugg.appendChild(div);
+      });
+  
+      sugg.style.display = "block";
+      const rect = input.getBoundingClientRect();
+      sugg.style.width = rect.width + "px";
+      sugg.style.top = (rect.bottom + window.scrollY) + "px";
+      sugg.style.left = (rect.left + window.scrollX) + "px";
+    });
+      
+    document.getElementById("version").textContent = VERSION;
+
+    async function main() {
+      await loadConfig();   // 先載設定
+      document.getElementById("version").textContent = VERSION;
+      
+      await liff.init({ liffId: LIFF_ID });
+      if (!liff.isLoggedIn()) liff.login();
+
+      // 預設日期為今天
+      document.getElementById("date").valueAsDate = new Date();
+          
+      // 🚀 等設定完成後再載入店家清單
+      await loadStoreList();
+    }
+    main();
+
+    document.getElementById("expenseForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      
+      const submitBtn = document.getElementById("submitBtn");
+      const loadingMsg = document.getElementById("loadingMsg");
+      
+      // 🔒 禁用按鈕 + 顯示訊息
+      submitBtn.disabled = true;
+      submitBtn.innerText = "處理中...";
+      loadingMsg.style.display = "block";
+      
+      const date = document.getElementById("date").value;
+      const store = document.getElementById("store").value;
+      const income = document.getElementById("income").value;
+      const payout = document.getElementById("payout").value;
+      const payment = document.getElementById("payment").value;
+      const currency = document.getElementById("currency").value;
+      const type = document.getElementById("type").value;
+      const note = document.getElementById("note").value;
+      const memo = document.getElementById("memo").value;
+
+      const profile = await liff.getProfile();
+      
+      const now = new Date();
+      const taiwanTime = new Date(now.getTime() + (8 * 60 * 60 * 1000))
+        .toISOString()
+        .replace("T", " ")
+        .split(".")[0]; 
+      
+      const payload = {
+        version: VERSION,
+        userId: profile.userId,
+        displayName: profile.displayName,
+        inputDate: date,
+        store: store,
+        income: income,
+        payout: payout,
+        currency: currency,
+        amount: Math.round((income-payout)*currency),
+        payment: payment,
+        type: type,
+        note: note,
+        memo: memo,
+        createdAt: taiwanTime
+      };
+
+const apiUrl = API_URL; 
+      try {
+        const res = await fetch(apiUrl, {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+        
+        if (result.ok) {
+          // 🟦 先查詢總額
+          let thisTotal = 0;
+          let lastTotal = 0;
+          let changeText = "";
+        
+          try {
+            const user = encodeURIComponent(payload.displayName); // 或固定 "Betty Yi"
+            const totalRes = await fetch(`${API_URL}?type=query&command=總額&user=${user}`); //GAS Web Path
+            const totalData = await totalRes.json();
+            console.log("totalData:", totalData);
+          
+            thisTotal = totalData?.thisMonth?.total ?? 0;
+            lastTotal = totalData?.lastMonth?.total ?? 0;
+            changeText = totalData?.changeText || "";        
+          } catch (err) {
+            console.warn("查詢總額失敗：", err.message);
+          }
+          
+         // ✅ 發送 LINE
+              if (liff.isInClient()) {
+                try {
+                  let msg =
+                    `非記不可.記帳成功！\n` +
+                    `👤 記帳者：${payload.displayName}\n` +
+                    `📆 日期：${payload.inputDate}\n` +
+                    `📋 店家：${payload.store || " "}\n` +
+                    `💰 收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
+                    `💰 幣別：${payload.currency}\n` +
+                    `💰 金額：${payload.amount}\n` +
+                    `💳 付款：${payload.payment}\n` +
+                    `📂 分類：${payload.type}\n` +
+                    `📝 附註：${payload.note || " "}\n\n` +
+                    `📆 本期總額：💰${thisTotal}\n`;
+        
+                  if (lastTotal !== 0) {
+                    msg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}`;
+                  }
+        
+                  await liff.sendMessages([{ type: "text", text: msg }]);
+                } catch (err) {
+                  console.warn("sendMessages 錯誤：", err.message);
+                }
+              }
+        
+              // ✅ alert 顯示
+              let alertMsg =
+                `非記不可.記帳成功！\n` +
+                `👤 記帳者：${payload.displayName}\n` +
+                `📆 日期：${payload.inputDate}\n` +
+                `📋 店家：${payload.store || " "}\n` +
+                `💰 收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
+                `💰 幣別：${payload.currency}\n` +
+                `💰 金額：${payload.amount}\n` +
+                `💳 付款：${payload.payment}\n` +
+                `📂 分類：${payload.type}\n` +
+                `📝 附註：${payload.note || " "}\n\n` +
+                `📆 本期總額：💰${thisTotal}\n`;
+        
+              if (lastTotal !== 0) {
+                alertMsg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}`;
+              }
+        
+              alert(alertMsg);
+        
+              // ✅ 重設表單
+              document.getElementById("expenseForm").reset();
+              document.getElementById("date").valueAsDate = new Date();
+            }
+          } catch (err) {
+            alert("❌ 送出失敗：" + err.message);
+          } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerText = "送出";
+            loadingMsg.style.display = "none";
+          }
+        });
+        
+    // 頁面載入時執行
+    loadConfig();
+  </script>
+</body>
+</html>
