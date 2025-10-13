@@ -299,13 +299,12 @@
     async function initApp(){
       try {
         const settings = await loadSettings();
-        if (!settings || !settings.ok) throw new Error("設定格式錯誤");
+        if (!settings) throw new Error("設定格式錯誤");
     
-        const data = await loadSettings();
-        API_URL = (data.API_URL || "").trim();
-        VERSION = (data.D10 || "V").trim();
-        LIFF_IDa = (data.D11 || "").trim();
-        LIFF_IDq = (data.D12 || "").trim();
+        API_URL = (settings.API_URL || "").trim();
+        VERSION = (settings.D10 || "V").trim();
+        LIFF_IDa = (settings.D11 || "").trim();
+        LIFF_IDq = (settings.D12 || "").trim();
     
         document.getElementById("version").textContent = VERSION;
         console.log("✅ 設定成功:", { API_URL, LIFF_IDa, VERSION });
@@ -554,6 +553,7 @@
   </script>
 </body>
 </html>
+
 
 
 
