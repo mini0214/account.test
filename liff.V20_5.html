@@ -312,7 +312,7 @@
         document.getElementById("version").textContent = VERSION;
         console.log("✅ 設定成功:", { API_URL, LIFF_IDa, VERSION });
     
-        if (!LIFF_ID) throw new Error("❌ LIFF ID 尚未設定，請確認設定表 D11");
+        if (!LIFF_IDa) throw new Error("❌ LIFF ID 尚未設定，請確認設定表 D11");
     
         await liff.init({ liffId: LIFF_IDa });
         if (!liff.isLoggedIn()) liff.login();
@@ -556,6 +556,7 @@
   </script>
 </body>
 </html>
+
 
 
 
