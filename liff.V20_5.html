@@ -273,18 +273,17 @@
     // 🚀 Step 1：先讀取設定檔 (D6.D10.D11.D12)
     async function loadSettingConfig() {
       try {
-        const settingUrl = await fetch(`${API_URL}?type=query&command=設定`); 
-        const res = await fetch(settingUrl);
+        const res = await fetch(FALLBACK_GAS_SETTINGS_URL + "?command=設定");
         const json = await res.json();
   
-        if (json.ok && json.data) {
-          API_URL = json.data.API_URL;
-          VERSION = json.data.D10;
-          LIFF_IDa = json.data.D11;
-          LIFF_IDq = json.data.D12;
+        if (json.ok) {
+          API_URL = json.D6 || "";
+          VERSION = json.D10 || "V";
+          LIFF_IDa = json.D11 || "";
+          LIFF_IDq = json.D12 || "";
 
           document.getElementById("version").textContent = VERSION;
-          console.log("✅ 設定載入完成:", json.data);
+          console.log("✅ 設定載入完成:", json);
         } else {
           throw new Error("設定檔格式錯誤");
         }
@@ -518,6 +517,7 @@
   </script>
 </body>
 </html>
+
 
 
 
