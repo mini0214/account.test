@@ -447,10 +447,7 @@
           // ✅ 發送訊息到 LINE 聊天
             if (liff.isInClient()) {
               try {
-                await liff.sendMessages([
-                  {
-                    type: "text",
-                    text:
+                let msg =
                       `非記不可.記帳成功！\n` +
                       `👤 記帳者：${payload.displayName}\n` +
                       `📆 日期：${payload.inputDate}\n` +
@@ -461,19 +458,23 @@
                       `💳 付款：${payload.payment}\n` +
                       `📂 分類：${payload.type}\n` +
                       `📝 附註：${payload.note || " "}\n\n` +
-                      `📆 本期總額：💰${thisTotal}\n` +
-                      `📆 上期總額：💰${lastTotal}\n` +
-                      `🧮 總額佔比：${changeText}`
+                      `📆 本期總額：💰${thisTotal}\n`;
 
-                  }
-                ]);
+                // 🔹 只有當上期總額不為 0 時，才加上這兩行
+                if (lastTotal != 0) {
+                  msg +=
+                    `📆 上期總額：💰${lastTotal}\n` +
+                    `🧮 總額佔比：${changeText}`;
+                }
+            
+                await liff.sendMessages([{ type: "text", text: msg }]);
             } catch (err) {
             console.warn("sendMessages 錯誤：", err.message);
           }
         }
 
           // ✅ 同步顯示在畫面 alert
-          alert(
+          let alertMsg =
                 `非記不可.記帳成功！\n` +
                 `👤 記帳者：${payload.displayName}\n` +
                 `📆 日期：${payload.inputDate}\n` +
@@ -484,11 +485,15 @@
                 `💳 付款：${payload.payment}\n` +
                 `📂 分類：${payload.type}\n` +
                 `📝 附註：${payload.note || " "}\n\n` +
-                `📆 本期總額：💰${thisTotal}\n` +
-                `📆 上期總額：💰${lastTotal}\n` +
-                `🧮 總額佔比：${changeText}`
-            );
-        } 
+                `📆 本期總額：💰${thisTotal}\n`;
+
+          if (lastTotal != 0) {
+            alertMsg +=
+              `📆 上期總額：💰${lastTotal}\n` +
+              `🧮 總額佔比：${changeText}`;
+          }
+          
+          alert(alertMsg);
         
         document.getElementById("expenseForm").reset();
         document.getElementById("date").valueAsDate = new Date();
@@ -507,6 +512,7 @@
   </script>
 </body>
 </html>
+
 
 
 
