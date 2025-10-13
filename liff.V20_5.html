@@ -273,7 +273,7 @@
     // 🚀 Step 1：先讀取設定檔 (D6.D10.D11.D12)
     async function loadSettingConfig() {
       try {
-        const settingUrl = "https://script.google.com/macros/s/AKfycbwDciyCC53dyenlM4zymzrHbgQECkZvtCtQ2YERInc1UnvfFzUkcru2Lc3ehJuZeVm6mw/exec?type=query&command=設定"; 
+        const settingUrl = `${API_URL}?type=query&command=設定`; 
         const res = await fetch(settingUrl);
         const json = await res.json();
   
@@ -518,6 +518,7 @@
   </script>
 </body>
 </html>
+
 
 
 
