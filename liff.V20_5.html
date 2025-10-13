@@ -361,13 +361,15 @@
       sugg.style.left = (rect.left + window.scrollX) + "px";
     });
       
-    document.getElementById("version").textContent = VERSION;
-
+    //document.getElementById("version").textContent = VERSION;
+    
+    // 🚀 Step 2：主流程
     async function main() {
       await loadConfig();   // 先載設定
       document.getElementById("version").textContent = VERSION;
-      
-      await liff.init({ liffId: LIFF_ID });
+
+      // ✅ 初始化 LIFF（使用 D11）
+      await liff.init({ liffId: LIFF_IDa });
       if (!liff.isLoggedIn()) liff.login();
 
       // 預設日期為今天
@@ -516,4 +518,5 @@
   </script>
 </body>
 </html>
+
 
