@@ -262,36 +262,71 @@
 
     //let LIFF_ID = "default";   // 先放預設或空字串,從 D11 帶入 append
     //let VERSION = "V";         // ✅ 預設顯示版本號，不要等API,從 D10 帶入 版次
-
+    
+    // ----------------------------------------------------
+    // ✅ 全域設定
+    // ----------------------------------------------------
+    const FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbwDciyCC53dyenlM4zymzrHbgQECkZvtCtQ2YERInc1UnvfFzUkcru2Lc3ehJuZeVm6mw/exec";
+    
     let API_URL = "";    // ✅ 從設定檔 D6
-    let VERSION = "";    // ✅ 從設定檔 D10
+    let VERSION = "V";   // ✅ 從設定檔 D10
     let LIFF_IDa = "";   // ✅ 從設定檔 D11
     let LIFF_IDq = "";   // ✅ 從設定檔 D12
 
-    document.getElementById("version").textContent = "載入中...";
-
-    // 🚀 Step 1：先讀取設定檔 (D6.D10.D11.D12)
-    async function loadSettingConfig() {
+    // ----------------------------------------------------
+    // ✅ 設定載入
+    // ----------------------------------------------------
+    async function tryFetchText(url){
+      const r = await fetch(url, { cache: 'no-store' });
+      const text = await r.text();
+      try { const j = JSON.parse(text); return { ok: true, json: j }; }
+      catch(e){ return { ok: false, text }; }
+    }
+    
+    async function loadSettings(){
+      const currentUrl = window.location.href.split('?')[0];
+      let res = await tryFetchText(`${currentUrl}?command=設定`);
+    
+      // 若主頁面非同一支 GAS，回傳 HTML，改用 FALLBACK
+      if (!res.ok || (res.text && res.text.startsWith("<"))) {
+        const r2 = await tryFetchText(`${FALLBACK_GAS_SETTINGS_URL}?command=設定`);
+        if (!r2.ok) throw new Error("設定 GAS 讀取失敗：" + (r2.text || ""));
+        return r2.json;
+      }
+    
+      return res.json;
+    }
+    
+    // ----------------------------------------------------
+    // ✅ 初始化
+    // ----------------------------------------------------
+    async function initApp(){
       try {
-        const res = await fetch(FALLBACK_GAS_SETTINGS_URL + "?command=設定");
-        const json = await res.json();
-  
-        if (json.ok) {
-          API_URL = json.D6 || "";
-          VERSION = json.D10 || "V";
-          LIFF_IDa = json.D11 || "";
-          LIFF_IDq = json.D12 || "";
-
-          document.getElementById("version").textContent = VERSION;
-          console.log("✅ 設定載入完成:", json);
-        } else {
-          throw new Error("設定檔格式錯誤");
-        }
+        const settings = await loadSettings();
+        if (!settings || !settings.ok) throw new Error("設定格式錯誤");
+    
+        API_URL = (settings.D6 || "").trim();
+        VERSION = (settings.D10 || "V").trim();
+        LIFF_IDa = (settings.D11 || "").trim();
+    
+        document.getElementById("version").textContent = VERSION;
+        console.log("✅ 設定成功:", { API_URL, LIFF_IDa, VERSION });
+    
+        if (!LIFF_ID) throw new Error("❌ LIFF ID 尚未設定，請確認設定表 D11");
+    
+        await liff.init({ liffId: LIFF_IDa });
+        if (!liff.isLoggedIn()) liff.login();
+    
+        document.getElementById("date").valueAsDate = new Date();
+    
+        if (API_URL) await loadStoreList();
+    
       } catch (err) {
-        console.error("❌ 載入設定檔失敗:", err);
-        alert("設定檔載入失敗，請檢查 GAS 設定。");
+        console.error("初始化設定失敗：", err);
+        alert("初始化設定失敗：" + err.message);
       }
     }
+
     
     // 店家清單
     let storeList = []; // [{store, type}]
@@ -517,10 +552,11 @@
         });
         
     // 頁面載入時執行
-    loadSettingConfig();
+    window.addEventListener("load", initApp);
   </script>
 </body>
 </html>
+
 
 
 
