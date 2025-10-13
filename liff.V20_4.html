@@ -421,62 +421,37 @@
       submitBtn.disabled = true;
       submitBtn.innerText = "送出中...";
       loadingMsg.style.display = "block";
-  
+    
       try {
         const res = await fetch(apiUrl, {
           method: "POST",
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         });
-
+    
         const result = await res.json();
-        
+    
         if (result.ok) {
-          // 🟦 先查詢總額
           let thisTotal = 0;
           let lastTotal = 0;
           let changeText = "";
-        
+    
           try {
-            const user = encodeURIComponent(payload.displayName); // 或固定 "Betty Yi"
-            const totalRes = await fetch(`${API_URL}?type=query&command=總額&user=${user}`); //GAS Web Path
+            const user = encodeURIComponent(payload.displayName);
+            const totalRes = await fetch(`${API_URL}?type=query&command=總額&user=${user}`);
             const totalData = await totalRes.json();
             console.log("totalData:", totalData);
-          
-            thisTotal = totalData?.thisMonth?.total ?? 0;
-            lastTotal = totalData?.lastMonth?.total ?? 0;
-            changeText = totalData?.changeText || "";        
+    
+            thisTotal = totalData?.thisMonth?.total || 0;
+            lastTotal = totalData?.lastMonth?.total || 0;
+            changeText = totalData?.changeText || "";
           } catch (err) {
             console.warn("查詢總額失敗：", err.message);
           }
-          
-          // ✅ 發送訊息到 LINE 聊天
-            if (liff.isInClient()) {
-              try {
-                let msg =
-                      `非記不可.記帳成功！\n` +
-                      `👤 記帳者：${payload.displayName}\n` +
-                      `📆 日期：${payload.inputDate}\n` +
-                      `📋 店家：${payload.store || " "}\n` +
-                      `💰 收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
-                      `💰 幣別：${payload.currency}\n` +
-                      `💰 金額：${payload.amount}\n` +
-                      `💳 付款：${payload.payment}\n` +
-                      `📂 分類：${payload.type}\n` +
-                      `📝 附註：${payload.note || " "}\n\n` +
-                      `📆 本期總額：💰${thisTotal}\n`;
-
-                if (lastTotal !== 0) {
-                  msg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}`;
-                }
-      
-                await liff.sendMessages([{ type: "text", text: msg }]);
-              } catch (err) {
-            console.warn("sendMessages 錯誤：", err.message);
-          }
-        }
-
-          // ✅ 同步顯示在畫面 alert
-          let alertMsg =
+    
+          // ✅ 發送 LINE
+          if (liff.isInClient()) {
+            try {
+              let msg =
                 `非記不可.記帳成功！\n` +
                 `👤 記帳者：${payload.displayName}\n` +
                 `📆 日期：${payload.inputDate}\n` +
@@ -488,31 +463,56 @@
                 `📂 分類：${payload.type}\n` +
                 `📝 附註：${payload.note || " "}\n\n` +
                 `📆 本期總額：💰${thisTotal}\n`;
-
+    
+              if (lastTotal !== 0) {
+                msg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}`;
+              }
+    
+              await liff.sendMessages([{ type: "text", text: msg }]);
+            } catch (err) {
+              console.warn("sendMessages 錯誤：", err.message);
+            }
+          }
+    
+          // ✅ alert 顯示
+          let alertMsg =
+            `非記不可.記帳成功！\n` +
+            `👤 記帳者：${payload.displayName}\n` +
+            `📆 日期：${payload.inputDate}\n` +
+            `📋 店家：${payload.store || " "}\n` +
+            `💰 收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
+            `💰 幣別：${payload.currency}\n` +
+            `💰 金額：${payload.amount}\n` +
+            `💳 付款：${payload.payment}\n` +
+            `📂 分類：${payload.type}\n` +
+            `📝 附註：${payload.note || " "}\n\n` +
+            `📆 本期總額：💰${thisTotal}\n`;
+    
           if (lastTotal !== 0) {
             alertMsg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}`;
           }
     
           alert(alertMsg);
-          
-        // ✅ 重設表單
-        document.getElementById("expenseForm").reset();
-        document.getElementById("date").valueAsDate = new Date();
-
-      } catch(err) {
+    
+          // ✅ 重設表單
+          document.getElementById("expenseForm").reset();
+          document.getElementById("date").valueAsDate = new Date();
+        }
+      } catch (err) {
         alert("❌ 送出失敗：" + err.message);
       } finally {
-        // ✅ 無論成功失敗都恢復按鈕 & 隱藏訊息
         submitBtn.disabled = false;
         submitBtn.innerText = "送出";
         loadingMsg.style.display = "none";
       }
     });
-  // 頁面載入時執行
-  loadConfig();
+    
+    // 頁面載入時執行
+    loadConfig();
   </script>
 </body>
 </html>
+
 
 
 
