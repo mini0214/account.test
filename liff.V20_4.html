@@ -499,7 +499,9 @@
                     `📆 上期總額：💰${lastTotal}\n` +
                     `🧮 總額佔比：${changeText}`;
                 }
-        
+        alert(alertMsg);
+
+        // ✅ 重設表單
         document.getElementById("expenseForm").reset();
         document.getElementById("date").valueAsDate = new Date();
 
@@ -517,6 +519,7 @@
   </script>
 </body>
 </html>
+
 
 
 
