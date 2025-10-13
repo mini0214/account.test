@@ -416,7 +416,12 @@
         createdAt: taiwanTime
       };
 
-      const apiUrl = API_URL; 
+    submitBtn.addEventListener("click", async () => {
+      const apiUrl = API_URL;
+      submitBtn.disabled = true;
+      submitBtn.innerText = "送出中...";
+      loadingMsg.style.display = "block";
+  
       try {
         const res = await fetch(apiUrl, {
           method: "POST",
@@ -508,6 +513,7 @@
   </script>
 </body>
 </html>
+
 
 
 
