@@ -285,24 +285,12 @@
     
     async function loadSettings(){
       const res = await tryFetchText(FALLBACK_GAS_SETTINGS_URL + "?type=query&command=設定");
-          
       if (!res.ok) throw new Error("設定 GAS 讀取失敗：" + res.text);
-
-      const settings = res.json;
-
-      if (!settings.ok || !settings.data) throw new Error("設定格式錯誤");
-
-      return settings;
-     }
-      
-      // 如果缺少 ok 或 data，也用 fallback
-      if (!res.json.ok || !res.json.data) {
-        const r2 = await tryFetchText(FALLBACK_GAS_SETTINGS_URL + "?type=query&command=設定");
-        if (!r2.ok) throw new Error("設定 GAS 格式錯誤：" + (r2.text || ""));
-        return r2.json;
-      }
-      
-      return res.json;
+    
+      const data = res.json;
+      if (!data.ok || !data.data) throw new Error("設定格式錯誤");
+    
+      return data.data;  // 只回傳 data
     }
     
     // ----------------------------------------------------
@@ -313,8 +301,7 @@
         const settings = await loadSettings();
         if (!settings || !settings.ok) throw new Error("設定格式錯誤");
     
-        const data = settings.data || {};
-
+        const data = await loadSettings();
         API_URL = (data.API_URL || "").trim();
         VERSION = (data.D10 || "V").trim();
         LIFF_IDa = (data.D11 || "").trim();
@@ -427,7 +414,7 @@
       // 🚀 等設定完成後再載入店家清單
       await loadStoreList();
     }
-    window.addEventListener("load", main);
+    //window.addEventListener("load", main);
 
     document.getElementById("expenseForm").addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -567,5 +554,6 @@
   </script>
 </body>
 </html>
+
 
 
