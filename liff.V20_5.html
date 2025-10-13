@@ -365,7 +365,7 @@
     
     // 🚀 Step 2：主流程
     async function main() {
-      await loadConfig();   // 先載設定
+      await loadSettingConfig();   // 先載設定
       document.getElementById("version").textContent = VERSION;
 
       // ✅ 初始化 LIFF（使用 D11）
@@ -514,9 +514,10 @@
         });
         
     // 頁面載入時執行
-    loadConfig();
+    loadSettingConfig();
   </script>
 </body>
 </html>
+
 
 
