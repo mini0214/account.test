@@ -482,7 +482,7 @@
                 `💳 付款：${payload.payment}\n` +
                 `📂 分類：${payload.type}\n` +
                 `📝 附註：${payload.note || " "}\n\n` +
-                `📆 本期總額：💰${thisTotal}\n``;
+                `📆 本期總額：💰${thisTotal}\n`;
 
           if (lastTotal !== 0) {
             alertMsg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}`;
@@ -508,3 +508,4 @@
   </script>
 </body>
 </html>
+
