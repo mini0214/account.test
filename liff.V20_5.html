@@ -284,15 +284,16 @@
     }
     
     async function loadSettings(){
-      const currentUrl = window.location.href.split('?')[0];
-      let res = await tryFetchText(`${currentUrl}?command=設定`);
-    
-      // 若主頁面非同一支 GAS，回傳 HTML，改用 FALLBACK
-      if (!res.ok || (res.text && res.text.startsWith("<"))) {
-        const r2 = await tryFetchText(`${FALLBACK_GAS_SETTINGS_URL}?command=設定`);
-        if (!r2.ok) throw new Error("設定 GAS 讀取失敗：" + (r2.text || ""));
-        return r2.json;
-      }
+      const res = await tryFetchText(FALLBACK_GAS_SETTINGS_URL + "?command=設定");
+          
+      if (!res.ok) throw new Error("設定 GAS 讀取失敗：" + res.text);
+
+      const settings = res.json;
+
+      if (!settings.ok || !settings.data) throw new Error("設定格式錯誤");
+
+      return settings;
+     }
       
       // 如果缺少 ok 或 data，也用 fallback
       if (!res.json.ok || !res.json.data) {
@@ -566,3 +567,4 @@
   </script>
 </body>
 </html>
+
