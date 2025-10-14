@@ -391,6 +391,9 @@
             lastTotal = totalData?.lastMonth?.total ?? 0;
             changeText = totalData?.changeText || "";
             changetxt = totalData?.changetxt || ""; 
+            // ✅ 取得分類總額
+            const types = totalData?.types || [];
+            
           } catch (err) {
             console.warn("查詢總額失敗：", err.message);
           }
@@ -489,6 +492,7 @@
   </script>
 </body>
 </html>
+
 
 
 
