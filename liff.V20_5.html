@@ -392,7 +392,7 @@
             lastTotal = totalData?.lastMonth?.total ?? 0;
             changeText = totalData?.changeText || "";
             changetxt = totalData?.changetxt || ""; 
-            types = totalData?.types || []; // ✅ 取得分類總額
+            types = totalData?.types || []; // ✅ 分類本期總額
             
           } catch (err) {
             console.warn("查詢總額失敗：", err.message);
@@ -418,20 +418,19 @@
                       msg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}\n📢 ${changetxt}`;
                     }
 
-                    // 🔹 新增分類總額顯示
+                    // 🔹 分類本期總額顯示
                     if (types && types.length) {
-                      msg += `\n📂 分類總額:\n`;
+                      msg += `\n📂 分類本期總額:\n`;
                 
-                      types.forEach(t => {
-                        if (t.lastTotal === 0) {
-                          // 上期為 0，顯示本期總額 + 百分比
-                          msg += `• ${t.type}：💰${t.thisTotal}，🧮 ${t.changeText}\n`;
-                        } else {
-                          // 上期不為 0，只顯示本期總額
-                          msg += `• ${t.type}：💰${t.thisTotal}\n`;
-                        }
-                      });
-                    }
+                    // 建立固定順序
+                    const order = ["食","衣","住","行","育","樂","其他","收入"];                    
+                    // 按順序排序 types
+                    const sortedTypes = order.map(o => types.find(t => t.type === o)).filter(Boolean);
+                  
+                    sortedTypes.forEach(t => {
+                      msg += `• ${t.type}：💰${t.thisTotal}\n`;
+                    });
+                  }
           
                     await liff.sendMessages([{ type: "text", text: msg }]);
                   } catch (err) {
@@ -457,20 +456,19 @@
                   alertMsg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}\n📢 ${changetxt}`;
                 }
             
-                // 🔹 類別分類總額
+                // 🔹 分類本期總額顯示
                 if (types && types.length) {
-                  alertMsg += `\n📂 分類總額:\n`;
+                  alertMsg += `\n📂 分類本期總額:\n`;
                 
-                  types.forEach(t => {
-                    // 只顯示 lastTotal === 0 的類別百分比
-                    if (t.lastTotal === 0) {
-                      alertMsg += `• ${t.type}：💰${t.thisTotal}，🧮 佔比：${t.changeText}\n`;
-                    } else {
-                      // 如果 lastTotal !== 0，僅顯示本期總額，不顯示百分比
-                      alertMsg += `• ${t.type}：💰${t.thisTotal}\n`;
-                    }
-                  });
-                }
+                // 建立固定順序
+                const order = ["食","衣","住","行","育","樂","其他","收入"];
+                // 按順序排序 types
+                const sortedTypes = order.map(o => types.find(t => t.type === o)).filter(Boolean);
+              
+                sortedTypes.forEach(t => {
+                  alertMsg += `• ${t.type}：💰${t.thisTotal}\n`;
+                });
+              }
             
                 alert(alertMsg);
         
@@ -492,16 +490,6 @@
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
 
 
 
