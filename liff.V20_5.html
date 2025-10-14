@@ -389,7 +389,8 @@
           
             thisTotal = totalData?.thisMonth?.total ?? 0;
             lastTotal = totalData?.lastMonth?.total ?? 0;
-            changeText = totalData?.changeText || "";        
+            changeText = totalData?.changeText || "";
+            changetxt = totalData?.changetxt || ""; 
           } catch (err) {
             console.warn("查詢總額失敗：", err.message);
           }
@@ -458,6 +459,7 @@
   </script>
 </body>
 </html>
+
 
 
 
