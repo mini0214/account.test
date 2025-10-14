@@ -331,7 +331,7 @@ function renderResult(command, json) {
                  <tr>
                    <th>${sec.cmd==="店家"?"店家":sec.cmd==="付款"?"付款方式":sec.cmd==="記帳者"?"記帳者":"分類方式"}</th>
                    <th class="numeric">金額</th>
-                   <th class="numeric">占比</th>
+                   <th class="numeric">佔比</th>
                  </tr>`;
       labels.forEach((l,i)=>{
         const percent = ((values[i]/total)*100).toFixed(1);
@@ -547,4 +547,3 @@ initApp();
 </script>
 </body>
 </html>
-
