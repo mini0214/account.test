@@ -412,7 +412,7 @@
                     `📆 本期總額：💰${thisTotal}\n`;
         
                   if (lastTotal !== 0) {
-                    msg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}\n🔖 ${changetxt}`;
+                    msg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}\n📢 ${changetxt}`;
                   }
         
                   await liff.sendMessages([{ type: "text", text: msg }]);
@@ -436,7 +436,7 @@
                 `📆 本期總額：💰${thisTotal}\n`;
         
               if (lastTotal !== 0) {
-                alertMsg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}\n🔖 ${changetxt}`;
+                alertMsg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}\n📢 ${changetxt}`;
               }
         
               alert(alertMsg);
@@ -459,6 +459,7 @@
   </script>
 </body>
 </html>
+
 
 
 
