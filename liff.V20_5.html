@@ -380,6 +380,7 @@
           let lastTotal = 0;
           let changeText = "";
           let changetxt = "";
+          let types = [];   
         
           try {
             const user = encodeURIComponent(payload.displayName); // 或固定 "Betty Yi"
@@ -391,8 +392,7 @@
             lastTotal = totalData?.lastMonth?.total ?? 0;
             changeText = totalData?.changeText || "";
             changetxt = totalData?.changetxt || ""; 
-            // ✅ 取得分類總額
-            const types = totalData?.types || [];
+            types = totalData?.types || []; // ✅ 取得分類總額
             
           } catch (err) {
             console.warn("查詢總額失敗：", err.message);
@@ -492,6 +492,7 @@
   </script>
 </body>
 </html>
+
 
 
 
