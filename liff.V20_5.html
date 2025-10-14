@@ -411,15 +411,30 @@
                     `📝 附註：${payload.note || " "}\n\n` +
                     `📆 本期總額：💰${thisTotal}\n`;
         
-                  if (lastTotal !== 0) {
-                    msg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}\n📢 ${changetxt}`;
+                    if (lastTotal !== 0) {
+                      msg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}\n📢 ${changetxt}`;
+                    }
+
+                    // 🔹 新增分類總額顯示
+                    if (types && types.length) {
+                      msg += `\n📂 分類總額:\n`;
+                
+                      types.forEach(t => {
+                        if (t.lastTotal === 0) {
+                          // 上期為 0，顯示本期總額 + 百分比
+                          msg += `• ${t.type}：💰${t.thisTotal}，🧮 ${t.changeText}\n`;
+                        } else {
+                          // 上期不為 0，只顯示本期總額
+                          msg += `• ${t.type}：💰${t.thisTotal}\n`;
+                        }
+                      });
+                    }
+          
+                    await liff.sendMessages([{ type: "text", text: msg }]);
+                  } catch (err) {
+                    console.warn("sendMessages 錯誤：", err.message);
                   }
-        
-                  await liff.sendMessages([{ type: "text", text: msg }]);
-                } catch (err) {
-                  console.warn("sendMessages 錯誤：", err.message);
                 }
-              }
         
               // ✅ alert 顯示
               let alertMsg =
@@ -435,26 +450,26 @@
                 `📝 附註：${payload.note || " "}\n\n` +
                 `📆 本期總額：💰${thisTotal}\n`;
         
-              if (lastTotal !== 0) {
-                alertMsg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}\n📢 ${changetxt}`;
-              }
-          
-              // 🔹 類別分類總額
-              if (types && types.length) {
-                alertMsg += `\n📂 分類總額:\n`;
-              
-                types.forEach(t => {
-                  // 只顯示 lastTotal === 0 的類別百分比
-                  if (t.lastTotal === 0) {
-                    alertMsg += `• ${t.type}：💰${t.thisTotal}，🧮 佔比：${t.changeText}\n`;
-                  } else {
-                    // 如果 lastTotal !== 0，僅顯示本期總額，不顯示百分比
-                    alertMsg += `• ${t.type}：💰${t.thisTotal}\n`;
-                  }
-                });
-              }
-          
-              alert(alertMsg);
+                if (lastTotal !== 0) {
+                  alertMsg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}\n📢 ${changetxt}`;
+                }
+            
+                // 🔹 類別分類總額
+                if (types && types.length) {
+                  alertMsg += `\n📂 分類總額:\n`;
+                
+                  types.forEach(t => {
+                    // 只顯示 lastTotal === 0 的類別百分比
+                    if (t.lastTotal === 0) {
+                      alertMsg += `• ${t.type}：💰${t.thisTotal}，🧮 佔比：${t.changeText}\n`;
+                    } else {
+                      // 如果 lastTotal !== 0，僅顯示本期總額，不顯示百分比
+                      alertMsg += `• ${t.type}：💰${t.thisTotal}\n`;
+                    }
+                  });
+                }
+            
+                alert(alertMsg);
         
               // ✅ 重設表單
               document.getElementById("expenseForm").reset();
@@ -474,6 +489,7 @@
   </script>
 </body>
 </html>
+
 
 
 
