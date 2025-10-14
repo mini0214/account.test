@@ -438,7 +438,22 @@
               if (lastTotal !== 0) {
                 alertMsg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}\n📢 ${changetxt}`;
               }
-        
+          
+              // 🔹 類別分類總額
+              if (types && types.length) {
+                alertMsg += `\n📂 分類總額:\n`;
+              
+                types.forEach(t => {
+                  // 只顯示 lastTotal === 0 的類別百分比
+                  if (t.lastTotal === 0) {
+                    alertMsg += `• ${t.type}：💰${t.thisTotal}，🧮 佔比：${t.changeText}\n`;
+                  } else {
+                    // 如果 lastTotal !== 0，僅顯示本期總額，不顯示百分比
+                    alertMsg += `• ${t.type}：💰${t.thisTotal}\n`;
+                  }
+                });
+              }
+          
               alert(alertMsg);
         
               // ✅ 重設表單
@@ -459,6 +474,7 @@
   </script>
 </body>
 </html>
+
 
 
 
