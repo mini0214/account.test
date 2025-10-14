@@ -54,58 +54,98 @@
 <script>
 //const LIFF_ID = "2008096451-jPJ50MOY"; // 換成你的 LIFF ID
 //const VERSION = "V17_#43";             // 固定版次
-const API_URL = "https://script.google.com/macros/s/AKfycby4mZrwFX52xb7WgBrJIYsG76yvUZkgSadjly-vot-4ajrJ8DV8bemR1EVn_fZKJR_kHA/exec";  // 換成你的 GAS PATH
+//const API_URL = "https://script.google.com/macros/s/AKfycby4mZrwFX52xb7WgBrJIYsG76yvUZkgSadjly-vot-4ajrJ8DV8bemR1EVn_fZKJR_kHA/exec";  // 換成你的 GAS PATH
 
-let LIFF_ID = "default";   // 先放預設或空字串,從 D12 帶入 query
-let VERSION = "V";      // ✅ 預設顯示版本號，不要等API,從 D10 帶入 版次
+//let LIFF_ID = "default";   // 先放預設或空字串,從 D12 帶入 query
+//let VERSION = "V";      // ✅ 預設顯示版本號，不要等API,從 D10 帶入 版// ----------------------------------------------------
+// ✅ 設定,全域設定
+// ----------------------------------------------------
+// 💡 說明：
+// FALLBACK_GAS_SETTINGS_URL 是「啟動保底設定URL」。第一次啟動時用它讀取設定表。所以未來重新部署 GAS，不需修改此行，除非設定表失效。
+// 若設定表內有 D5（SETTINGS_URL），會自動更新成 D5。
+// 暫時用,後續會自動轉換成設定檔內的固定 D5。這行只是啟動用的臨時鑰匙，真的開門後會自動換成設定表的正式鑰匙。
+let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbz3mlLlX4NId1J9th8ADMfLfswG5Z6XalWDL9cu68W60yDj3XSAdQ4NLwZozXwDSTe4cQ/exec";
+     
+let API_URL = "";    // ✅ 從設定檔 D6
+let VERSION = "V";   // ✅ 從設定檔 D10
+let LIFF_IDa = "";   // ✅ 從設定檔 D11
+let LIFF_IDq = "";   // ✅ 從設定檔 D12
+
+let currentUser = null; // ✅ 先定義變數，不要一開始就用 json 登入者的資料
+let chartInstance = null;
 
 document.getElementById("version").textContent = VERSION;
 
-async function loadConfig() { 
-  try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify({ type: "config" })
-    });
-    const cfg = await res.json();
+// ----------------------------------------------------
+// ✅ 設定,設定載入
+// ----------------------------------------------------
+async function tryFetchText(url){
+  const r = await fetch(url, { cache: 'no-store' });
+  const text = await r.text();
+  try { const j = JSON.parse(text); return { ok: true, json: j }; }
+  catch(e){ return { ok: false, text }; }
+}
 
-    if (cfg.ok) {
-      LIFF_ID = cfg.D12;    // 取設定表 D12 query
-      VERSION = cfg.D10;    // 取設定表 D10 版次
-      document.getElementById("version").textContent = VERSION; // ✅ API回來再更新
-      console.log("設定完成:", { LIFF_ID, VERSION });
-    } else {
-      console.error("讀取設定失敗:", cfg.error);
+// ----------------------------------------------------
+// ✅ 設定,從設定GAS讀取設定
+// ----------------------------------------------------
+async function loadSettings(){
+  // 🔹 直接用 fallback 設定 GAS 查詢
+  const res = await tryFetchText(FALLBACK_GAS_SETTINGS_URL + "?type=query&command=設定");
+  if (!res.ok) throw new Error("設定 GAS 讀取失敗：" + res.text);
+    
+  const data = res.json;
+  if (!data.ok || !data.data) throw new Error("設定格式錯誤");
+    
+  return data.data;  // 只回傳 data
+}
+  
+// ----------------------------------------------------
+// ✅ 設定,初始化
+// ----------------------------------------------------
+async function initApp(){
+  try {
+    const settings = await loadSettings();
+    if (!settings) throw new Error("設定格式錯誤");
+       
+    // 🔹 從設定帶入
+    FALLBACK_GAS_SETTINGS_URL = (settings.SETTINGS_URL || FALLBACK_GAS_SETTINGS_URL).trim();// 自動轉換成設定檔內的固定 D5
+    API_URL = (settings.API_URL || "").trim();
+    VERSION = (settings.D10 || "V").trim();
+    //LIFF_IDa = (settings.D11 || "").trim();
+    LIFF_IDq = (settings.D12 || "").trim();
+    
+    document.getElementById("version").textContent = VERSION;
+    console.log("✅ 設定成功:", { FALLBACK_GAS_SETTINGS_URL, API_URL, LIFF_IDq, VERSION });
+    
+    if (!LIFF_IDq) throw new Error("❌ LIFF ID 尚未設定，請確認設定表 D12");
+    
+    await liff.init({ liffId: LIFF_IDq });
+    if (!liff.isLoggedIn()) liff.login();
+    
+    // 抓使用者 LINE 名稱
+    try {
+      const profile = await liff.getProfile();
+      currentUser = profile.displayName;
+      console.log("登入使用者:", currentUser);
+    } catch (e) {
+      console.warn("抓不到 LINE 名稱，會改用資料表第一筆:", e);
     }
+
+    // 日期區間初始化
+    setDefaultDateRange();
+
+    // 其他邏輯（例如繪圖或查詢）
+    if (API_URL) {
+      console.log("📡 已連線到 API_URL:", API_URL);
+      // await loadChartData();
+    }
+    
   } catch (err) {
-    console.error("載入設定發生錯誤:", err);
+    console.error("初始化設定失敗：", err);
+    alert("初始化設定失敗：" + err.message);
   }
 }
- 
-let chartInstance = null;
-let currentUser = null;   // ✅ 先定義變數，不要一開始就用 json 登入者的資料
-  
-document.getElementById("version").textContent = VERSION;
-
-// 初始化 LIFF
-async function main() {
-  await loadConfig();   // ✅ 先等設定抓完
-  document.getElementById("version").textContent = VERSION;
-  
-  await liff.init({ liffId: LIFF_ID });
-  if (!liff.isLoggedIn()) liff.login();
-
-  // 這裡也可以從 LINE 帳號自動抓名稱 登入者的資料
-  try {
-    const profile = await liff.getProfile();
-    currentUser = profile.displayName;
-    console.log("登入使用者:", currentUser);
-  } catch (e) {
-    console.warn("抓不到 LINE 名稱，會改用資料表第一筆:", e);
-  }  
-  setDefaultDateRange();
-}
-main();
 
 // 設定預設日期為本月月初與月底
 function setDefaultDateRange() {
@@ -505,15 +545,5 @@ chartInstance = new Chart(ctx, {
 // ✅ 呼叫一次
 loadConfig();
 </script>
-
 </body>
 </html>
-
-
-
-
-
-
-
-
-
