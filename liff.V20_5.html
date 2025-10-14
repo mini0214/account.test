@@ -266,8 +266,8 @@
     // ----------------------------------------------------
     // ✅ 全域設定
     // ----------------------------------------------------
-    const FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbwDciyCC53dyenlM4zymzrHbgQECkZvtCtQ2YERInc1UnvfFzUkcru2Lc3ehJuZeVm6mw/exec";
-    
+    //const FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbwDciyCC53dyenlM4zymzrHbgQECkZvtCtQ2YERInc1UnvfFzUkcru2Lc3ehJuZeVm6mw/exec";
+    let FALLBACK_GAS_SETTINGS_URL = "";  // ✅ 從設定檔 D5 
     let API_URL = "";    // ✅ 從設定檔 D6
     let VERSION = "V";   // ✅ 從設定檔 D10
     let LIFF_IDa = "";   // ✅ 從設定檔 D11
@@ -284,7 +284,9 @@
     }
     
     async function loadSettings(){
-      const res = await tryFetchText(FALLBACK_GAS_SETTINGS_URL + "?type=query&command=設定");
+      // 1️⃣ 呼叫本 GAS 自己（不需事先知道 D5）
+      const selfUrl = window.location.href.split('?')[0]; // 目前執行頁面對應的 GAS URL
+      const res = await tryFetchText(selfUrl + "?type=query&command=設定");
       if (!res.ok) throw new Error("設定 GAS 讀取失敗：" + res.text);
     
       const data = res.json;
@@ -300,14 +302,16 @@
       try {
         const settings = await loadSettings();
         if (!settings) throw new Error("設定格式錯誤");
-    
+        
+         // 🔹 從設定帶入
+        FALLBACK_GAS_SETTINGS_URL = (settings.FALLBACK_GAS_SETTINGS_URL || "").trim();
         API_URL = (settings.API_URL || "").trim();
         VERSION = (settings.D10 || "V").trim();
         LIFF_IDa = (settings.D11 || "").trim();
         LIFF_IDq = (settings.D12 || "").trim();
     
         document.getElementById("version").textContent = VERSION;
-        console.log("✅ 設定成功:", { API_URL, LIFF_IDa, VERSION });
+        console.log("✅ 設定成功:", { FALLBACK_GAS_SETTINGS_URL, API_URL, LIFF_IDa, VERSION });
     
         if (!LIFF_IDa) throw new Error("❌ LIFF ID 尚未設定，請確認設定表 D11");
     
@@ -553,6 +557,7 @@
   </script>
 </body>
 </html>
+
 
 
 
