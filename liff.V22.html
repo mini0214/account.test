@@ -112,14 +112,30 @@
   
     <div class="form-row">
       <label for="payment">付款：</label>
-      <select id="payment" required></select>
+      <select id="payment" required>
+        <option value="">請選擇付款</option>
+        <option value="現金">現金</option>
+        <option value="信用卡">信用卡</option>
+        <option value="LINE Pay">LINE Pay</option>
+        <option value="銀行轉帳">銀行轉帳</option>
+      </select>
     </div>
 
     <div class="form-block">
       <label for="type">分類：</label>
-      <select id="type" required></select>
+      <select id="type" required>
+        <option value="">請選擇分類</option>
+        <option value="食">食</option>
+        <option value="衣">衣</option>
+        <option value="住">住</option>
+        <option value="行">行</option>
+        <option value="育">育</option>
+        <option value="樂">樂</option>
+        <option value="其他">其他</option>
+        <option value="收入">收入</option>   
+      </select>
     </div>
-    
+
     <div class="form-row">
       <label for="store">附註：</label>
       <input type="text" id="note" placeholder="選填">
@@ -152,7 +168,7 @@
     // FALLBACK_GAS_SETTINGS_URL 是「啟動保底設定URL」。第一次啟動時用它讀取設定表。所以未來重新部署 GAS，不需修改此行，除非設定表失效。
     // 若設定表內有 D5（SETTINGS_URL），會自動更新成 D5。
     // 暫時用,後續會自動轉換成設定檔內的固定 D5。這行只是啟動用的臨時鑰匙，真的開門後會自動換成設定表的正式鑰匙。
-    let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycby1SMoG2P9fXnir-9aaGe_4WTvNL7u1QqorBMpWnxFO760AtriIKzhawj3wKiKj5ZE_UQ/exec";
+    let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbz3mlLlX4NId1J9th8ADMfLfswG5Z6XalWDL9cu68W60yDj3XSAdQ4NLwZozXwDSTe4cQ/exec";
      
     let API_URL = "";    // ✅ 從設定檔 D6
     let VERSION = "V";   // ✅ 從設定檔 D10
@@ -205,10 +221,7 @@
     
         document.getElementById("date").valueAsDate = new Date();
     
-        if (API_URL) {
-          await loadStoreList();          // 店家提示清單
-          await loadTypeAndPaymentList(); // 清單(分類/付款)
-        }
+        if (API_URL) await loadStoreList();
     
       } catch (err) {
         console.error("初始化設定失敗：", err);
@@ -216,43 +229,6 @@
       }
     }
     
-    // 🔹 載入清單(分類type/付款payment)
-    async function loadTypeAndPaymentList() {
-      try {
-        const listRes = await fetch(`${API_URL}?type=query&command=清單`);
-        const listData = await listRes.json();
-        console.log("GAS 回傳清單:", listData);
-    
-        if (listData.ok) {
-          // 假設回傳格式 { types: [...], payments: [...] }
-          const types = listData.types || [];
-          const payments = listData.payments || [];
-    
-          // 填入分類type下拉選單
-          const typeSelect = document.getElementById("type");
-          typeSelect.innerHTML = ""; // 清空
-          types.forEach(t => {
-            const opt = document.createElement("option");
-            opt.value = t;
-            opt.textContent = t;
-            typeSelect.appendChild(opt);
-          });
-    
-          // 填入付款payment下拉選單
-          const paymentSelect = document.getElementById("payment");
-          paymentSelect.innerHTML = ""; // 清空
-          payments.forEach(p => {
-            const opt = document.createElement("option");
-            opt.value = p;
-            opt.textContent = p;
-            paymentSelect.appendChild(opt);
-          });
-        }
-      } catch (err) {
-        console.error("載入清單失敗:", err);
-      }
-    }   
-  
     // 店家清單
     let storeList = []; // [{store, type}]
     const input = document.getElementById("store");
@@ -337,7 +313,10 @@
 
       // 預設日期為今天
       document.getElementById("date").valueAsDate = new Date();
-      
+          
+      // 🚀 等設定完成後再載入店家清單
+      await loadStoreList();
+    }
     //window.addEventListener("load", main);
 
     document.getElementById("expenseForm").addEventListener("submit", async (e) => {
@@ -541,4 +520,10 @@
   </script>
 </body>
 </html>
+
+
+
+
+
+
 
