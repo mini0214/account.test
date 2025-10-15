@@ -430,13 +430,13 @@
                     const sortedpayments = order.map(o => payments.find(t => t.payment === o)).filter(Boolean);
                   
                     sortedpayments.forEach(t => {
-                      msg += `• ${t.payment}：💰${t.thisTotal}\n`;
+                      msg += `▶︎ ${t.payment}：💰${t.thisTotal}\n`;
                     });
                   }
                   
                     // 🔹 分類本期總額顯示
                     if (types && types.length) {
-                      msg += `\n\n📂 分類本期總額:\n`;
+                      msg += `\n📂 分類本期總額:\n`;
                 
                     // 建立固定順序
                     const order = ["食","衣","住","行","育","樂","其他","收入"];                    
@@ -444,7 +444,7 @@
                     const sortedTypes = order.map(o => types.find(t => t.type === o)).filter(Boolean);
                   
                     sortedTypes.forEach(t => {
-                      msg += `• ${t.type}：💰${t.thisTotal}\n`;
+                      msg += `▶︎ ${t.type}：💰${t.thisTotal}\n`;
                     });
                   }
           
@@ -482,13 +482,13 @@
                 const sortedpayments = order.map(o => payments.find(t => t.payment === o)).filter(Boolean);
               
                 sortedpayments.forEach(t => {
-                  alertMsg += `• ${t.payment}：💰${t.thisTotal}\n`;
+                  alertMsg += `▶︎ ${t.payment}：💰${t.thisTotal}\n`;
                 });
               }
           
                 // 🔹 分類本期總額顯示
                 if (types && types.length) {
-                  alertMsg += `\n\n📂 分類本期總額:\n`;
+                  alertMsg += `\n📂 分類本期總額:\n`;
                 
                 // 建立固定順序
                 const order = ["食","衣","住","行","育","樂","其他","收入"];
@@ -496,7 +496,7 @@
                 const sortedTypes = order.map(o => types.find(t => t.type === o)).filter(Boolean);
               
                 sortedTypes.forEach(t => {
-                  alertMsg += `• ${t.type}：💰${t.thisTotal}\n`;
+                  alertMsg += `▶︎ ${t.type}：💰${t.thisTotal}\n`;
                 });
               }
             
@@ -520,6 +520,7 @@
   </script>
 </body>
 </html>
+
 
 
 
