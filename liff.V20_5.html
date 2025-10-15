@@ -381,6 +381,7 @@
           let changeText = "";
           let changetxt = "";
           let types = [];   
+          let payments = [];
         
           try {
             const user = encodeURIComponent(payload.displayName); // 或固定 "Betty Yi"
@@ -388,11 +389,12 @@
             const totalData = await totalRes.json();
             console.log("totalData:", totalData);
           
-            thisTotal = totalData?.thisMonth?.total ?? 0;
-            lastTotal = totalData?.lastMonth?.total ?? 0;
-            changeText = totalData?.changeText || "";
-            changetxt = totalData?.changetxt || ""; 
-            types = totalData?.types || []; // ✅ 分類本期總額
+            thisTotal = totalData?.thisMonth?.total ?? 0;  // ✅ 本期
+            lastTotal = totalData?.lastMonth?.total ?? 0;  // ✅ 上期
+            changeText = totalData?.changeText || "";      // ✅ 百分比
+            changetxt = totalData?.changetxt || "";        // ✅ 百分比 對應的between txt
+            types = totalData?.types || [];                // ✅ 分類本期總額
+            payments = totalData?.payments || [];          // ✅ 付款本期總額
             
           } catch (err) {
             console.warn("查詢總額失敗：", err.message);
@@ -418,6 +420,20 @@
                       msg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}\n📢 ${changetxt}`;
                     }
 
+                    // 🔹 付款本期總額顯示
+                    if (payments && payments.length) {
+                      msg += `\n\n💳 付款本期總額:\n`;
+                
+                    // 建立固定順序
+                    const order = ["現金","信用卡","LINE Pay","銀行轉帳"];                    
+                    // 按順序排序 payments
+                    const sortedpayments = order.map(o => payments.find(t => t.payment === o)).filter(Boolean);
+                  
+                    sortedpayments.forEach(t => {
+                      msg += `• ${t.payment}：💰${t.thisTotal}\n`;
+                    });
+                  }
+                  
                     // 🔹 分類本期總額顯示
                     if (types && types.length) {
                       msg += `\n\n📂 分類本期總額:\n`;
@@ -455,7 +471,21 @@
                 if (lastTotal !== 0) {
                   alertMsg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}\n📢 ${changetxt}`;
                 }
-            
+
+                // 🔹 付款本期總額顯示
+                if (payments && payments.length) {
+                  alertMsg += `\n\n💳 付款本期總額:\n`;
+                
+                // 建立固定順序
+                const order = ["現金","信用卡","LINE Pay","銀行轉帳"]; 
+                // 按順序排序 payments
+                const sortedpayments = order.map(o => payments.find(t => t.payment === o)).filter(Boolean);
+              
+                sortedpayments.forEach(t => {
+                  alertMsg += `• ${t.payment}：💰${t.thisTotal}\n`;
+                });
+              }
+          
                 // 🔹 分類本期總額顯示
                 if (types && types.length) {
                   alertMsg += `\n\n📂 分類本期總額:\n`;
@@ -490,6 +520,7 @@
   </script>
 </body>
 </html>
+
 
 
 
