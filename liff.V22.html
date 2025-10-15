@@ -343,8 +343,10 @@
       // 預設日期為今天
       document.getElementById("date").valueAsDate = new Date();
           
-      // 🚀 等設定完成後再載入店家清單
-      await loadStoreList();
+      if (API_URL) {
+        await loadListData();   // ← 先載分類、付款清單
+        await loadStoreList();  // ← 再載店家清單
+      }
     }
     //window.addEventListener("load", main);
 
@@ -549,6 +551,7 @@
   </script>
 </body>
 </html>
+
 
 
 
