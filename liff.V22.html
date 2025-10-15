@@ -205,7 +205,10 @@
     
         document.getElementById("date").valueAsDate = new Date();
     
-        if (API_URL) await loadStoreList();
+        if (API_URL) {
+          await loadStoreList();          // 店家提示清單
+          await loadTypeAndPaymentList(); // 清單(分類/付款)
+        }
     
       } catch (err) {
         console.error("初始化設定失敗：", err);
@@ -538,12 +541,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
