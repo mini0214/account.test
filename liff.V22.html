@@ -112,30 +112,14 @@
   
     <div class="form-row">
       <label for="payment">付款：</label>
-      <select id="payment" required>
-        <option value="">請選擇付款</option>
-        <option value="現金">現金</option>
-        <option value="信用卡">信用卡</option>
-        <option value="LINE Pay">LINE Pay</option>
-        <option value="銀行轉帳">銀行轉帳</option>
-      </select>
+      <select id="payment" required></select>
     </div>
 
     <div class="form-block">
       <label for="type">分類：</label>
-      <select id="type" required>
-        <option value="">請選擇分類</option>
-        <option value="食">食</option>
-        <option value="衣">衣</option>
-        <option value="住">住</option>
-        <option value="行">行</option>
-        <option value="育">育</option>
-        <option value="樂">樂</option>
-        <option value="其他">其他</option>
-        <option value="收入">收入</option>   
-      </select>
+      <select id="type" required></select>
     </div>
-
+    
     <div class="form-row">
       <label for="store">附註：</label>
       <input type="text" id="note" placeholder="選填">
@@ -229,6 +213,43 @@
       }
     }
     
+    // 🔹 載入清單(分類type/付款payment)
+    async function loadTypeAndPaymentList() {
+      try {
+        const listRes = await fetch(`${API_URL}?type=query&command=清單`);
+        const listData = await listRes.json();
+        console.log("GAS 回傳清單:", listData);
+    
+        if (listData.ok) {
+          // 假設回傳格式 { types: [...], payments: [...] }
+          const types = listData.types || [];
+          const payments = listData.payments || [];
+    
+          // 填入分類type下拉選單
+          const typeSelect = document.getElementById("type");
+          typeSelect.innerHTML = ""; // 清空
+          types.forEach(t => {
+            const opt = document.createElement("option");
+            opt.value = t;
+            opt.textContent = t;
+            typeSelect.appendChild(opt);
+          });
+    
+          // 填入付款payment下拉選單
+          const paymentSelect = document.getElementById("payment");
+          paymentSelect.innerHTML = ""; // 清空
+          payments.forEach(p => {
+            const opt = document.createElement("option");
+            opt.value = p;
+            opt.textContent = p;
+            paymentSelect.appendChild(opt);
+          });
+        }
+      } catch (err) {
+        console.error("載入清單失敗:", err);
+      }
+    }   
+  
     // 店家清單
     let storeList = []; // [{store, type}]
     const input = document.getElementById("store");
@@ -313,10 +334,13 @@
 
       // 預設日期為今天
       document.getElementById("date").valueAsDate = new Date();
-          
-      // 🚀 等設定完成後再載入店家清單
-      await loadStoreList();
-    }
+      
+      // 初始化時呼叫;等設定完成後再載入
+      window.addEventListener("load", async () => {
+        await loadStoreList();           // 店家清單
+        await loadTypeAndPaymentList();  // 分類 + 付款
+      });
+
     //window.addEventListener("load", main);
 
     document.getElementById("expenseForm").addEventListener("submit", async (e) => {
@@ -520,6 +544,7 @@
   </script>
 </body>
 </html>
+
 
 
 
