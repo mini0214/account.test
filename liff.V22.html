@@ -335,12 +335,6 @@
       // 預設日期為今天
       document.getElementById("date").valueAsDate = new Date();
       
-      // 初始化時呼叫;等設定完成後再載入
-      window.addEventListener("load", async () => {
-        await loadStoreList();           // 店家清單
-        await loadTypeAndPaymentList();  // 分類 + 付款
-      });
-
     //window.addEventListener("load", main);
 
     document.getElementById("expenseForm").addEventListener("submit", async (e) => {
@@ -544,6 +538,7 @@
   </script>
 </body>
 </html>
+
 
 
 
