@@ -114,10 +114,6 @@
       <label for="payment">付款：</label>
       <select id="payment" required>
         <option value="">請選擇付款</option>
-        <option value="現金">現金</option>
-        <option value="信用卡">信用卡</option>
-        <option value="LINE Pay">LINE Pay</option>
-        <option value="銀行轉帳">銀行轉帳</option>
       </select>
     </div>
 
@@ -125,16 +121,48 @@
       <label for="type">分類：</label>
       <select id="type" required>
         <option value="">請選擇分類</option>
-        <option value="食">食</option>
-        <option value="衣">衣</option>
-        <option value="住">住</option>
-        <option value="行">行</option>
-        <option value="育">育</option>
-        <option value="樂">樂</option>
-        <option value="其他">其他</option>
-        <option value="收入">收入</option>   
       </select>
     </div>
+
+    //清單(type/payment)
+    <script>
+        async function loadList() {
+        try {
+          const res = await fetch(`${API_URL}?type=query&command=清單`);
+          const data = await res.json();
+          if (!data.ok) throw new Error("讀取清單失敗");
+    
+          const typeList = data.list.type;
+          const paymentList = data.list.payment;
+    
+          const typeSelect = document.getElementById("type");
+          const paymentSelect = document.getElementById("payment");
+    
+          // ✅ 動態生成「分類」下拉選單type
+          typeList.forEach(item => {
+            const opt = document.createElement("option");
+            opt.value = item.name;   // 可改成 item.number 看你要用哪個存
+            opt.textContent = item.name;
+            typeSelect.appendChild(opt);
+          });
+    
+          // ✅ 動態生成「付款」下拉選單payment
+          paymentList.forEach(item => {
+            const opt = document.createElement("option");
+            opt.value = item.name;
+            opt.textContent = item.name;
+            paymentSelect.appendChild(opt);
+          });
+    
+        } catch (err) {
+          console.error("❌ 載入清單失敗：", err);
+          alert("無法載入清單，請稍後再試！");
+        }
+      }
+    
+      // 🚀 頁面載入時自動執行
+      document.addEventListener("DOMContentLoaded", loadList);
+    </script>
 
     <div class="form-row">
       <label for="store">附註：</label>
@@ -520,6 +548,7 @@
   </script>
 </body>
 </html>
+
 
 
 
