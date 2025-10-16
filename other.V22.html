@@ -125,6 +125,15 @@
 
     let editIndex = -1; // 修改用
 
+      // 初始化完後載入資料
+      loadOther();
+
+    } catch (err) {
+      alert("❌ 初始化失敗：" + err.message);
+      console.error(err);
+    }
+  }
+
     async function saveOther() {
       const payload = {
         type: editIndex === -1 ? "save_other" : "update_other",
@@ -136,7 +145,7 @@
       };
 
       if (!payload.number || !payload.name) {
-        alert("❗代碼與名稱不得為空");
+        alert("❗編號與名稱不得為空");
         return;
       }
 
@@ -229,12 +238,8 @@
         }
       });
     }
-
-    loadOther(); // 初始載入清單
+    
+    initApp();// 🚀 啟動應用
   </script>
 </body>
 </html>
-
-
-
-
