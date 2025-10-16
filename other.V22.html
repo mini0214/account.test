@@ -95,7 +95,7 @@
     }
 
     async function loadOther() {
-     try {
+      try {
         const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ type: "query_other" }) });
         const result = await res.json();
         const tbody = document.querySelector("#otherTable tbody");
@@ -123,7 +123,7 @@
         alert("⚠️ 查詢失敗：" + err);
       }
     }
-
+    
     function editOther(idx) {
       fetch(API_URL, { method: "POST", body: JSON.stringify({ type: "query_other" }) })
         .then(res => res.json())
@@ -141,10 +141,26 @@
 
     function deleteOther(idx) {
       if (!confirm("❗確定要刪除這筆資料嗎？")) return;
-      fetch(API_URL, { method: "POST", body: JSON.stringify({ type: "delete_other", index: idx }) })
+
+      // 先取得最新資料，確保 index 對應正確
+      fetch(API_URL, { method: "POST", body: JSON.stringify({ type: "query_other" }) })
         .then(res => res.json())
         .then(result => {
-          if (result.ok) { alert("✅ 已刪除資料"); loadOther(); }
+          if (result.ok && Array.isArray(result.data) && result.data[idx]) {
+            fetch(API_URL, { method: "POST", body: JSON.stringify({ type: "delete_other", index: idx }) })
+              .then(res2 => res2.json())
+              .then(resDel => {
+                if (resDel.ok) {
+                  alert("✅ 已刪除資料");
+                  clearForm();
+                  loadOther();
+                } else {
+                  alert("❌ 刪除失敗：" + (resDel.msg || "未知錯誤"));
+                }
+              });
+          } else {
+            alert("❌ 資料不存在，無法刪除");
+          }
         });
     }
 
@@ -152,6 +168,3 @@
   </script>
 </body>
 </html>
-
-
-
