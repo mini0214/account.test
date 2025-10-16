@@ -7,7 +7,7 @@
   
   <style>
     body { font-family: Arial, sans-serif; padding: 30px; background: #f7f7f7; }
-    h2 { font-size: 50px; text-align: center; margin-bottom: 50px; }
+    h3 { font-size: 50px; text-align: center; margin-bottom: 50px; }
     select, input, button { padding: 8px; margin: 5px 0; font-size: 16px; }
     button { background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
     button:hover { background-color: #0056b3; }
@@ -24,7 +24,7 @@
 <body>
   
   <div class="container">
-    <h2>維護分類/付款清單</h2>
+    <h3>非設不可.[<span id="version"></span>]</h3>
     
     <label>類別：</label>
     <select id="classify">
@@ -33,13 +33,13 @@
     </select><br>
 
     <label>編號：</label>
-    <input type="text" id="number" placeholder="例如：t08 或 p06"><br>
+    <input type="text" id="number" placeholder="例如：t08 或 p06" required><br>
 
     <label>名稱：</label>
-    <input type="text" id="name" placeholder="名稱"><br>
+    <input type="text" id="name" placeholder="名稱" required><br>
 
     <label>備註：</label>
-    <input type="text" id="note" placeholder="可留空"><br>
+    <input type="text" id="note" placeholder="選填"><br>
 
     <button onclick="saveOther()">📤 儲存</button>
     <button onclick="loadOther()">📖 查詢</button>
@@ -53,7 +53,76 @@
   </div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbzEIwqoBvtGJgguaWh4HHlStVZHIpPOHzgZjNmMFCxasICgHFdA7bhJ7-2QndzBUUEvZw/exec";
+  //const LIFF_ID = "2008096451-jPJ50MOY"; // 換成你的 LIFF ID
+  //const VERSION = "V17_#43";             // 固定版次
+  //const API_URL = "https://script.google.com/macros/s/AKfycby4mZrwFX52xb7WgBrJIYsG76yvUZkgSadjly-vot-4ajrJ8DV8bemR1EVn_fZKJR_kHA/exec";  // 換成你的 GAS PATH
+  
+  //let LIFF_ID = "default";   // 先放預設或空字串,從 D12 帶入 query
+  //let VERSION = "V";      // ✅ 預設顯示版本號，不要等API,從 D10 帶入 版// ----------------------------------------------------
+  // ✅ 設定,全域設定
+  // ----------------------------------------------------
+  // 💡 說明：
+  // FALLBACK_GAS_SETTINGS_URL 是「啟動保底設定URL」。第一次啟動時用它讀取設定表。所以未來重新部署 GAS，不需修改此行，除非設定表失效。
+  // 若設定表內有 D5（SETTINGS_URL），會自動更新成 D5。
+  // 暫時用,後續會自動轉換成設定檔內的固定 D5。這行只是啟動用的臨時鑰匙，真的開門後會自動換成設定表的正式鑰匙。
+  let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbz3mlLlX4NId1J9th8ADMfLfswG5Z6XalWDL9cu68W60yDj3XSAdQ4NLwZozXwDSTe4cQ/exec";
+       
+  let API_URL = "";    // ✅ 從設定檔 D6
+  let VERSION = "V";   // ✅ 從設定檔 D10
+  let LIFF_IDa = "";   // ✅ 從設定檔 D11
+  let LIFF_IDq = "";   // ✅ 從設定檔 D12
+  let LIFF_IDo = "";   // ✅ 從設定檔 D13
+  let LIFF_IDs = "";   // ✅ 從設定檔 D14
+
+  // ----------------------------------------------------
+  // ✅ 設定,設定載入
+  // ----------------------------------------------------
+  async function tryFetchText(url){
+    const r = await fetch(url, { cache: 'no-store' });
+    const text = await r.text();
+    try { const j = JSON.parse(text); return { ok: true, json: j }; }
+    catch(e){ return { ok: false, text }; }
+  }
+  
+  // ----------------------------------------------------
+  // ✅ 設定,從設定GAS讀取設定
+  // ----------------------------------------------------
+  async function loadSettings(){
+    // 🔹 直接用 fallback 設定 GAS 查詢
+    const res = await tryFetchText(FALLBACK_GAS_SETTINGS_URL + "?type=query&command=設定");
+    if (!res.ok) throw new Error("設定 GAS 讀取失敗：" + res.text);
+      
+    const data = res.json;
+    if (!data.ok || !data.data) throw new Error("設定格式錯誤");
+      
+    return data.data;  // 只回傳 data
+  }
+    
+  // ----------------------------------------------------
+  // ✅ 設定,初始化
+  // ----------------------------------------------------
+  async function initApp(){
+    try {
+      const settings = await loadSettings();
+      if (!settings) throw new Error("設定格式錯誤");
+         
+      // 🔹 從設定帶入
+      FALLBACK_GAS_SETTINGS_URL = (settings.SETTINGS_URL || FALLBACK_GAS_SETTINGS_URL).trim();// 自動轉換成設定檔內的固定 D5
+      API_URL = (settings.API_URL || "").trim();
+      VERSION = (settings.D10 || "V").trim();
+      //LIFF_IDa = (settings.D11 || "").trim();
+      //LIFF_IDq = (settings.D12 || "").trim();
+      LIFF_IDo = (settings.D13 || "").trim();
+      //LIFF_IDs = (settings.D14 || "").trim();
+      
+      document.getElementById("version").textContent = VERSION;
+      console.log("✅ 設定成功:", { FALLBACK_GAS_SETTINGS_URL, API_URL, LIFF_IDo, VERSION });
+      
+      if (!LIFF_IDo) throw new Error("❌ LIFF ID 尚未設定，請確認設定表 D13");
+      
+      await liff.init({ liffId: LIFF_IDo });
+      if (!liff.isLoggedIn()) liff.login();
+
     let editIndex = -1; // 修改用
 
     async function saveOther() {
@@ -165,6 +234,7 @@
   </script>
 </body>
 </html>
+
 
 
 
