@@ -461,7 +461,9 @@
                       msg += `\n\n💳 付款本期總額:\n`;
                 
                       // 依 number 排序
-                      const sortedPayments = [...window.otherList.payment].sort((a, b) => a.number.localeCompare(b.number));
+                      const sortedPayments = [...window.otherList.payment].sort(
+                        (a, b) => String(a.number ?? "").localeCompare(String(b.number ?? ""))
+                      );
                 
                       sortedPayments.forEach(ref => {
                         const found = payments.find(p => p.payment === ref.name);
@@ -476,8 +478,10 @@
                       msg += `\n📂 分類本期總額:\n`;
                 
                       // 依 number 排序
-                      const sortedTypes = [...window.otherList.type].sort((a, b) => a.number.localeCompare(b.number));
-                
+                      const sortedTypes = [...window.otherList.type].sort(
+                        (a, b) => String(a.number ?? "").localeCompare(String(b.number ?? ""))
+                      );
+                      
                       sortedTypes.forEach(ref => {
                         const found = types.find(t => t.type === ref.name);
                         if (found) {
@@ -522,7 +526,9 @@
                   alertMsg += `\n\n💳 付款本期總額:\n`;
                 
                   // 依 number 排序
-                  const sortedPayments = [...window.otherList.payment].sort((a, b) => a.number.localeCompare(b.number));
+                  const sortedPayments = [...window.otherList.payment].sort(
+                    (a, b) => String(a.number ?? "").localeCompare(String(b.number ?? ""))
+                  );
                 
                   sortedPayments.forEach(ref => {
                     const found = payments.find(p => p.payment === ref.name);
@@ -537,7 +543,9 @@
                   alertMsg += `\n📂 分類本期總額:\n`;
                 
                   // 依 number 排序
-                  const sortedTypes = [...window.otherList.type].sort((a, b) => a.number.localeCompare(b.number));
+                  const sortedTypes = [...window.otherList.type].sort(
+                    (a, b) => String(a.number ?? "").localeCompare(String(b.number ?? ""))
+                  );
                 
                   sortedTypes.forEach(ref => {
                     const found = types.find(t => t.type === ref.name);
@@ -567,4 +575,5 @@
   </script>
 </body>
 </html>
+
 
