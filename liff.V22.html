@@ -485,7 +485,14 @@
                         }
                       });
                     }
-                
+                  
+                    // ✅ 最後顯示於 alert（或 LINE 傳送）
+                    alert(msg);
+
+                    if (liff.isInClient()) {
+                      await liff.sendMessages([{ type: "text", text: msg }]);
+                    }
+                  
                     await liff.sendMessages([{ type: "text", text: msg }]);
                   } catch (err) {
                     console.warn("sendMessages 錯誤：", err.message);
@@ -560,3 +567,4 @@
   </script>
 </body>
 </html>
+
