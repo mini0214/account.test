@@ -460,10 +460,19 @@
                     if (payments && payments.length && window.otherList && window.otherList.payment) {
                       msg += `\n\n💳 付款本期總額:\n`;
                 
-                      // 依 number 排序
-                      const sortedPayments = [...window.otherList.payment].sort(
-                        (a, b) => String(a.number ?? "").localeCompare(String(b.number ?? ""))
-                      );
+                      // 依 number 排序（同時支援數字與文字）
+                      const sortedPayments = [...window.otherList.payment].sort((a, b) => {
+                        const aVal = a.number;
+                        const bVal = b.number;
+                    
+                        const aNum = Number(aVal);
+                        const bNum = Number(bVal);
+                    
+                        if (!isNaN(aNum) && !isNaN(bNum)) {
+                          return aNum - bNum;
+                        }
+                        return String(aVal).localeCompare(String(bVal));
+                      });
                 
                       sortedPayments.forEach(ref => {
                         const found = payments.find(p => p.payment === ref.name);
@@ -477,10 +486,21 @@
                     if (types && types.length && window.otherList && window.otherList.type) {
                       msg += `\n📂 分類本期總額:\n`;
                 
-                      // 依 number 排序
-                      const sortedTypes = [...window.otherList.type].sort(
-                        (a, b) => String(a.number ?? "").localeCompare(String(b.number ?? ""))
-                      );
+                      // 依 number 排序（同時支援數字與文字）
+                      const sortedTypes = [...window.otherList.type].sort((a, b) => {
+                        const aVal = a.number;
+                        const bVal = b.number;
+                    
+                        const aNum = Number(aVal);
+                        const bNum = Number(bVal);
+                    
+                        // 兩者都是有效數字 → 用數值排序
+                        if (!isNaN(aNum) && !isNaN(bNum)) {
+                          return aNum - bNum;
+                        }
+                        // 否則 → 用字母排序
+                        return String(aVal).localeCompare(String(bVal));
+                      });
                       
                       sortedTypes.forEach(ref => {
                         const found = types.find(t => t.type === ref.name);
@@ -575,5 +595,6 @@
   </script>
 </body>
 </html>
+
 
 
