@@ -42,18 +42,18 @@
     <input type="text" id="note" placeholder="可留空"><br>
 
     <button onclick="saveOther()">📤 儲存</button>
-    <button onclick="loadOther()">📖 查詢清單</button>
+    <button onclick="loadOther()">📖 查詢</button>
 
     <table id="otherTable">
       <thead>
-        <tr><th>類別</th><th>代碼</th><th>名稱</th><th>備註</th><th>操作</th></tr>
+        <tr><th>類別</th><th>代碼</th><th>名稱</th><th>備註</th><th>功能</th></tr>
       </thead>
       <tbody></tbody>
     </table>
   </div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbydk7LriqV_az7zZ95rfkT8cZDKkoFjWSLV4482sXuVR1HC1ZNsF6UIbMsQy1WT5NJyUQ/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbxS0DVbHAvgadW6qclJ28tchry0Otwrepn2Uc6a7koxQuXX9Yq1otG4HBN-LnaZSo1uxA/exec";
     let editIndex = -1; // 修改用
 
     async function saveOther() {
@@ -95,16 +95,13 @@
     }
 
     async function loadOther() {
-      try {
-        const res = await fetch(API_URL, { 
-          method: "POST", 
-          body: JSON.stringify({ type: "query_other" }) 
-        });
+     try {
+        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ type: "query_other" }) });
         const result = await res.json();
         const tbody = document.querySelector("#otherTable tbody");
         tbody.innerHTML = "";
 
-        if (result.ok) {
+        if (result.ok && Array.isArray(result.data)) {
           result.data.forEach((row, idx) => {
             const tr = document.createElement("tr");
             tr.innerHTML = `
@@ -119,6 +116,8 @@
             `;
             tbody.appendChild(tr);
           });
+        } else {
+          console.warn("查詢回傳資料異常：", result);
         }
       } catch (err) {
         alert("⚠️ 查詢失敗：" + err);
@@ -126,41 +125,30 @@
     }
 
     function editOther(idx) {
-      fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify({ type: "query_other" })
-      })
-      .then(res => res.json())
-      .then(result => {
-        if (result.ok) {
-          const row = result.data[idx];
-          document.getElementById("classify").value = row.classify;
-          document.getElementById("number").value = row.number;
-          document.getElementById("name").value = row.name;
-          document.getElementById("note").value = row.note || "";
-          editIndex = idx;
-        }
-      });
+      fetch(API_URL, { method: "POST", body: JSON.stringify({ type: "query_other" }) })
+        .then(res => res.json())
+        .then(result => {
+          if (result.ok && Array.isArray(result.data)) {
+            const row = result.data[idx];
+            document.getElementById("classify").value = row.classify;
+            document.getElementById("number").value = row.number;
+            document.getElementById("name").value = row.name;
+            document.getElementById("note").value = row.note || "";
+            editIndex = idx;
+          }
+        });
     }
 
     function deleteOther(idx) {
       if (!confirm("❗確定要刪除這筆資料嗎？")) return;
       fetch(API_URL, { method: "POST", body: JSON.stringify({ type: "delete_other", index: idx }) })
-      .then(res => res.json())
-      .then(result => {
-        if (result.ok) {
-          alert("✅ 已刪除資料");
-          loadOther();
-        }
-      });
+        .then(res => res.json())
+        .then(result => {
+          if (result.ok) { alert("✅ 已刪除資料"); loadOther(); }
+        });
     }
 
-    // 初始載入清單
-    loadOther();
+    loadOther(); // 初始載入清單
   </script>
 </body>
 </html>
-
-
-
-
