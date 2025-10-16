@@ -2,11 +2,12 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>維護分類/付款清單</title>
+  <title>零用金支出帳簿</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  
   <style>
     body { font-family: Arial, sans-serif; padding: 30px; background: #f7f7f7; }
-    h2 { color: #333; }
+    h2 { font-size: 50px; text-align: center; margin-bottom: 50px; }
     select, input, button { padding: 8px; margin: 5px 0; font-size: 16px; }
     button { background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
     button:hover { background-color: #0056b3; }
@@ -21,8 +22,9 @@
   </style>
 </head>
 <body>
+  
   <div class="container">
-    <h2>維護 Other 清單</h2>
+    <h2>維護分類/付款清單</h2>
     
     <label>類別：</label>
     <select id="classify">
@@ -30,7 +32,7 @@
       <option value="payment">付款 payment</option>
     </select><br>
 
-    <label>代碼：</label>
+    <label>編號：</label>
     <input type="text" id="number" placeholder="例如：t08 或 p06"><br>
 
     <label>名稱：</label>
@@ -158,5 +160,6 @@
   </script>
 </body>
 </html>
+
 
 
