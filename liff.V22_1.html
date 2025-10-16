@@ -454,34 +454,36 @@
                       msg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}\n📢 ${changetxt}`;
                     }
 
-                    // 🔹 付款本期總額顯示
-                    if (payments && payments.length) {
+                    // 🔹 付款本期總額顯示（依 otherList.payment.number 排序）
+                    if (payments && payments.length && window.otherList && window.otherList.payment) {
                       msg += `\n\n💳 付款本期總額:\n`;
                 
-                    // 建立固定順序
-                    const order = ["現金","信用卡","LINE Pay","銀行轉帳"];                    
-                    // 按順序排序 payments
-                    const sortedpayments = order.map(o => payments.find(t => t.payment === o)).filter(Boolean);
+                      // 依 number 排序
+                      const sortedPayments = [...window.otherList.payment].sort((a, b) => a.number.localeCompare(b.number));
+                
+                      sortedPayments.forEach(ref => {
+                        const found = payments.find(p => p.payment === ref.name);
+                        if (found) {
+                          msg += `▶︎ ${ref.name}：💰${found.thisTotal}\n`;
+                        }
+                      });
+                    }
                   
-                    sortedpayments.forEach(t => {
-                      msg += `▶︎ ${t.payment}：💰${t.thisTotal}\n`;
-                    });
-                  }
-                  
-                    // 🔹 分類本期總額顯示
-                    if (types && types.length) {
+                    // 🔹 分類本期總額顯示（依 otherList.type.number 排序）
+                    if (types && types.length && window.otherList && window.otherList.type) {
                       msg += `\n📂 分類本期總額:\n`;
                 
-                    // 建立固定順序
-                    const order = ["食","衣","住","行","育","樂","其他","收入"];                    
-                    // 按順序排序 types
-                    const sortedTypes = order.map(o => types.find(t => t.type === o)).filter(Boolean);
-                  
-                    sortedTypes.forEach(t => {
-                      msg += `▶︎ ${t.type}：💰${t.thisTotal}\n`;
-                    });
-                  }
-          
+                      // 依 number 排序
+                      const sortedTypes = [...window.otherList.type].sort((a, b) => a.number.localeCompare(b.number));
+                
+                      sortedTypes.forEach(ref => {
+                        const found = types.find(t => t.type === ref.name);
+                        if (found) {
+                          msg += `▶︎ ${ref.name}：💰${found.thisTotal}\n`;
+                        }
+                      });
+                    }
+                
                     await liff.sendMessages([{ type: "text", text: msg }]);
                   } catch (err) {
                     console.warn("sendMessages 錯誤：", err.message);
@@ -506,34 +508,36 @@
                   alertMsg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}\n📢 ${changetxt}`;
                 }
 
-                // 🔹 付款本期總額顯示
-                if (payments && payments.length) {
+                // 🔹 付款本期總額顯示（依 otherList.payment.number 排序）
+                if (payments && payments.length && window.otherList && window.otherList.payment) {
                   alertMsg += `\n\n💳 付款本期總額:\n`;
                 
-                // 建立固定順序
-                const order = ["現金","信用卡","LINE Pay","銀行轉帳"]; 
-                // 按順序排序 payments
-                const sortedpayments = order.map(o => payments.find(t => t.payment === o)).filter(Boolean);
-              
-                sortedpayments.forEach(t => {
-                  alertMsg += `▶︎ ${t.payment}：💰${t.thisTotal}\n`;
-                });
-              }
+                  // 依 number 排序
+                  const sortedPayments = [...window.otherList.payment].sort((a, b) => a.number.localeCompare(b.number));
+                
+                  sortedPayments.forEach(ref => {
+                    const found = payments.find(p => p.payment === ref.name);
+                    if (found) {
+                      alertMsg += `▶︎ ${ref.name}：💰${found.thisTotal}\n`;
+                    }
+                  });
+                }
           
-                // 🔹 分類本期總額顯示
-                if (types && types.length) {
+                // 🔹 分類本期總額顯示（依 otherList.type.number 排序）
+                if (types && types.length && window.otherList && window.otherList.type) {
                   alertMsg += `\n📂 分類本期總額:\n`;
                 
-                // 建立固定順序
-                const order = ["食","衣","住","行","育","樂","其他","收入"];
-                // 按順序排序 types
-                const sortedTypes = order.map(o => types.find(t => t.type === o)).filter(Boolean);
-              
-                sortedTypes.forEach(t => {
-                  alertMsg += `▶︎ ${t.type}：💰${t.thisTotal}\n`;
-                });
-              }
-            
+                  // 依 number 排序
+                  const sortedTypes = [...window.otherList.type].sort((a, b) => a.number.localeCompare(b.number));
+                
+                  sortedTypes.forEach(ref => {
+                    const found = types.find(t => t.type === ref.name);
+                    if (found) {
+                      alertMsg += `▶︎ ${ref.name}：💰${found.thisTotal}\n`;
+                    }
+                  });
+                }
+                          
                 alert(alertMsg);
         
               // ✅ 重設表單
@@ -554,15 +558,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
