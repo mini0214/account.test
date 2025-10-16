@@ -69,10 +69,7 @@
        
   let API_URL = "";    // ✅ 從設定檔 D6
   let VERSION = "V";   // ✅ 從設定檔 D10
-  let LIFF_IDa = "";   // ✅ 從設定檔 D11
-  let LIFF_IDq = "";   // ✅ 從設定檔 D12
   let LIFF_IDo = "";   // ✅ 從設定檔 D13
-  let LIFF_IDs = "";   // ✅ 從設定檔 D14
 
   // ----------------------------------------------------
   // ✅ 設定,設定載入
@@ -110,10 +107,7 @@
       FALLBACK_GAS_SETTINGS_URL = (settings.SETTINGS_URL || FALLBACK_GAS_SETTINGS_URL).trim();// 自動轉換成設定檔內的固定 D5
       API_URL = (settings.API_URL || "").trim();
       VERSION = (settings.D10 || "V").trim();
-      //LIFF_IDa = (settings.D11 || "").trim();
-      //LIFF_IDq = (settings.D12 || "").trim();
       LIFF_IDo = (settings.D13 || "").trim();
-      //LIFF_IDs = (settings.D14 || "").trim();
       
       document.getElementById("version").textContent = VERSION;
       console.log("✅ 設定成功:", { FALLBACK_GAS_SETTINGS_URL, API_URL, LIFF_IDo, VERSION });
@@ -243,3 +237,4 @@
   </script>
 </body>
 </html>
+
