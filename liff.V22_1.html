@@ -252,9 +252,11 @@
           opt.textContent = p.name;
           paymentSelect.appendChild(opt);
         });
+        
+        // ✅ 加上這行 (關鍵)
+        window.otherList = list;  
     
-        console.log("✅ 清單載入完成");
-    
+        console.log("✅ 清單載入完成");    
       } catch (err) {
         console.error("❌ 載入清單失敗:", err);
         alert("載入清單失敗：" + err.message);
@@ -558,3 +560,4 @@
   </script>
 </body>
 </html>
+
