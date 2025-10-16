@@ -141,30 +141,28 @@
 
     function deleteOther(idx) {
       if (!confirm("❗確定要刪除這筆資料嗎？")) return;
-
-      // 先取得最新資料，確保 index 對應正確
-      fetch(API_URL, { method: "POST", body: JSON.stringify({ type: "query_other" }) })
-        .then(res => res.json())
-        .then(result => {
-          if (result.ok && Array.isArray(result.data) && result.data[idx]) {
-            fetch(API_URL, { method: "POST", body: JSON.stringify({ type: "delete_other", index: idx }) })
-              .then(res2 => res2.json())
-              .then(resDel => {
-                if (resDel.ok) {
-                  alert("✅ 已刪除資料");
-                  clearForm();
-                  loadOther();
-                } else {
-                  alert("❌ 刪除失敗：" + (resDel.msg || "未知錯誤"));
-                }
-              });
-          } else {
-            alert("❌ 資料不存在，無法刪除");
-          }
-        });
+    
+      // 假設資料在 Sheet 從第2列開始
+      const rowIndex = idx + 2; 
+    
+      fetch(API_URL, { 
+        method: "POST", 
+        body: JSON.stringify({ type: "delete_other", index: rowIndex }) 
+      })
+      .then(res => res.json())
+      .then(resDel => {
+        if (resDel.ok) {
+          alert("✅ 已刪除資料");
+          clearForm();
+          loadOther();
+        } else {
+          alert("❌ 刪除失敗：" + (resDel.msg || "未知錯誤"));
+        }
+      });
     }
 
     loadOther(); // 初始載入清單
   </script>
 </body>
 </html>
+
