@@ -25,7 +25,7 @@
 </head>
 <body>
 
-<h3>非看不可.[<span id="version"></span>]</h3>
+<h3>非匯不可.[<span id="version"></span>]</h3>
 
 <div class="date-inputs">
   開始日期：<input type="date" id="startDate"><br>
@@ -68,8 +68,7 @@ let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbz3mlLl
      
 let API_URL = "";    // ✅ 從設定檔 D6
 let VERSION = "V";   // ✅ 從設定檔 D10
-let LIFF_IDa = "";   // ✅ 從設定檔 D11
-let LIFF_IDq = "";   // ✅ 從設定檔 D12
+let LIFF_IDs = "";   // ✅ 從設定檔 D14
 
 let currentUser = null; // ✅ 先定義變數，不要一開始就用 json 登入者的資料
 let chartInstance = null;
@@ -112,15 +111,14 @@ async function initApp(){
     FALLBACK_GAS_SETTINGS_URL = (settings.SETTINGS_URL || FALLBACK_GAS_SETTINGS_URL).trim();// 自動轉換成設定檔內的固定 D5
     API_URL = (settings.API_URL || "").trim();
     VERSION = (settings.D10 || "V").trim();
-    //LIFF_IDa = (settings.D11 || "").trim();
-    LIFF_IDq = (settings.D12 || "").trim();
+    LIFF_IDs = (settings.D14 || "").trim();
     
     document.getElementById("version").textContent = VERSION;
     console.log("✅ 設定成功:", { FALLBACK_GAS_SETTINGS_URL, API_URL, LIFF_IDq, VERSION });
     
-    if (!LIFF_IDq) throw new Error("❌ LIFF ID 尚未設定，請確認設定表 D12");
+    if (!LIFF_IDs) throw new Error("❌ LIFF ID 尚未設定，請確認設定表 D14");
     
-    await liff.init({ liffId: LIFF_IDq });
+    await liff.init({ liffId: LIFF_IDs });
     if (!liff.isLoggedIn()) liff.login();
     
     // 抓使用者 LINE 名稱
@@ -547,3 +545,4 @@ initApp();
 </script>
 </body>
 </html>
+
