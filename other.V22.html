@@ -112,7 +112,8 @@ async function saveOther() {
     classify: document.getElementById("classify").value,
     number: document.getElementById("number").value.trim(),
     name: document.getElementById("name").value.trim(),
-    note: document.getElementById("note").value.trim()
+    note: document.getElementById("note").value.trim(),
+    oldNumber: window.oldNumber || undefined // ✅ 修改時要帶上舊的編號
   };
 
   if (!payload.number || !payload.name) {
@@ -194,6 +195,7 @@ function editOther(idx) {
   document.getElementById("name").value = row.name;
   document.getElementById("note").value = row.note || "";
   editIndex = idx;
+  window.oldNumber = row.number; // ✅ 記錄原始編號
 }
 
 // ----------------------------------------------------
@@ -225,4 +227,5 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
