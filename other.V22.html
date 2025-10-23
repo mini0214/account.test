@@ -175,6 +175,12 @@
           body: JSON.stringify({ type: "other", command: "query" })
         });
 
+        // ✅ 確保 JSON 解析
+        const result = await res.json();
+    
+        const tbody = document.querySelector("#otherTable tbody");
+        tbody.innerHTML = "";
+
         if (result.ok && Array.isArray(result.data)) {
           result.data.forEach((row, idx) => {
             const tr = document.createElement("tr");
@@ -194,7 +200,9 @@
           console.warn("查詢回傳資料異常：", result);
         }
       } catch (err) {
-        alert("⚠️ 查詢失敗：" + err);
+        // ✅ 使用 err.message，而不是 result
+        alert("⚠️ 查詢失敗：" + err.message);
+        console.error(err);
       }
     }
     
@@ -241,3 +249,4 @@
   </script>
 </body>
 </html>
+
