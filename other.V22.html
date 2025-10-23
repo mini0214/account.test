@@ -17,8 +17,7 @@
     th { background: #eee; }
     .action-btn { background: #dc3545; margin: 0 2px; }
     .edit-btn { background: #28a745; }
-    .action-btn:hover { opacity: 0.8; }
-    .edit-btn:hover { opacity: 0.8; }
+    .action-btn:hover, .edit-btn:hover { opacity: 0.8; }
   </style>
 </head>
 <body>
@@ -52,201 +51,177 @@
     </table>
   </div>
 
-  <script>
-  //const LIFF_ID = "2008096451-jPJ50MOY"; // 換成你的 LIFF ID
-  //const VERSION = "V17_#43";             // 固定版次
-  //const API_URL = "https://script.google.com/macros/s/AKfycby4mZrwFX52xb7WgBrJIYsG76yvUZkgSadjly-vot-4ajrJ8DV8bemR1EVn_fZKJR_kHA/exec";  // 換成你的 GAS PATH
-  
-  //let LIFF_ID = "default";   // 先放預設或空字串,從 D12 帶入 query
-  //let VERSION = "V";      // ✅ 預設顯示版本號，不要等API,從 D10 帶入 版// ----------------------------------------------------
-  // ✅ 設定,全域設定
-  // ----------------------------------------------------
-  // 💡 說明：
-  // FALLBACK_GAS_SETTINGS_URL 是「啟動保底設定URL」。第一次啟動時用它讀取設定表。所以未來重新部署 GAS，不需修改此行，除非設定表失效。
-  // 若設定表內有 D5（SETTINGS_URL），會自動更新成 D5。
-  // 暫時用,後續會自動轉換成設定檔內的固定 D5。這行只是啟動用的臨時鑰匙，真的開門後會自動換成設定表的正式鑰匙。
-  let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycby62VzwYPzO1l_Fed6tAAAUk1BDVskPa8vxXKptjTdWZSUZs-MxC5RmIFCbCOvIPErwew/exec";
-       
-  let API_URL = "";    // ✅ 從設定檔 D6
-  let VERSION = "V";   // ✅ 從設定檔 D10
-  let LIFF_IDo = "";   // ✅ 從設定檔 D13
+<script>
+let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycby62VzwYPzO1l_Fed6tAAAUk1BDVskPa8vxXKptjTdWZSUZs-MxC5RmIFCbCOvIPErwew/exec";
+let API_URL = "";
+let VERSION = "V";
+let LIFF_IDo = "";
+let editIndex = -1; // 修改用
 
-  // ----------------------------------------------------
-  // ✅ 設定,設定載入
-  // ----------------------------------------------------
-  async function tryFetchText(url){
-    const r = await fetch(url, { cache: 'no-store' });
-    const text = await r.text();
-    try { const j = JSON.parse(text); return { ok: true, json: j }; }
-    catch(e){ return { ok: false, text }; }
-  }
-  
-  // ----------------------------------------------------
-  // ✅ 設定,從設定GAS讀取設定
-  // ----------------------------------------------------
-  async function loadSettings(){
-    // 🔹 直接用 fallback 設定 GAS 查詢
-    const res = await tryFetchText(FALLBACK_GAS_SETTINGS_URL + "?type=query&command=設定");
-    if (!res.ok) throw new Error("設定 GAS 讀取失敗：" + res.text);
-      
-    const data = res.json;
-    if (!data.ok || !data.data) throw new Error("設定格式錯誤");
-      
-    return data.data;  // 只回傳 data
-  }
+// ----------------------------------------------------
+// ✅ 設定讀取
+// ----------------------------------------------------
+async function tryFetchText(url){
+  const r = await fetch(url, { cache: 'no-store' });
+  const text = await r.text();
+  try { const j = JSON.parse(text); return { ok: true, json: j }; }
+  catch(e){ return { ok: false, text }; }
+}
+
+async function loadSettings(){
+  const res = await tryFetchText(FALLBACK_GAS_SETTINGS_URL + "?type=query&command=設定");
+  if (!res.ok) throw new Error("設定 GAS 讀取失敗：" + res.text);
+  const data = res.json;
+  if (!data.ok || !data.data) throw new Error("設定格式錯誤");
+  return data.data;
+}
+
+// ----------------------------------------------------
+// ✅ 初始化
+// ----------------------------------------------------
+async function initApp(){
+  try {
+    const settings = await loadSettings();
+    FALLBACK_GAS_SETTINGS_URL = (settings.SETTINGS_URL || FALLBACK_GAS_SETTINGS_URL).trim();
+    API_URL = (settings.API_URL || "").trim();
+    VERSION = (settings.D10 || "V").trim();
+    LIFF_IDo = (settings.D13 || "").trim();
     
-  // ----------------------------------------------------
-  // ✅ 設定,初始化
-  // ----------------------------------------------------
-  async function initApp(){
-    try {
-      const settings = await loadSettings();
-      if (!settings) throw new Error("設定格式錯誤");
-         
-      // 🔹 從設定帶入
-      FALLBACK_GAS_SETTINGS_URL = (settings.SETTINGS_URL || FALLBACK_GAS_SETTINGS_URL).trim();// 自動轉換成設定檔內的固定 D5
-      API_URL = (settings.API_URL || "").trim();
-      VERSION = (settings.D10 || "V").trim();
-      LIFF_IDo = (settings.D13 || "").trim();
-      
-      document.getElementById("version").textContent = VERSION;
-      console.log("✅ 設定成功:", { FALLBACK_GAS_SETTINGS_URL, API_URL, LIFF_IDo, VERSION });
-      
-      if (!LIFF_IDo) throw new Error("❌ LIFF ID 尚未設定，請確認設定表 D13");
-      
-      await liff.init({ liffId: LIFF_IDo });
-      if (!liff.isLoggedIn()) liff.login();
+    document.getElementById("version").textContent = VERSION;
+    console.log("✅ 設定成功:", { FALLBACK_GAS_SETTINGS_URL, API_URL, LIFF_IDo, VERSION });
+    
+    if (!LIFF_IDo) throw new Error("❌ LIFF ID 尚未設定，請確認設定表 D13");
+    
+    await liff.init({ liffId: LIFF_IDo });
+    if (!liff.isLoggedIn()) liff.login();
 
-    let editIndex = -1; // 修改用
+    loadOther();
+  } catch (err) {
+    alert("❌ 初始化失敗：" + err.message);
+    console.error(err);
+  }
+}
 
-      // 初始化完後載入資料
+// ----------------------------------------------------
+// 1️⃣ 儲存/修改
+// ----------------------------------------------------
+async function saveOther() {
+  const payload = {
+    type: "other",
+    command: editIndex === -1 ? "add" : "update",
+    classify: document.getElementById("classify").value,
+    number: document.getElementById("number").value.trim(),
+    name: document.getElementById("name").value.trim(),
+    note: document.getElementById("note").value.trim()
+  };
+
+  if (!payload.number || !payload.name) {
+    alert("❗編號與名稱不得為空");
+    return;
+  }
+
+  try {
+    const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
+    const result = await res.json();
+
+    if (result.ok) {
+      alert(editIndex === -1 ? "✅ 已新增資料" : "✅ 已修改資料");
+      clearForm();
       loadOther();
-
-    } catch (err) {
-      alert("❌ 初始化失敗：" + err.message);
-      console.error(err);
+    } else {
+      alert("❌ 失敗：" + (result.msg || "未知錯誤"));
     }
+  } catch (err) {
+    alert("⚠️ 發生錯誤：" + err);
   }
+}
 
-    // 1️⃣ 儲存／修改
-    async function saveOther() {
-      const payload = {
-        type: "other",
-        command: editIndex === -1 ? "add" : "update",
-        classify: document.getElementById("classify").value,
-        number: document.getElementById("number").value.trim(),
-        name: document.getElementById("name").value.trim(),
-        note: document.getElementById("note").value.trim()
-      };
+function clearForm() {
+  document.getElementById("number").value = "";
+  document.getElementById("name").value = "";
+  document.getElementById("note").value = "";
+  editIndex = -1;
+}
 
-      if (!payload.number || !payload.name) {
-        alert("❗編號與名稱不得為空");
-        return;
-      }
-
-      try {
-        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
-        const result = await res.json();
-
-        if (result.ok) {
-          alert(editIndex === -1 ? "✅ 已新增資料" : "✅ 已修改資料");
-          clearForm();
-          loadOther();
-        } else {
-          alert("❌ 失敗：" + (result.msg || "未知錯誤"));
-        }
-      } catch (err) {
-        alert("⚠️ 發生錯誤：" + err);
-      }
-    }
-
-    function clearForm() {
-      document.getElementById("number").value = "";
-      document.getElementById("name").value = "";
-      document.getElementById("note").value = "";
-      editIndex = -1;
-    }
-
-    // 2️⃣ 查詢
-    async function loadOther() {
-      try {
-        const res = await fetch(API_URL, {
-          method: "POST",
-          body: JSON.stringify({ type: "other", command: "query" })
-        });
-
-        // ✅ 確保 JSON 解析
-        const result = await res.json();
+// ----------------------------------------------------
+// 2️⃣ 查詢
+// ----------------------------------------------------
+async function loadOther() {
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({ type: "other", command: "query" })
+    });
+    const result = await res.json();
     
-        const tbody = document.querySelector("#otherTable tbody");
-        tbody.innerHTML = "";
+    const tbody = document.querySelector("#otherTable tbody");
+    tbody.innerHTML = "";
 
-        if (result.ok && Array.isArray(result.data)) {
-          result.data.forEach((row, idx) => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td>${row.classify}</td>
-              <td>${row.number}</td>
-              <td>${row.name}</td>
-              <td>${row.note || ""}</td>
-              <td>
-                <button class="edit-btn" onclick="editOther(${idx})">修改</button>
-                <button class="action-btn" onclick="deleteOther(${idx})">刪除</button>
-              </td>
-            `;
-            tbody.appendChild(tr);
-          });
-        } else {
-          console.warn("查詢回傳資料異常：", result);
-        }
-      } catch (err) {
-        // ✅ 使用 err.message，而不是 result
-        alert("⚠️ 查詢失敗：" + err.message);
-        console.error(err);
-      }
+    if (result.ok && Array.isArray(result.list)) { // ✅ 注意改成 list
+      result.list.forEach((row, idx) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.classify}</td>
+          <td>${row.number}</td>
+          <td>${row.name}</td>
+          <td>${row.note || ""}</td>
+          <td>
+            <button class="edit-btn" onclick="editOther(${idx})">修改</button>
+            <button class="action-btn" onclick="deleteOther(${idx})">刪除</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      // 將最新資料存到全域變數，方便編輯使用
+      window.otherDataCache = result.list;
+    } else {
+      console.warn("查詢回傳資料異常：", result);
     }
-    
-    function editOther(idx) {
-      fetch(API_URL, { method: "POST", body: JSON.stringify({ type: "query_other" }) })
-        .then(res => res.json())
-        .then(result => {
-          if (result.ok && Array.isArray(result.data)) {
-            const row = result.data[idx];
-            document.getElementById("classify").value = row.classify;
-            document.getElementById("number").value = row.number;
-            document.getElementById("name").value = row.name;
-            document.getElementById("note").value = row.note || "";
-            editIndex = idx;
-          }
-        });
-    }
+  } catch (err) {
+    alert("⚠️ 查詢失敗：" + err.message);
+    console.error(err);
+  }
+}
 
-    // 3️⃣ 刪除
-    function deleteOther(idx) {
-      if (!confirm("❗確定要刪除這筆資料嗎？")) return;
-      
-        const tbody = document.querySelector("#otherTable tbody");
-        const tr = tbody.rows[idx];
-        const number = tr.cells[1].textContent; // 第二欄是 number
-      
-        fetch(API_URL, {
-          method: "POST",
-          body: JSON.stringify({ type: "other", command: "delete", number })
-        })
-        .then(res => res.json())
-        .then(resDel => {
-          if (resDel.ok) {
-            alert("✅ 已刪除資料");
-            clearForm();
-            loadOther();
-          } else {
-            alert("❌ 刪除失敗：" + (resDel.msg || "未知錯誤"));
-          }
-        });
+// ----------------------------------------------------
+// 3️⃣ 修改
+// ----------------------------------------------------
+function editOther(idx) {
+  const row = window.otherDataCache[idx];
+  if (!row) return;
+  document.getElementById("classify").value = row.classify;
+  document.getElementById("number").value = row.number;
+  document.getElementById("name").value = row.name;
+  document.getElementById("note").value = row.note || "";
+  editIndex = idx;
+}
+
+// ----------------------------------------------------
+// 4️⃣ 刪除
+// ----------------------------------------------------
+function deleteOther(idx) {
+  if (!confirm("❗確定要刪除這筆資料嗎？")) return;
+  
+  const row = window.otherDataCache[idx];
+  if (!row) return;
+
+  fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({ type: "other", command: "delete", number: row.number })
+  })
+  .then(res => res.json())
+  .then(resDel => {
+    if (resDel.ok) {
+      alert("✅ 已刪除資料");
+      clearForm();
+      loadOther();
+    } else {
+      alert("❌ 刪除失敗：" + (resDel.msg || "未知錯誤"));
     }
-    
-    initApp();// 🚀 啟動應用
-  </script>
+  });
+}
+
+initApp(); // 🚀 啟動應用
+</script>
 </body>
 </html>
-
