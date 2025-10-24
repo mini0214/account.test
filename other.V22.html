@@ -145,7 +145,7 @@ function clearForm() {
 }
 
 // ----------------------------------------------------
-// 2️⃣ 查詢
+// 2️⃣ 查詢 (排序：classify → number)
 // ----------------------------------------------------
 async function loadOther() {
   try {
@@ -158,7 +158,20 @@ async function loadOther() {
     const tbody = document.querySelector("#otherTable tbody");
     tbody.innerHTML = "";
 
-    if (result.ok && Array.isArray(result.list)) { // ✅ 注意改成 list
+    if (result.ok && Array.isArray(result.list)) {
+      // ✅ 排序：先依 classify 排，再依 number 排
+      result.list.sort((a, b) => {
+        // classify 排序
+        if (a.classify < b.classify) return -1;
+        if (a.classify > b.classify) return 1;
+
+        // classify 相同時依 number 排（數字部分比較）
+        const numA = parseInt(a.number.replace(/[^\d]/g, ""), 10);
+        const numB = parseInt(b.number.replace(/[^\d]/g, ""), 10);
+        return numA - numB;
+      });
+
+      // ✅ 渲染表格
       result.list.forEach((row, idx) => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
@@ -240,6 +253,7 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
 
 
