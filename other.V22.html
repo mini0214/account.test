@@ -173,15 +173,20 @@ async function loadOther() {
         `;
         tbody.appendChild(tr);
       });
+
+      // ✅ 存最新資料
+      window.otherDataCache = result.list;
       
       // ✅ 統計筆數
       const typeRows = result.list.filter(r => r.classify === "type");
       const paymentRows = result.list.filter(r => r.classify === "payment");
       document.getElementById("summary").innerHTML = `
       <table>
-        <td>📂 分類：${typeRows.length} 筆　</td>
-        <td>💳 付款：${paymentRows.length} 筆　</td>
-        <td>📌 總計：${result.list.length} 筆  </td>
+        <tr>
+          <td>📂 分類：${typeRows.length} 筆　</td>
+          <td>💳 付款：${paymentRows.length} 筆　</td>
+          <td>📌 總計：${result.list.length} 筆  </td>
+        </tr>
       </table>
       `;
     } else {
@@ -235,6 +240,7 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
 
 
