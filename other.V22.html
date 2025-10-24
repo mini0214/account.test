@@ -120,7 +120,7 @@ async function saveOther() {
     classify: document.getElementById("classify").value,
     number: document.getElementById("number").value.trim(),
     name: document.getElementById("name").value.trim(),
-    note: document.getElementById("note").value.trim(),
+    note: (document.getElementById("note")?.value || "").trim(),
     oldNumber: window.oldNumber || undefined // ✅ 修改時要帶上舊的編號
   };
 
@@ -285,6 +285,7 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
 
 
