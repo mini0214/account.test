@@ -167,8 +167,8 @@ async function loadOther() {
           <td>${row.name}</td>
           <td>${row.note || ""}</td>
           <td>
-            <button class="edit-btn" onclick="editOther(${idx})">修改</button>
-            <button class="action-btn" onclick="deleteOther(${idx})">刪除</button>
+            <button class="edit-btn" onclick="editOther(${idx})">📝 修改</button>
+            <button class="action-btn" onclick="deleteOther(${idx})">✂️ 刪除</button>
           </td>
         `;
         tbody.appendChild(tr);
@@ -233,5 +233,6 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
 
