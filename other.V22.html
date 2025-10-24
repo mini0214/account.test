@@ -129,7 +129,28 @@ async function saveOther() {
     return;
   }
 
+  // ✅ 先檢查 name 是否已存在
   try {
+    // 取得分類與付款方式列表
+    const [typeRes, paymentRes] = await Promise.all([
+      fetch(API_URL + "?type=query&command=cashdate.type"),
+      fetch(API_URL + "?type=query&command=cashpayment.type")
+    ]);
+
+    const typeData = await typeRes.json();
+    const paymentData = await paymentRes.json();
+
+    const allNames = [
+      ...(typeData.types || []),
+      ...(paymentData.payments || [])
+    ];
+
+    if (allNames.includes(payload.name)) {
+      alert("❌ 名稱已存在於系統分類或付款方式中，無法新增/修改");
+      return;
+    }
+
+    // ✅ 送出新增/修改請求
     const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
     const result = await res.json();
 
@@ -261,6 +282,7 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
 
 
