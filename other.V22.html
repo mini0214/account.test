@@ -178,11 +178,11 @@ async function loadOther() {
       const typeRows = result.list.filter(r => r.classify === "type");
       const paymentRows = result.list.filter(r => r.classify === "payment");
       document.getElementById("summary").innerHTML = `
-      <<table>>
+      <table>
         <td>📂 分類：${typeRows.length} 筆　</td>
         <td>💳 付款：${paymentRows.length} 筆　</td>
         <td>📌 總計：${result.list.length} 筆  </td>
-      </<table>>
+      </table>
       `;
     } else {
       document.getElementById("summary").innerHTML = "⚠️ 沒有資料";
@@ -235,6 +235,7 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
 
 
