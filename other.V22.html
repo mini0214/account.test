@@ -48,18 +48,6 @@
       <tbody></tbody>
     </table>
     
-    // ✅ 筆數同樣用 rowsForDisplay
-    const typeRows = rowsForDisplay.filter(r => r[0] === 'type');
-    const paymentRows = rowsForDisplay.filter(r => r[0] === 'payment');
-    
-    html += `
-      <div class="total">
-        📂 分類：${typeRows.length} 筆　
-        💳 付款：${paymentRows.length} 筆　
-        📌 總計：${rowsForDisplay.length} 筆
-      </div>
-    `;
-
 <script>
 let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbxllPV_s_TpLyE5hhUzgxJWkL9bdAa6MtS0ee95oO2n1uNs94H9Da8-H5nLos5kosh-/exec";
 let API_URL = "";
@@ -232,10 +220,19 @@ function deleteOther(idx) {
   });
 }
 
+  //筆數
+  div id="summary" class="total"></div>
+
+    const typeRows = rowsForDisplay.filter(r => r[0] === 'type');
+    const paymentRows = rowsForDisplay.filter(r => r[0] === 'payment');
+
+    document.getElementById('summary').innerHTML = `
+      📂 分類：${typeRows.length} 筆　
+      💳 付款：${paymentRows.length} 筆　
+      📌 總計：${rowsForDisplay.length} 筆
+    `;
+
 initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
-
-
-
