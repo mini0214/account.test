@@ -11,8 +11,6 @@
     label, select, input { font-size: 50px; text-align: left; margin-bottom: 20px;  }
     button { font-size: 32px; text-align: center; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background-color: #4CAF50; color: white; }
     button:hover { background-color: #0056b3; }
-    buttont { font-size: 28px; text-align: center; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background-color: #4CAF50; color: white; }
-    buttont:hover { background-color: #0056b3; }
     table { font-size: 32px; border-collapse: collapse; width: 100%; margin-top: 15px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
     th { background-color: #f2f2f2; }
@@ -182,8 +180,8 @@ async function loadOther() {
           <td>${row.name}</td>
           <td>${row.note || ""}</td>
           <td>
-            <buttont class="edit-btn" onclick="editOther(${idx})">📝 修改</buttont>
-            <buttont class="action-btn" onclick="deleteOther(${idx})">🗑️ 刪除</buttont>
+            <button class="edit-btn" onclick="editOther(${idx})">📝 修改</button>
+            <button class="action-btn" onclick="deleteOther(${idx})">🗑️ 刪除</button>
           </td>
         `;
         tbody.appendChild(tr);
@@ -255,6 +253,7 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
 
 
