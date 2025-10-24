@@ -44,6 +44,11 @@
       <button onclick="loadOther()">📖 查詢</button>
     </div>
 
+     <!-- ⏳ 載入提示區 -->
+    <div id="loading" style="display:none; text-align:center; margin:20px;">
+      <span style="font-size: 38px;">⏳ 載入中，請稍候...</span>
+    </div>
+
     <table id="otherTable">
       <thead>
         <tr><th>類別</th><th>編號</th><th>名稱</th><th>備註</th><th>功能</th></tr>
@@ -53,11 +58,6 @@
 
     <!-- ✅ 筆數統計要放在 body 裡 -->
     <div id="summary" class="total"></div>
-
-    <!-- ⏳ 載入提示區 -->
-    <div id="loading" style="display:none; text-align:center; margin:20px;">
-      <span style="font-size: 38px;">⏳ 載入中，請稍候...</span>
-    </div>
     
 <script>
 let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbxllPV_s_TpLyE5hhUzgxJWkL9bdAa6MtS0ee95oO2n1uNs94H9Da8-H5nLos5kosh-/exec";
@@ -261,6 +261,7 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
 
 
