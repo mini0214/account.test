@@ -9,7 +9,7 @@
     body { font-family: Arial, sans-serif; padding: 50px; }
     h3 { font-size: 50px; text-align: center; margin-bottom: 50px; }
     label, select, input, button { font-size: 50px; text-align: left; margin-bottom: 20px;  }
-    button { background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    button { font-size: 40px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background-color: #4CAF50; color: white; }
     button:hover { background-color: #0056b3; }
     table { font-size: 28px; border-collapse: collapse; width: 100%; margin-top: 15px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
@@ -178,9 +178,11 @@ async function loadOther() {
       const typeRows = result.list.filter(r => r.classify === "type");
       const paymentRows = result.list.filter(r => r.classify === "payment");
       document.getElementById("summary").innerHTML = `
+      <div>
         <td>📂 分類：${typeRows.length} 筆　</td>
         <td>💳 付款：${paymentRows.length} 筆　</td>
         <td>📌 總計：${result.list.length} 筆  </td>
+      </div>
       `;
     } else {
       document.getElementById("summary").innerHTML = "⚠️ 沒有資料";
@@ -233,6 +235,7 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
 
 
