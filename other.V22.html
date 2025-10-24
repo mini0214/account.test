@@ -129,7 +129,6 @@ async function saveOther() {
     return;
   }
 
-  // ✅ 先檢查 name 是否已存在
   try {
     // 取得分類與付款方式列表
     const [typeRes, paymentRes] = await Promise.all([
@@ -159,11 +158,17 @@ async function saveOther() {
       clearForm();
       loadOther();
     } else {
-      // 顯示 API 回傳的 msg，如果沒有就顯示完整回傳結果
       alert("❌ 失敗：" + (result.msg || JSON.stringify(result) || "未知錯誤"));
     }
-  }
 
+  } catch (err) {
+    alert("⚠️ 發生錯誤：" + err);
+  }
+}
+
+// ----------------------------------------------------
+// 清空表單
+// ----------------------------------------------------
 function clearForm() {
   document.getElementById("number").value = "";
   document.getElementById("name").value = "";
@@ -280,6 +285,7 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
 
 
