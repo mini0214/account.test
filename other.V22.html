@@ -116,11 +116,11 @@ async function saveOther() {
     number: document.getElementById("number").value.trim(),
     name: document.getElementById("name").value.trim(),
     note: (document.getElementById("note")?.value || "").trim(),
-    oldNumber: window.oldNumber || undefined // ✅ 修改時要帶上舊的編號
+    oldNumber: window.oldNumber || undefined
   };
 
-  if (!payload.number || !payload.name) {
-    alert("❗編號與名稱不得為空");
+  if (!payload.classify || !payload.number || !payload.name) {
+    alert("❗分類、編號與名稱不得為空");
     return;
   }
 
@@ -153,22 +153,12 @@ async function saveOther() {
       clearForm();
       loadOther();
     } else {
-      alert("❌ 失敗：" + (result.msg || JSON.stringify(result) || "未知錯誤"));
+      alert("❌ 失敗：" + (result.msg || result.error || JSON.stringify(result) || "未知錯誤"));
     }
 
   } catch (err) {
     alert("⚠️ 發生錯誤：" + err);
   }
-}
-
-// ----------------------------------------------------
-// 清空表單
-// ----------------------------------------------------
-function clearForm() {
-  document.getElementById("number").value = "";
-  document.getElementById("name").value = "";
-  document.getElementById("note").value = "";
-  editIndex = -1;
 }
 
 // ----------------------------------------------------
@@ -280,6 +270,7 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
 
 
