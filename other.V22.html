@@ -8,7 +8,7 @@
   <style>
     body { font-family: Arial, sans-serif; padding: 50px; }
     h3 { font-size: 50px; text-align: center; margin-bottom: 50px; }
-    label, select, input, button { font-size: 50px; text-align: center; margin-bottom: 20px;  }
+    label, select, input, button { font-size: 50px; text-align: left; margin-bottom: 20px;  }
     button { background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
     button:hover { background-color: #0056b3; }
     table { font-size: 28px; border-collapse: collapse; width: 100%; margin-top: 15px; }
@@ -47,6 +47,9 @@
       </thead>
       <tbody></tbody>
     </table>
+
+    <!-- ✅ 筆數統計要放在 body 裡 -->
+    div id="summary" class="total"></div>
     
 <script>
 let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbxllPV_s_TpLyE5hhUzgxJWkL9bdAa6MtS0ee95oO2n1uNs94H9Da8-H5nLos5kosh-/exec";
@@ -170,17 +173,23 @@ async function loadOther() {
         `;
         tbody.appendChild(tr);
       });
-      // 將最新資料存到全域變數，方便編輯使用
-      window.otherDataCache = result.list;
+      
+      // ✅ 統計筆數
+      const typeRows = result.list.filter(r => r.classify === "type");
+      const paymentRows = result.list.filter(r => r.classify === "payment");
+      document.getElementById("summary").innerHTML = `
+        📂 分類：${typeRows.length} 筆　
+        💳 付款：${paymentRows.length} 筆　
+        📌 總計：${result.list.length} 筆
+      `;
     } else {
-      console.warn("查詢回傳資料異常：", result);
+      document.getElementById("summary").innerHTML = "⚠️ 沒有資料";
     }
   } catch (err) {
     alert("⚠️ 查詢失敗：" + err.message);
     console.error(err);
   }
 }
-
 // ----------------------------------------------------
 // 3️⃣ 修改
 // ----------------------------------------------------
@@ -219,18 +228,6 @@ function deleteOther(idx) {
     }
   });
 }
-
-  //筆數
-  div id="summary" class="total"></div>
-
-    const typeRows = rowsForDisplay.filter(r => r[0] === 'type');
-    const paymentRows = rowsForDisplay.filter(r => r[0] === 'payment');
-
-    document.getElementById('summary').innerHTML = `
-      📂 分類：${typeRows.length} 筆　
-      💳 付款：${paymentRows.length} 筆　
-      📌 總計：${rowsForDisplay.length} 筆
-    `;
 
 initApp(); // 🚀 啟動應用
 </script>
