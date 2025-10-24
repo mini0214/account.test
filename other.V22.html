@@ -30,7 +30,7 @@
     </select><br>
 
     <label>編號：</label>
-    <input type="text" id="number" placeholder="分類:t08 或 付款:p06 / 日後相關排序用..." required><br>
+    <input type="text" id="number" placeholder="分類t08 / 付款p06 / 相關排序用" required><br>
 
     <label>名稱：</label>
     <input type="text" id="name" placeholder="請輸入名稱" required><br>
@@ -168,7 +168,7 @@ async function loadOther() {
           <td>${row.note || ""}</td>
           <td>
             <button class="edit-btn" onclick="editOther(${idx})">📝 修改</button>
-            <button class="action-btn" onclick="deleteOther(${idx})">✂️ 刪除</button>
+            <button class="action-btn" onclick="deleteOther(${idx})">🗑️ 刪除</button>
           </td>
         `;
         tbody.appendChild(tr);
@@ -178,11 +178,9 @@ async function loadOther() {
       const typeRows = result.list.filter(r => r.classify === "type");
       const paymentRows = result.list.filter(r => r.classify === "payment");
       document.getElementById("summary").innerHTML = `
-      <table>
         <td>📂 分類：${typeRows.length} 筆　</td>
         <td>💳 付款：${paymentRows.length} 筆　</td>
         <td>📌 總計：${result.list.length} 筆  </td>
-      </table>
       `;
     } else {
       document.getElementById("summary").innerHTML = "⚠️ 沒有資料";
@@ -235,6 +233,7 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
 
 
