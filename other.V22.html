@@ -104,7 +104,7 @@ async function initApp(){
   }
 }
 // ----------------------------------------------------
-// 1️⃣ 儲存/修改（加上type綁定檢查）
+// 1️⃣ 儲存/修改（加上type/payment綁定檢查）
 // ----------------------------------------------------
 async function saveOther() {
   const payload = {
@@ -225,7 +225,7 @@ async function loadOther() {
   }
 }
 // ----------------------------------------------------
-// 3️⃣ 修改（加上type綁定檢查）
+// 3️⃣ 修改
 // ----------------------------------------------------
 function editOther(idx) {
   const row = window.otherDataCache[idx];
@@ -238,7 +238,7 @@ function editOther(idx) {
   window.oldNumber = row.number; // ✅ 記錄原始編號
 }
 // ----------------------------------------------------
-// 4️⃣ 刪除（加上payment綁定檢查）
+// 4️⃣ 刪除（加上type/payment綁定檢查）
 // ----------------------------------------------------
 async function deleteOther(idx) {
   if (!confirm("❗確定要刪除這筆資料嗎？")) return;
@@ -247,13 +247,23 @@ async function deleteOther(idx) {
   if (!row) return;
 
   try {
-    // 🔹 查詢目前付款方式清單
-    const resPay = await fetch(API_URL + "?type=query&command=cashdate.payment");
-    const payData = await resPay.json();
+    // 🔹 同時查詢「分類(type)」與「付款(payment)」清單
+    const [typeRes, paymentRes] = await Promise.all([
+      fetch(API_URL + "?type=query&command=cashdate.type"),
+      fetch(API_URL + "?type=query&command=cashpayment.type")
+    ]);
 
-    // 🔹 若名稱存在於付款清單中，禁止刪除
-    if (payData.ok && Array.isArray(payData.payments) && payData.payments.includes(row.name)) {
-      alert(`⚠️「${row.name}」已被使用於付款方式清單中，無法刪除！`);
+    const typeData = await typeRes.json();
+    const paymentData = await paymentRes.json();
+
+    const allNames = [
+      ...(typeData.types || []),
+      ...(paymentData.payments || [])
+    ];
+
+    // ✅ 如果這筆名稱已存在於分類或付款方式，就禁止刪除
+    if (allNames.includes(row.name)) {
+      alert(`⚠️「${row.name}」已被使用於分類或付款清單中，無法刪除！`);
       return;
     }
 
@@ -292,5 +302,3 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
-
-
