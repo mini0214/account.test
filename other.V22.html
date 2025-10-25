@@ -147,15 +147,17 @@ async function saveOther() {
     const result = await res.json();
 
     if (result.ok) {
-      alert(editIndex === -1 ? "✅ 已新增資料" : "✅ 已修改資料");
+      alert(editIndex === -1 
+        ? `✅ 已新增資料：${payload.name}` 
+        : `✅ 已修改資料：${payload.name}`);
       clearForm();
       loadOther();
     } else {
-      alert("❌ 失敗：" + (result.msg || result.error || JSON.stringify(result) || "未知錯誤"));
+      alert(`❌ 失敗：${result.msg || result.error || JSON.stringify(result) || "未知錯誤"} (${payload.name})`);
     }
 
   } catch (err) {
-    alert("⚠️ 發生錯誤：" + err);
+    alert(`⚠️ 發生錯誤：${err} (${payload.name})`);
   }
 }
 // ----------------------------------------------------
@@ -275,15 +277,15 @@ async function deleteOther(idx) {
 
     const resDel = await res.json();
     if (resDel.ok) {
-      alert("✅ 已刪除資料");
+      alert(`✅ 已刪除資料：${row.name}`);
       clearForm();
       loadOther();
     } else {
-      alert("❌ 刪除失敗：" + (resDel.msg || "未知錯誤"));
+      alert(`❌ 刪除失敗：${resDel.msg || "未知錯誤"} (${row.name})`);
     }
 
   } catch (err) {
-    alert("⚠️ 刪除過程發生錯誤：" + err.message);
+    alert(`⚠️ 刪除過程發生錯誤：${err.message} (${row.name})`);
     console.error(err);
   }
 }
@@ -302,6 +304,7 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
 
 
