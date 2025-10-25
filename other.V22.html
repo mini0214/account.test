@@ -78,7 +78,6 @@ async function loadSettings(){
   if (!data.ok || !data.data) throw new Error("設定格式錯誤");
   return data.data;
 }
-
 // ----------------------------------------------------
 // ✅ 初始化
 // ----------------------------------------------------
@@ -104,7 +103,6 @@ async function initApp(){
     console.error(err);
   }
 }
-
 // ----------------------------------------------------
 // 1️⃣ 儲存/修改
 // ----------------------------------------------------
@@ -144,8 +142,13 @@ async function saveOther() {
       return;
     }
 
-    // ✅ 送出新增/修改請求
-    const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
+    // ✅ 送出新增/修改請求 一定要加 headers 才能讓 GAS 正確解析 JSON！
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    
     const result = await res.json();
 
     if (result.ok) {
@@ -160,7 +163,6 @@ async function saveOther() {
     alert("⚠️ 發生錯誤：" + err);
   }
 }
-
 // ----------------------------------------------------
 // 2️⃣ 查詢 (排序：classify → number)
 // ----------------------------------------------------
@@ -240,7 +242,6 @@ function editOther(idx) {
   editIndex = idx;
   window.oldNumber = row.number; // ✅ 記錄原始編號
 }
-
 // ----------------------------------------------------
 // 4️⃣ 刪除
 // ----------------------------------------------------
@@ -270,39 +271,3 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
