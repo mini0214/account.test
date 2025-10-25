@@ -8,7 +8,7 @@
 
   <style>
     body { font-family: Arial, sans-serif; padding: 50px; }
-    h2 { font-size: 50px; text-align: center; margin-bottom: 50px; }
+    h3 { font-size: 50px; text-align: center; margin-bottom: 50px; }
     label { font-size: 50px; font-weight: bold; display: inline-block; /*比較不會被擠下去 */ margin-top: 25px; white-space: nowrap; }
     input, select  { font-size: 50px; padding: 25px; width: 70%; margin-top: 5px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
     .form-row, .form-block { display: flex; align-items: center; margin: 20px 0; white-space: nowrap; /* ✅ 關鍵：不允許自動換行 */ }     
@@ -31,7 +31,7 @@
 </head>
 <body>
 
-  <h2 id="title">非記不可.[<span id="version">V</span>]</h2>
+  <h3>非<span style="color: red;">記</span>不可.[<span id="version">V</span>]</h3>
 
   <!-- 登錄表單 -->
   <form id="expenseForm">
@@ -595,6 +595,7 @@
   </script>
 </body>
 </html>
+
 
 
 
