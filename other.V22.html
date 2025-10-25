@@ -240,7 +240,7 @@ function editOther(idx) {
 // ----------------------------------------------------
 // 4️⃣ 刪除（加上payment綁定檢查）
 // ----------------------------------------------------
-function deleteOther(idx) {
+async function deleteOther(idx) {
   if (!confirm("❗確定要刪除這筆資料嗎？")) return;
   
   const row = window.otherDataCache[idx];
@@ -292,4 +292,5 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
