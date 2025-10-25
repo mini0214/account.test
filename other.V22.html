@@ -114,7 +114,7 @@ async function saveOther() {
     number: document.getElementById("number").value.trim(),
     name: document.getElementById("name").value.trim(),
     note: (document.getElementById("note")?.value || "").trim(),
-    oldNumber: window.oldNumber || undefined
+    oldNumber: window.oldNumber || undefined // ✅ 修改時要帶上舊的編號
   };
 
   if (!payload.classify || !payload.number || !payload.name) {
@@ -143,7 +143,7 @@ async function saveOther() {
     }
 
     // ✅ 送出新增/修改請求
-    const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });    
+    const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
     const result = await res.json();
 
     if (result.ok) {
@@ -261,9 +261,18 @@ function deleteOther(idx) {
     }
   });
 }
+// ----------------------------------------------------
+// 🧹 清空表單
+// ----------------------------------------------------
+function clearForm() {
+  document.getElementById("number").value = "";
+  document.getElementById("name").value = "";
+  document.getElementById("note").value = "";
+  editIndex = -1;
+  window.oldNumber = undefined;
+}
 
 initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
-
