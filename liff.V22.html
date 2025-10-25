@@ -513,15 +513,23 @@
                     // ✅ 最後顯示於 alert（或 LINE 傳送）
                     alert(msg);
 
-                    if (liff.isInClient()) {
-                      await liff.sendMessages([{ type: "text", text: msg }]);
+                    try {
+                      if (liff.isInClient()) {
+                        // 📱 若在 LINE App 中開啟，發送訊息
+                        await liff.sendMessages([
+                          {
+                            type: "text",
+                            text: msg,
+                          },
+                        ]);
+                        console.log("✅ 已成功傳送 LINE 訊息");
+                      } else {
+                        // 💻 若在瀏覽器中開啟，不發送，只顯示 alert
+                        console.log("💡 非 LINE App 環境，僅顯示 alert，不發送訊息");
+                      }
+                    } catch (err) {
+                      console.warn("⚠️ sendMessages 錯誤：", err.message);
                     }
-                  
-                    await liff.sendMessages([{ type: "text", text: msg }]);
-                  } catch (err) {
-                    console.warn("sendMessages 錯誤：", err.message);
-                  }
-                }
         
               // ✅ alert 顯示
               let alertMsg =
@@ -595,6 +603,7 @@
   </script>
 </body>
 </html>
+
 
 
 
