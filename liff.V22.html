@@ -161,7 +161,6 @@
     let API_URL = "";    // ✅ 從設定檔 D6
     let VERSION = "V";   // ✅ 從設定檔 D10
     let LIFF_IDa = "";   // ✅ 從設定檔 D11
-    let LIFF_IDq = "";   // ✅ 從設定檔 D12
 
     // ----------------------------------------------------
     // ✅ 設定,設定載入
@@ -197,7 +196,6 @@
         API_URL = (settings.API_URL || "").trim();
         VERSION = (settings.D10 || "V").trim();
         LIFF_IDa = (settings.D11 || "").trim();
-        LIFF_IDq = (settings.D12 || "").trim();
     
         document.getElementById("version").textContent = VERSION;
         console.log("✅ 設定成功:", { FALLBACK_GAS_SETTINGS_URL, API_URL, LIFF_IDa, VERSION });
@@ -595,6 +593,7 @@
   </script>
 </body>
 </html>
+
 
 
 
