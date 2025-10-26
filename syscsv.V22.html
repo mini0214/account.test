@@ -114,7 +114,7 @@ async function initApp(){
     LIFF_IDs = (settings.D14 || "").trim();
     
     document.getElementById("version").textContent = VERSION;
-    console.log("✅ 設定成功:", { FALLBACK_GAS_SETTINGS_URL, API_URL, LIFF_IDq, VERSION });
+    console.log("✅ 設定成功:", { FALLBACK_GAS_SETTINGS_URL, API_URL, LIFF_IDs, VERSION });
     
     if (!LIFF_IDs) throw new Error("❌ LIFF ID 尚未設定，請確認設定表 D14");
     
@@ -545,5 +545,6 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
