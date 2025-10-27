@@ -12,7 +12,7 @@
     .date-inputs { font-size: 50px; text-align: center; margin-bottom: 20px;  }
     .date-inputs input { font-size: 50px; margin: 0 10px;  padding: 5px; }
     h4 { font-size: 36px; text-align: center; margin-bottom: 20px; }
-    button { font-size: 40px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background-color: #4CAF50; color: white; }
+    button { font-size: 40px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background-color: #0056b3; color: white; }
     #queryResult { margin-top: 1px; }
     h5 { font-size: 28px; margin: 0; padding: 0; }
     table { font-size: 28px; border-collapse: collapse; width: 100%; margin-top: 15px; }
@@ -25,17 +25,21 @@
 </head>
 <body>
 
-<h3>✅非<span style="color: green;">匯</span>不可.[<span id="version"></span>]</h3>
+<h3>🔍非<span style="color: blue;">看</span>不可.[<span id="version"></span>]</h3>
 
 <div class="date-inputs">
   開始日期：<input type="date" id="startDate"><br>
   結束日期：<input type="date" id="endDate">
 </div>
 
-<h4>選擇您想要匯出的日期區間...開發中</h4>
+<h4>選擇您想要看的(直球對決)</h4>
 
 <div style="text-align:center">
-  <button id="queryMonthBtn">✅ 匯出</button>
+  <button id="queryMonthBtn">📊 明細</button>
+  <button id="queryMonthPayBtn">💳 付款</button>
+  <button id="queryMonthTypeBtn">📂 分類</button>
+  <button id="queryMonthStoreBtn">📋 店家</button>
+  <button id="queryMonthUserBtn">👤 記帳者</button>
 </div>
 
 <!-- ⏳ 載入提示區 -->
@@ -60,11 +64,11 @@
 // FALLBACK_GAS_SETTINGS_URL 是「啟動保底設定URL」。第一次啟動時用它讀取設定表。所以未來重新部署 GAS，不需修改此行，除非設定表失效。
 // 若設定表內有 D5（SETTINGS_URL），會自動更新成 D5。
 // 暫時用,後續會自動轉換成設定檔內的固定 D5。這行只是啟動用的臨時鑰匙，真的開門後會自動換成設定表的正式鑰匙。
-let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbxQ0NbKd-i30VwoyuPMsVgcbQuAaRCq7yTyBPHcaLwMzm6viyqvv2ioKP9rPPvl1e-2Kw/exec";
+let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbz3mlLlX4NId1J9th8ADMfLfswG5Z6XalWDL9cu68W60yDj3XSAdQ4NLwZozXwDSTe4cQ/exec";
      
 let API_URL = "";    // ✅ 從設定檔 D6
 let VERSION = "V";   // ✅ 從設定檔 D10
-let LIFF_IDs = "";   // ✅ 從設定檔 D14
+let LIFF_IDq = "";   // ✅ 從設定檔 D12
 
 let currentUser = null; // ✅ 先定義變數，不要一開始就用 json 登入者的資料
 let chartInstance = null;
@@ -107,14 +111,14 @@ async function initApp(){
     FALLBACK_GAS_SETTINGS_URL = (settings.SETTINGS_URL || FALLBACK_GAS_SETTINGS_URL).trim();// 自動轉換成設定檔內的固定 D5
     API_URL = (settings.API_URL || "").trim();
     VERSION = (settings.D10 || "V").trim();
-    LIFF_IDs = (settings.D14 || "").trim();
+    LIFF_IDq = (settings.D12 || "").trim();
     
     document.getElementById("version").textContent = VERSION;
-    console.log("✅ 設定成功:", { FALLBACK_GAS_SETTINGS_URL, API_URL, LIFF_IDs, VERSION });
+    console.log("✅ 設定成功:", { FALLBACK_GAS_SETTINGS_URL, API_URL, LIFF_IDq, VERSION });
     
-    if (!LIFF_IDs) throw new Error("❌ LIFF ID 尚未設定，請確認設定表 D14");
+    if (!LIFF_IDq) throw new Error("❌ LIFF ID 尚未設定，請確認設定表 D12");
     
-    await liff.init({ liffId: LIFF_IDs });
+    await liff.init({ liffId: LIFF_IDq });
     if (!liff.isLoggedIn()) liff.login();
     
     // 抓使用者 LINE 名稱
@@ -158,6 +162,10 @@ function toInputDate(d) {
 
 // 按鈕事件
 document.getElementById("queryMonthBtn").addEventListener("click", () => sendQuery("明細"));
+document.getElementById("queryMonthTypeBtn").addEventListener("click", () => sendQuery("分類"));
+document.getElementById("queryMonthPayBtn").addEventListener("click", () => sendQuery("付款"));
+document.getElementById("queryMonthStoreBtn").addEventListener("click", () => sendQuery("店家"));
+document.getElementById("queryMonthUserBtn").addEventListener("click", () => sendQuery("記帳者"));
 
 // 發送查詢
 async function sendQuery(command) {
@@ -267,6 +275,12 @@ function renderResult(command, json) {
     // ✅ 總額 & 筆數同樣用 rowsForDisplay
     const totalAmount = rowsForDisplay.reduce((sum, r) => sum + Number(r[5] || 0), 0);
     html += `<div class="total">📌 總額：${totalAmount.toLocaleString()} 元（共 ${rowsForDisplay.length} 筆）</div>`;
+    // 按鈕事件
+    //document.getElementById("queryMonthBtn").addEventListener("click", () => sendQuery("明細"));
+    //document.getElementById("queryMonthTypeBtn").addEventListener("click", () => sendQuery("分類"));
+    document.getElementById("queryMonthPayBtn").addEventListener("click", () => sendQuery("付款統計"));
+    //document.getElementById("queryMonthStoreBtn").addEventListener("click", () => sendQuery("店家"));
+    //document.getElementById("queryMonthUserBtn").addEventListener("click", () => sendQuery("記帳者"));
 
     // 長條圖資料：金額總和 + 幣別最大值
     const dateSum = {};
@@ -537,3 +551,7 @@ initApp();
 </script>
 </body>
 </html>
+
+
+
+
