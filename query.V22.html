@@ -569,10 +569,10 @@ chartInstance = new Chart(ctx, {
   
     tables.forEach((table, idx) => {
       // 取表格標題
-      const titleElement = table.previousElementSibling && table.previousElementSibling.tagName === "H5"
-        ? table.previousElementSibling.textContent
-        : `工作表${idx + 1}`;
-      const titleElement = rawTitle.split(";")[0].trim(); // 只取 ; 前面
+      let rawTitle = table.previousElementSibling && table.previousElementSibling.tagName === "H5"
+          ? table.previousElementSibling.textContent
+          : `工作表${idx + 1}`;
+      const titleElement = rawTitle.split(";")[0].trim();
       
       // 取總額資訊
       const totalElement = table.nextElementSibling && table.nextElementSibling.classList.contains("total")
@@ -619,3 +619,4 @@ initApp();
 </script>
 </body>
 </html>
+
