@@ -606,9 +606,9 @@ chartInstance = new Chart(ctx, {
     const min = String(now.getMinutes()).padStart(2,"0");
     const ss = String(now.getSeconds()).padStart(2,"0");
     
-    const startDate = document.getElementById("startDate").value || "unknown"; // YYYY-MM-DD
-    const timestamp = `${startDate}-${hh}-${min}-${ss}`;
-    const filename = `零用金支出報表_${timestamp}.xlsx`;
+    const startDate = document.getElementById("startDate").value || "unknown"; // YYYYMMDD
+    const timestamp = `${startDate}-${hh}${min}${ss}`;
+    const filename = `非匯不可報表_${timestamp}.xlsx`;
   
     // 下載
     XLSX.writeFile(wb, filename);
@@ -619,6 +619,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
