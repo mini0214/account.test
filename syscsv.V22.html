@@ -35,11 +35,7 @@
 <h4>選擇您想要匯出的日期區間...開發中</h4>
 
 <div style="text-align:center">
-  <button id="queryMonthBtn">📊 明細</button>
-  <button id="queryMonthPayBtn">💳 付款</button>
-  <button id="queryMonthTypeBtn">📂 分類</button>
-  <button id="queryMonthStoreBtn">📋 店家</button>
-  <button id="queryMonthUserBtn">👤 記帳者</button>
+  <button id="queryMonthBtn">✅ 匯出</button>
 </div>
 
 <!-- ⏳ 載入提示區 -->
@@ -162,10 +158,6 @@ function toInputDate(d) {
 
 // 按鈕事件
 document.getElementById("queryMonthBtn").addEventListener("click", () => sendQuery("明細"));
-document.getElementById("queryMonthTypeBtn").addEventListener("click", () => sendQuery("分類"));
-document.getElementById("queryMonthPayBtn").addEventListener("click", () => sendQuery("付款"));
-document.getElementById("queryMonthStoreBtn").addEventListener("click", () => sendQuery("店家"));
-document.getElementById("queryMonthUserBtn").addEventListener("click", () => sendQuery("記帳者"));
 
 // 發送查詢
 async function sendQuery(command) {
@@ -275,35 +267,6 @@ function renderResult(command, json) {
     // ✅ 總額 & 筆數同樣用 rowsForDisplay
     const totalAmount = rowsForDisplay.reduce((sum, r) => sum + Number(r[5] || 0), 0);
     html += `<div class="total">📌 總額：${totalAmount.toLocaleString()} 元（共 ${rowsForDisplay.length} 筆）</div>`;
-
-    // 長條圖資料：金額總和 + 幣別最大值
-    const dateSum = {};
-    const maxCurrencyByDate = {};
-    rowsForDisplay.forEach(r => {
-      const d = new Date(r[4]).toLocaleDateString("zh-TW");
-      const amount = Number(r[5]);
-      const currency = Number(r[13]);
-
-      dateSum[d] = (dateSum[d] || 0) + amount;
-      if (!maxCurrencyByDate[d] || currency > maxCurrencyByDate[d]) {
-        maxCurrencyByDate[d] = currency;
-      }
-    });
-
-    const sortedDates = Object.keys(dateSum).sort((a,b)=> new Date(a)-new Date(b));
-    const sumValues = sortedDates.map(d=> dateSum[d]);
-    const currencyValues = sortedDates.map(d=> maxCurrencyByDate[d] || 0);
-
-    renderChart("bar", sortedDates, [sumValues, currencyValues]);
-  }
-
-  // 分類、付款、店家、記帳者
-  const sections = [
-    { cmd: "分類", key: 6, title: "📂 選擇分類統計;標題按下即可排序" },
-    { cmd: "付款", key: 7, title: "💳 選擇付款統計;標題按下即可排序" },
-    { cmd: "店家", key: 8, title: "📋 選擇店家統計;標題按下即可排序" },
-    { cmd: "記帳者", key: 3, title: "👤 選擇記帳者統計;標題按下即可排序" }
-  ];
 
   sections.forEach(sec => {
     if (command === sec.cmd) {
@@ -545,3 +508,4 @@ initApp();
 </script>
 </body>
 </html>
+
