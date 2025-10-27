@@ -286,6 +286,71 @@ function renderResult(command, json) {
     const totalAmount = rowsForDisplay.reduce((sum, r) => sum + Number(r[5] || 0), 0);
     html += `<div class="total">📌 總額：${totalAmount.toLocaleString()} 元（共 ${rowsForDisplay.length} 筆）</div>`;
 
+    // ✅ 匯出 Excel 功能
+    document.getElementById("exportExcelBtn").addEventListener("click", exportExcel);
+    
+    function exportExcel() {
+      const queryDiv = document.getElementById("queryResult");
+      if (!queryDiv) return alert("目前沒有查詢結果");
+    
+      const tables = queryDiv.querySelectorAll("table");
+      if (tables.length === 0) return alert("沒有可匯出的表格");
+    
+      const wb = XLSX.utils.book_new();
+    
+      tables.forEach((table, idx) => {
+        // 取日期區間，與資料日期一樣所以統一格式為 YYYY/MM/DD
+        const startDate = (document.getElementById("startDate").value || "unknown").replace(/-/g, "/");
+        const endDate = (document.getElementById("endDate").value || "unknown").replace(/-/g, "/");
+        const dateRange = `日期區間：${startDate} ~ ${endDate}`;
+        
+        // 取表格標題
+        let rawTitle = table.previousElementSibling && table.previousElementSibling.tagName === "H5"
+            ? table.previousElementSibling.textContent
+            : `工作表${idx + 1}`;
+        const titleElement = rawTitle.split(";")[0].trim();
+        
+        // 取總額資訊
+        const totalElement = table.nextElementSibling && table.nextElementSibling.classList.contains("total")
+          ? table.nextElementSibling.textContent
+          : "";
+    
+        // 轉換表格為二維陣列
+        const wsData = [];
+        wsData.push([dateRange]);            // 第一列：日期區間
+        wsData.push([titleElement]);         // 第二列：標題
+        wsData.push([totalElement]);         // 第三列：總額資訊
+        
+        // 第三列：表頭
+        const headers = Array.from(table.querySelectorAll("th")).map(th => th.innerText.trim());
+        wsData.push(headers);
+        
+        // 第四列起：資料
+        const rows = Array.from(table.querySelectorAll("tr")).slice(1);
+        rows.forEach(row => {
+          const rowData = Array.from(row.querySelectorAll("td")).map(td => td.innerText.trim());
+          wsData.push(rowData);
+        });
+    
+        // 生成工作表
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        XLSX.utils.book_append_sheet(wb, ws, titleElement.substring(0, 20)); // 名稱最多 31 字
+      });
+    
+      // 檔名
+      const now = new Date();  // 本地時間（瀏覽器時間）
+      const hh = String(now.getHours()).padStart(2,"0");
+      const min = String(now.getMinutes()).padStart(2,"0");
+      const ss = String(now.getSeconds()).padStart(2,"0");
+      
+      const startDate = document.getElementById("startDate").value || "unknown"; // YYYY-MM-DD
+      const timestamp = `${startDate}-${hh}-${min}-${ss}`;
+      const filename = `非匯不可報表_${timestamp}.xlsx`;
+    
+      // 下載
+      XLSX.writeFile(wb, filename);
+    }
+
     // 長條圖資料：金額總和 + 幣別最大值
     const dateSum = {};
     const maxCurrencyByDate = {};
@@ -553,76 +618,8 @@ chartInstance = new Chart(ctx, {
     });
   }
 }
-  
-  // ✅ 匯出 Excel 功能
-  document.getElementById("exportExcelBtn").addEventListener("click", exportExcel);
-  
-  function exportExcel() {
-    const queryDiv = document.getElementById("queryResult");
-    if (!queryDiv) return alert("目前沒有查詢結果");
-  
-    const tables = queryDiv.querySelectorAll("table");
-    if (tables.length === 0) return alert("沒有可匯出的表格");
-  
-    const wb = XLSX.utils.book_new();
-  
-    tables.forEach((table, idx) => {
-      // 取日期區間，與資料日期一樣所以統一格式為 YYYY/MM/DD
-      const startDate = (document.getElementById("startDate").value || "unknown").replace(/-/g, "/");
-      const endDate = (document.getElementById("endDate").value || "unknown").replace(/-/g, "/");
-      const dateRange = `日期區間：${startDate} ~ ${endDate}`;
-      
-      // 取表格標題
-      let rawTitle = table.previousElementSibling && table.previousElementSibling.tagName === "H5"
-          ? table.previousElementSibling.textContent
-          : `工作表${idx + 1}`;
-      const titleElement = rawTitle.split(";")[0].trim();
-      
-      // 取總額資訊
-      const totalElement = table.nextElementSibling && table.nextElementSibling.classList.contains("total")
-        ? table.nextElementSibling.textContent
-        : "";
-  
-      // 轉換表格為二維陣列
-      const wsData = [];
-      wsData.push([dateRange]);            // 第一列：日期區間
-      wsData.push([titleElement]);         // 第二列：標題
-      wsData.push([totalElement]);         // 第三列：總額資訊
-      
-      // 第三列：表頭
-      const headers = Array.from(table.querySelectorAll("th")).map(th => th.innerText.trim());
-      wsData.push(headers);
-      
-      // 第四列起：資料
-      const rows = Array.from(table.querySelectorAll("tr")).slice(1);
-      rows.forEach(row => {
-        const rowData = Array.from(row.querySelectorAll("td")).map(td => td.innerText.trim());
-        wsData.push(rowData);
-      });
-  
-      // 生成工作表
-      const ws = XLSX.utils.aoa_to_sheet(wsData);
-      XLSX.utils.book_append_sheet(wb, ws, titleElement.substring(0, 20)); // 名稱最多 31 字
-    });
-  
-    // 檔名
-    const now = new Date();  // 本地時間（瀏覽器時間）
-    const hh = String(now.getHours()).padStart(2,"0");
-    const min = String(now.getMinutes()).padStart(2,"0");
-    const ss = String(now.getSeconds()).padStart(2,"0");
-    
-    const startDate = document.getElementById("startDate").value || "unknown"; // YYYY-MM-DD
-    const timestamp = `${startDate}-${hh}-${min}-${ss}`;
-    const filename = `非匯不可報表_${timestamp}.xlsx`;
-  
-    // 下載
-    XLSX.writeFile(wb, filename);
-  }
-
 // ✅ 呼叫初始化
 initApp();
 </script>
 </body>
 </html>
-
-
