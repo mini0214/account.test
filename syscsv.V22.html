@@ -268,6 +268,35 @@ function renderResult(command, json) {
     const totalAmount = rowsForDisplay.reduce((sum, r) => sum + Number(r[5] || 0), 0);
     html += `<div class="total">📌 總額：${totalAmount.toLocaleString()} 元（共 ${rowsForDisplay.length} 筆）</div>`;
 
+    // 長條圖資料：金額總和 + 幣別最大值
+    const dateSum = {};
+    const maxCurrencyByDate = {};
+    rowsForDisplay.forEach(r => {
+      const d = new Date(r[4]).toLocaleDateString("zh-TW");
+      const amount = Number(r[5]);
+      const currency = Number(r[13]);
+
+      dateSum[d] = (dateSum[d] || 0) + amount;
+      if (!maxCurrencyByDate[d] || currency > maxCurrencyByDate[d]) {
+        maxCurrencyByDate[d] = currency;
+      }
+    });
+
+    const sortedDates = Object.keys(dateSum).sort((a,b)=> new Date(a)-new Date(b));
+    const sumValues = sortedDates.map(d=> dateSum[d]);
+    const currencyValues = sortedDates.map(d=> maxCurrencyByDate[d] || 0);
+
+    renderChart("bar", sortedDates, [sumValues, currencyValues]);
+  }
+
+  // 分類、付款、店家、記帳者
+  const sections = [
+    { cmd: "分類", key: 6, title: "📂 選擇分類統計;標題按下即可排序" },
+    { cmd: "付款", key: 7, title: "💳 選擇付款統計;標題按下即可排序" },
+    { cmd: "店家", key: 8, title: "📋 選擇店家統計;標題按下即可排序" },
+    { cmd: "記帳者", key: 3, title: "👤 選擇記帳者統計;標題按下即可排序" }
+  ];
+
   sections.forEach(sec => {
     if (command === sec.cmd) {
       
@@ -508,4 +537,3 @@ initApp();
 </script>
 </body>
 </html>
-
