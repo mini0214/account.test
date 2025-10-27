@@ -567,6 +567,11 @@ chartInstance = new Chart(ctx, {
     const wb = XLSX.utils.book_new();
   
     tables.forEach((table, idx) => {
+      // 取日期區間
+      const startDate = document.getElementById("startDate").value || "unknown";
+      const endDate = document.getElementById("endDate").value || "unknown";
+      const dateRange = `日期區間：${startDate} ~ ${endDate}`;
+      
       // 取表格標題
       let rawTitle = table.previousElementSibling && table.previousElementSibling.tagName === "H5"
           ? table.previousElementSibling.textContent
@@ -580,8 +585,9 @@ chartInstance = new Chart(ctx, {
   
       // 轉換表格為二維陣列
       const wsData = [];
-      wsData.push([titleElement]);         // 第一列：標題
-      wsData.push([totalElement]);         // 第二列：總額資訊
+      wsData.push([dateRange]);            // 第一列：日期區間
+      wsData.push([titleElement]);         // 第二列：標題
+      wsData.push([totalElement]);         // 第三列：總額資訊
       
       // 第三列：表頭
       const headers = Array.from(table.querySelectorAll("th")).map(th => th.innerText.trim());
@@ -618,3 +624,4 @@ initApp();
 </script>
 </body>
 </html>
+
