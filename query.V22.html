@@ -358,6 +358,9 @@ function renderResult(command, json) {
   // 表格排序
   const dataTable = document.getElementById("dataTable");
   if (dataTable) makeTableSortable(dataTable);
+  
+  // ✅ 查詢完成後顯示匯出按鈕
+  document.getElementById("exportArea").style.display = "block";
 }
 
 // 通用表格排序（支援數字/百分比/日期）
@@ -594,3 +597,4 @@ initApp();
 </script>
 </body>
 </html>
+
