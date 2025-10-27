@@ -567,9 +567,9 @@ chartInstance = new Chart(ctx, {
     const wb = XLSX.utils.book_new();
   
     tables.forEach((table, idx) => {
-      // 取日期區間
-      const startDate = document.getElementById("startDate").value || "unknown";
-      const endDate = document.getElementById("endDate").value || "unknown";
+      // 取日期區間，與資料日期一樣所以統一格式為 YYYY/MM/DD
+      const startDate = (document.getElementById("startDate").value || "unknown").replace(/-/g, "/");
+      const endDate = (document.getElementById("endDate").value || "unknown").replace(/-/g, "/");
       const dateRange = `日期區間：${startDate} ~ ${endDate}`;
       
       // 取表格標題
@@ -624,4 +624,5 @@ initApp();
 </script>
 </body>
 </html>
+
 
