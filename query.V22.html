@@ -185,6 +185,9 @@ async function sendQuery(command) {
   
     // ✅ 查詢前清空舊的查詢結果
     document.getElementById("queryResult").innerHTML = "";
+
+    // ✅ 隱藏匯出按鈕，避免舊按鈕閃現
+    document.getElementById("exportArea").style.display = "none";
   
     // ✅ 如果有舊圖表，銷毀掉
     if (chartInstance) {
@@ -608,4 +611,5 @@ initApp();
 </script>
 </body>
 </html>
+
 
