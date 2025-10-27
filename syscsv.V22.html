@@ -5,6 +5,8 @@
   <title>零用金支出帳簿</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
   
   <style>
     body { font-family: Arial, sans-serif; padding: 50px; }
@@ -275,12 +277,6 @@ function renderResult(command, json) {
     // ✅ 總額 & 筆數同樣用 rowsForDisplay
     const totalAmount = rowsForDisplay.reduce((sum, r) => sum + Number(r[5] || 0), 0);
     html += `<div class="total">📌 總額：${totalAmount.toLocaleString()} 元（共 ${rowsForDisplay.length} 筆）</div>`;
-    // 按鈕事件
-    //document.getElementById("queryMonthBtn").addEventListener("click", () => sendQuery("明細"));
-    //document.getElementById("queryMonthTypeBtn").addEventListener("click", () => sendQuery("分類"));
-    document.getElementById("queryMonthPayBtn").addEventListener("click", () => sendQuery("付款統計"));
-    //document.getElementById("queryMonthStoreBtn").addEventListener("click", () => sendQuery("店家"));
-    //document.getElementById("queryMonthUserBtn").addEventListener("click", () => sendQuery("記帳者"));
 
     // 長條圖資料：金額總和 + 幣別最大值
     const dateSum = {};
@@ -546,6 +542,53 @@ chartInstance = new Chart(ctx, {
     });
   }
 }
+
+  <!-- 匯出 Excel 按鈕 -->
+  <div style="text-align:center; margin-top:20px;">
+    <button id="exportExcelBtn">📤 匯出 Excel（含圖表）</button>
+  </div>
+  
+  //匯出excel功能
+  document.getElementById("exportExcelBtn").addEventListener("click", async () => {
+    const table = document.querySelector("#queryResult table"); 
+    const chartCanvas = document.getElementById("chartCanvas");
+  
+    if (!table) {
+      alert("找不到表格！請先執行查詢。");
+      return;
+    }
+  
+    // 建立 Excel workbook
+    const wb = XLSX.utils.book_new();
+  
+    // 1️⃣ 匯出表格
+    const wsTable = XLSX.utils.table_to_sheet(table);
+    XLSX.utils.book_append_sheet(wb, wsTable, "統計表格");
+  
+    // 2️⃣ 匯出圖表（先轉成圖片）
+    if (chartCanvas) {
+      // 將 canvas 轉成 Base64 PNG
+      const imgData = chartCanvas.toDataURL("image/png");
+  
+      // SheetJS 需要使用二進位型態插入圖片 (需 SheetJS Pro 才完整支援)
+      // 這裡提供簡單方案：用一個空 sheet 顯示圖片作為背景
+      const wsChart = XLSX.utils.aoa_to_sheet([[""]]); // 空 sheet
+      XLSX.utils.book_append_sheet(wb, wsChart, "圖表");
+  
+      // SheetJS 社群版不直接支援圖片插入，這裡用 workaround：提供下載 Base64 圖片
+      // 另外一種方案是生成 HTML 報表後存成 Excel 兼容格式
+      console.warn("⚠️ 圖表會另存為圖片，Excel 社群版無法直接嵌入圖片");
+  
+      // 提供單獨下載 chart 圖片
+      const link = document.createElement("a");
+      link.href = imgData;
+      link.download = `零用金圖表_${new Date().toISOString().slice(0,10)}.png`;
+      link.click();
+    }
+  
+    // 3️⃣ 下載 Excel
+    XLSX.writeFile(wb, `零用金報表_${new Date().toISOString().slice(0,10)}.xlsx`);
+  });
 // ✅ 呼叫初始化
 initApp();
 </script>
