@@ -52,6 +52,11 @@
 <!-- 📊 查詢結果顯示區 -->  
 <div id="queryResult"></div>
 <canvas id="chartCanvas"></canvas>
+    
+  <!-- 匯出 Excel 按鈕 -->
+  <div style="text-align:center; margin-top:20px;">
+    <button id="exportExcelBtn">📤 匯出 Excel（含圖表）</button>
+  </div>
 
 <script>
 //const LIFF_ID = "2008096451-jPJ50MOY"; // 換成你的 LIFF ID
@@ -543,11 +548,6 @@ chartInstance = new Chart(ctx, {
   }
 }
 
-  <!-- 匯出 Excel 按鈕 -->
-  <div style="text-align:center; margin-top:20px;">
-    <button id="exportExcelBtn">📤 匯出 Excel（含圖表）</button>
-  </div>
-  
   //匯出excel功能
   document.getElementById("exportExcelBtn").addEventListener("click", async () => {
     const table = document.querySelector("#queryResult table"); 
@@ -594,6 +594,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
