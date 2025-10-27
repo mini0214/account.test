@@ -598,9 +598,17 @@ chartInstance = new Chart(ctx, {
     });
   
     // 檔名
+    const startDate = document.getElementById("startDate").value || "unknown"; // YYYY-MM-DD
     const now = new Date();
-    const timestamp = now.toISOString().slice(0,19).replace(/[:T]/g, "-");
-    const filename = `支出報表_${timestamp}.xlsx`;
+    const tzOffset = 8 * 60; // 台灣 +8 小時
+    const local = new Date(now.getTime() + tzOffset*60*1000 - now.getTimezoneOffset()*60*1000);
+  
+    const hh = String(local.getHours()).padStart(2,"0");
+    const min = String(local.getMinutes()).padStart(2,"0");
+    const ss = String(local.getSeconds()).padStart(2,"0");
+  
+    const timestamp = `${startDate}-${hh}-${min}-${ss}`;
+    const filename = `零用金支出報表_${timestamp}.xlsx`;
   
     // 下載
     XLSX.writeFile(wb, filename);
@@ -611,5 +619,6 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
