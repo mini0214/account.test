@@ -52,10 +52,10 @@
 <!-- 📊 查詢結果顯示區 -->  
 <div id="queryResult"></div>
 <canvas id="chartCanvas"></canvas>
-    
-  <!-- 匯出 Excel 按鈕 -->
-  <div style="text-align:center; margin-top:20px;">
-    <button id="exportExcelBtn">📤 匯出 Excel </button>
+
+  <!-- 匯出 Excel 按鈕 --> 
+  <div style="text-align:center; margin-top:20px;"> 
+    <button id="exportExcelBtn">📤 匯出 Excel </button> 
   </div>
 
 <script>
@@ -75,7 +75,7 @@ let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbz3mlLl
      
 let API_URL = "";    // ✅ 從設定檔 D6
 let VERSION = "V";   // ✅ 從設定檔 D10
-let LIFF_IDs = "";   // ✅ 從設定檔 D12
+let LIFF_IDs = "";   // ✅ 從設定檔 D14
 
 let currentUser = null; // ✅ 先定義變數，不要一開始就用 json 登入者的資料
 let chartInstance = null;
@@ -123,7 +123,7 @@ async function initApp(){
     document.getElementById("version").textContent = VERSION;
     console.log("✅ 設定成功:", { FALLBACK_GAS_SETTINGS_URL, API_URL, LIFF_IDs, VERSION });
     
-    if (!LIFF_IDs) throw new Error("❌ LIFF ID 尚未設定，請確認設定表 D12");
+    if (!LIFF_IDs) throw new Error("❌ LIFF ID 尚未設定，請確認設定表 D14");
     
     await liff.init({ liffId: LIFF_IDs });
     if (!liff.isLoggedIn()) liff.login();
@@ -547,33 +547,36 @@ chartInstance = new Chart(ctx, {
     });
   }
 }
-
-  // 匯出 Excel（只含表格）
+  // 匯出 Excel（僅表格，不含圖表）
   document.getElementById("exportExcelBtn").addEventListener("click", () => {
     const queryResult = document.getElementById("queryResult");
     const table = queryResult.querySelector("table");
-  
+    
     if (!table) {
-      alert("目前沒有查詢結果，請先查詢資料再匯出。");
+      alert("目前沒有可匯出的表格資料！");
       return;
     }
-
-  // 抓表格資料轉成 SheetJS 可用格式
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.table_to_sheet(table);
-  XLSX.utils.book_append_sheet(wb, ws, "查詢結果");
-
-  // 產生檔名，例如：「零用金支出_2025-10-27.xlsx」
-  const today = new Date();
-  const fileName = `零用金支出_${today.getFullYear()}-${(today.getMonth()+1)
-    .toString().padStart(2,"0")}-${today.getDate().toString().padStart(2,"0")}.xlsx`;
-
-  // 下載 Excel
-  XLSX.writeFile(wb, fileName);
-});
+  
+    // 抓表格資料轉成 SheetJS 可用格式
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.table_to_sheet(table);
+    XLSX.utils.book_append_sheet(wb, ws, "查詢結果");
+  
+    // 產生檔名，例如：「零用金支出_2025-10-27.xlsx」
+    const today = new Date();
+    const fileName = `零用金支出_${today.getFullYear()}-${(today.getMonth()+1)
+      .toString().padStart(2,"0")}-${today.getDate().toString().padStart(2,"0")}.xlsx`;
+  
+    // 下載 Excel
+    XLSX.writeFile(wb, fileName);
+  });
 
 // ✅ 呼叫初始化
 initApp();
 </script>
 </body>
 </html>
+
+
+
+
