@@ -5,8 +5,6 @@
   <title>零用金支出帳簿</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
   
   <style>
     body { font-family: Arial, sans-serif; padding: 50px; }
@@ -14,7 +12,7 @@
     .date-inputs { font-size: 50px; text-align: center; margin-bottom: 20px;  }
     .date-inputs input { font-size: 50px; margin: 0 10px;  padding: 5px; }
     h4 { font-size: 36px; text-align: center; margin-bottom: 20px; }
-    button { font-size: 40px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background-color: #0056b3; color: white; }
+    button { font-size: 40px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background-color: #4CAF50; color: white; }
     #queryResult { margin-top: 1px; }
     h5 { font-size: 28px; margin: 0; padding: 0; }
     table { font-size: 28px; border-collapse: collapse; width: 100%; margin-top: 15px; }
@@ -27,14 +25,14 @@
 </head>
 <body>
 
-<h3>🔍非<span style="color: blue;">看</span>不可.[<span id="version"></span>]</h3>
+<h3>✅非<span style="color: green;">匯</span>不可.[<span id="version"></span>]</h3>
 
 <div class="date-inputs">
   開始日期：<input type="date" id="startDate"><br>
   結束日期：<input type="date" id="endDate">
 </div>
 
-<h4>選擇您想要看的(直球對決)</h4>
+<h4>選擇您想要匯出的日期區間...開發中</h4>
 
 <div style="text-align:center">
   <button id="queryMonthBtn">📊 明細</button>
@@ -53,11 +51,6 @@
 <div id="queryResult"></div>
 <canvas id="chartCanvas"></canvas>
 
-  <!-- 匯出 Excel 按鈕 --> 
-  <div style="text-align:center; margin-top:20px;"> 
-    <button id="exportExcelBtn">📤 匯出 Excel </button> 
-  </div>
-
 <script>
 //const LIFF_ID = "2008096451-jPJ50MOY"; // 換成你的 LIFF ID
 //const VERSION = "V17_#43";             // 固定版次
@@ -71,7 +64,7 @@
 // FALLBACK_GAS_SETTINGS_URL 是「啟動保底設定URL」。第一次啟動時用它讀取設定表。所以未來重新部署 GAS，不需修改此行，除非設定表失效。
 // 若設定表內有 D5（SETTINGS_URL），會自動更新成 D5。
 // 暫時用,後續會自動轉換成設定檔內的固定 D5。這行只是啟動用的臨時鑰匙，真的開門後會自動換成設定表的正式鑰匙。
-let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbz3mlLlX4NId1J9th8ADMfLfswG5Z6XalWDL9cu68W60yDj3XSAdQ4NLwZozXwDSTe4cQ/exec";
+let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbxQ0NbKd-i30VwoyuPMsVgcbQuAaRCq7yTyBPHcaLwMzm6viyqvv2ioKP9rPPvl1e-2Kw/exec";
      
 let API_URL = "";    // ✅ 從設定檔 D6
 let VERSION = "V";   // ✅ 從設定檔 D10
@@ -547,36 +540,8 @@ chartInstance = new Chart(ctx, {
     });
   }
 }
-  // 匯出 Excel（僅表格，不含圖表）
-  document.getElementById("exportExcelBtn").addEventListener("click", () => {
-    const queryResult = document.getElementById("queryResult");
-    const table = queryResult.querySelector("table");
-    
-    if (!table) {
-      alert("目前沒有可匯出的表格資料！");
-      return;
-    }
-  
-    // 抓表格資料轉成 SheetJS 可用格式
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.table_to_sheet(table);
-    XLSX.utils.book_append_sheet(wb, ws, "查詢結果");
-  
-    // 產生檔名，例如：「零用金支出_2025-10-27.xlsx」
-    const today = new Date();
-    const fileName = `零用金支出_${today.getFullYear()}-${(today.getMonth()+1)
-      .toString().padStart(2,"0")}-${today.getDate().toString().padStart(2,"0")}.xlsx`;
-  
-    // 下載 Excel
-    XLSX.writeFile(wb, fileName);
-  });
-
 // ✅ 呼叫初始化
 initApp();
 </script>
 </body>
 </html>
-
-
-
-
