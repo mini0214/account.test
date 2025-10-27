@@ -550,47 +550,58 @@ chartInstance = new Chart(ctx, {
   }
 }
   
-  // 匯出 Excel（含「總額」資訊與表格）
-  document.getElementById("exportExcelBtn").addEventListener("click", () => {
-    const queryResult = document.getElementById("queryResult");
-    const table = queryResult.querySelector("table");
+  // ✅ 匯出 Excel 功能
+  document.getElementById("exportExcelBtn").addEventListener("click", exportExcel);
   
-    if (!table) {
-      alert("目前沒有可匯出的表格資料！");
-      return;
-    }
+  function exportExcel() {
+    const queryDiv = document.getElementById("queryResult");
+    if (!queryDiv) return alert("目前沒有查詢結果");
   
-    // 取得 📌 總額那一行的文字
-    const summaryText = Array.from(queryResult.querySelectorAll("p"))
-      .map(p => p.innerText)
-      .find(text => text.startsWith("📌")) || "";
+    const tables = queryDiv.querySelectorAll("table");
+    if (tables.length === 0) return alert("沒有可匯出的表格");
   
-    // 1️⃣ 建立新 Workbook
     const wb = XLSX.utils.book_new();
   
-    // 2️⃣ 先放入總額文字
-    const summaryData = summaryText ? [[summaryText], []] : [[]]; // 留一列空白
-    const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+    tables.forEach((table, idx) => {
+      // 取表格標題
+      const titleElement = table.previousElementSibling && table.previousElementSibling.tagName === "H5"
+        ? table.previousElementSibling.textContent
+        : `工作表${idx + 1}`;
+      
+      // 取總額資訊
+      const totalElement = table.nextElementSibling && table.nextElementSibling.classList.contains("total")
+        ? table.nextElementSibling.textContent
+        : "";
   
-    // 3️⃣ 把表格內容轉成 worksheet
-    const wsTable = XLSX.utils.table_to_sheet(table);
+      // 轉換表格為二維陣列
+      const wsData = [];
+      wsData.push([titleElement]);         // 第一列：標題
+      wsData.push([totalElement]);         // 第二列：總額資訊
+      
+      // 第三列：表頭
+      const headers = Array.from(table.querySelectorAll("th")).map(th => th.innerText.trim());
+      wsData.push(headers);
+      
+      // 第四列起：資料
+      const rows = Array.from(table.querySelectorAll("tr")).slice(1);
+      rows.forEach(row => {
+        const rowData = Array.from(row.querySelectorAll("td")).map(td => td.innerText.trim());
+        wsData.push(rowData);
+      });
   
-    // 4️⃣ 將表格內容 append 到 summary 後面
-    const range = XLSX.utils.decode_range(wsSummary['!ref']);
-    const startRow = range.e.r + 1; // 從 summary 之後開始貼
-    XLSX.utils.sheet_add_json(wsSummary, XLSX.utils.sheet_to_json(wsTable, { header: 1 }), { origin: startRow });
+      // 生成工作表
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+      XLSX.utils.book_append_sheet(wb, ws, titleElement.substring(0, 20)); // 名稱最多 31 字
+    });
   
-    // 5️⃣ 設定到 Workbook
-    XLSX.utils.book_append_sheet(wb, wsSummary, "查詢結果");
+    // 檔名
+    const now = new Date();
+    const timestamp = now.toISOString().slice(0,19).replace(/[:T]/g, "-");
+    const filename = `支出報表_${timestamp}.xlsx`;
   
-    // 6️⃣ 檔案名稱（自動含日期）
-    const today = new Date();
-    const fileName = `零用金支出_${today.getFullYear()}-${(today.getMonth()+1)
-      .toString().padStart(2,"0")}-${today.getDate().toString().padStart(2,"0")}.xlsx`;
-  
-    // 7️⃣ 下載 Excel
-    XLSX.writeFile(wb, fileName);
-  });
+    // 下載
+    XLSX.writeFile(wb, filename);
+  }
 
 // ✅ 呼叫初始化
 initApp();
