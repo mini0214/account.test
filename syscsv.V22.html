@@ -550,38 +550,30 @@ chartInstance = new Chart(ctx, {
 
   // 匯出 Excel（只含表格）
   document.getElementById("exportExcelBtn").addEventListener("click", () => {
-    const table = document.querySelector("#queryResult table"); 
+    const queryResult = document.getElementById("queryResult");
+    const table = queryResult.querySelector("table");
   
     if (!table) {
       alert("目前沒有查詢結果，請先查詢資料再匯出。");
       return;
     }
 
-    // 取得目前查詢類型標題
-    const title = document.querySelector("h5")?.innerText || "查詢結果";
-    
-    // 建立 Excel workbook
-    const wb = XLSX.utils.book_new();
-  
-    // 匯出表格
-    const ws = XLSX.utils.table_to_sheet(table);
+  // 抓表格資料轉成 SheetJS 可用格式
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.table_to_sheet(table);
+  XLSX.utils.book_append_sheet(wb, ws, "查詢結果");
 
-    // 加入到活頁簿
-    XLSX.utils.book_append_sheet(wb, ws, "資料");
-  
-    // 檔案名稱（含日期）
-    const now = new Date();
-    const ymd = now.toISOString().slice(0,10).replace(/-/g,"");
-    const fileName = `${title}_${ymd}.xlsx`;
-  
-    // 下載
-    XLSX.writeFile(wb, fileName);
-  });
+  // 產生檔名，例如：「零用金支出_2025-10-27.xlsx」
+  const today = new Date();
+  const fileName = `零用金支出_${today.getFullYear()}-${(today.getMonth()+1)
+    .toString().padStart(2,"0")}-${today.getDate().toString().padStart(2,"0")}.xlsx`;
+
+  // 下載 Excel
+  XLSX.writeFile(wb, fileName);
+});
 
 // ✅ 呼叫初始化
 initApp();
 </script>
 </body>
 </html>
-
-
