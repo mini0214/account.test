@@ -572,6 +572,7 @@ chartInstance = new Chart(ctx, {
       const titleElement = table.previousElementSibling && table.previousElementSibling.tagName === "H5"
         ? table.previousElementSibling.textContent
         : `工作表${idx + 1}`;
+      const titleElement = rawTitle.split(";")[0].trim(); // 只取 ; 前面
       
       // 取總額資訊
       const totalElement = table.nextElementSibling && table.nextElementSibling.classList.contains("total")
@@ -618,6 +619,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
