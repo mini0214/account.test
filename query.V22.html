@@ -5,6 +5,8 @@
   <title>零用金支出帳簿</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script> 
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
   
   <style>
     body { font-family: Arial, sans-serif; padding: 50px; }
@@ -50,6 +52,10 @@
 <!-- 📊 查詢結果顯示區 -->  
 <div id="queryResult"></div>
 <canvas id="chartCanvas"></canvas>
+
+<div id="exportArea" style="text-align:center; margin-top:20px; display:none;">
+  <button id="exportExcelBtn">📤 匯出Excel</button>
+</div>
 
 <script>
 //const LIFF_ID = "2008096451-jPJ50MOY"; // 換成你的 LIFF ID
@@ -540,13 +546,51 @@ chartInstance = new Chart(ctx, {
     });
   }
 }
+  
+  // 匯出 Excel（含「總額」資訊與表格）
+  document.getElementById("exportExcelBtn").addEventListener("click", () => {
+    const queryResult = document.getElementById("queryResult");
+    const table = queryResult.querySelector("table");
+  
+    if (!table) {
+      alert("目前沒有可匯出的表格資料！");
+      return;
+    }
+  
+    // 取得 📌 總額那一行的文字
+    const summaryText = Array.from(queryResult.querySelectorAll("p"))
+      .map(p => p.innerText)
+      .find(text => text.startsWith("📌")) || "";
+  
+    // 1️⃣ 建立新 Workbook
+    const wb = XLSX.utils.book_new();
+  
+    // 2️⃣ 先放入總額文字
+    const summaryData = summaryText ? [[summaryText], []] : [[]]; // 留一列空白
+    const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+  
+    // 3️⃣ 把表格內容轉成 worksheet
+    const wsTable = XLSX.utils.table_to_sheet(table);
+  
+    // 4️⃣ 將表格內容 append 到 summary 後面
+    const range = XLSX.utils.decode_range(wsSummary['!ref']);
+    const startRow = range.e.r + 1; // 從 summary 之後開始貼
+    XLSX.utils.sheet_add_json(wsSummary, XLSX.utils.sheet_to_json(wsTable, { header: 1 }), { origin: startRow });
+  
+    // 5️⃣ 設定到 Workbook
+    XLSX.utils.book_append_sheet(wb, wsSummary, "查詢結果");
+  
+    // 6️⃣ 檔案名稱（自動含日期）
+    const today = new Date();
+    const fileName = `零用金支出_${today.getFullYear()}-${(today.getMonth()+1)
+      .toString().padStart(2,"0")}-${today.getDate().toString().padStart(2,"0")}.xlsx`;
+  
+    // 7️⃣ 下載 Excel
+    XLSX.writeFile(wb, fileName);
+  });
+
 // ✅ 呼叫初始化
 initApp();
 </script>
 </body>
 </html>
-
-
-
-
-
