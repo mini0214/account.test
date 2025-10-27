@@ -35,11 +35,7 @@
 <h4>選擇您想要匯出的日期區間...開發中</h4>
 
 <div style="text-align:center">
-  <button id="queryMonthBtn">📊 明細</button>
-  <button id="queryMonthPayBtn">💳 付款</button>
-  <button id="queryMonthTypeBtn">📂 分類</button>
-  <button id="queryMonthStoreBtn">📋 店家</button>
-  <button id="queryMonthUserBtn">👤 記帳者</button>
+  <button id="queryMonthBtn">✅ 匯出</button>
 </div>
 
 <!-- ⏳ 載入提示區 -->
@@ -161,11 +157,7 @@ function toInputDate(d) {
 }
 
 // 按鈕事件
-document.getElementById("queryMonthBtn").addEventListener("click", () => sendQuery("明細"));
-document.getElementById("queryMonthTypeBtn").addEventListener("click", () => sendQuery("分類"));
-document.getElementById("queryMonthPayBtn").addEventListener("click", () => sendQuery("付款"));
-document.getElementById("queryMonthStoreBtn").addEventListener("click", () => sendQuery("店家"));
-document.getElementById("queryMonthUserBtn").addEventListener("click", () => sendQuery("記帳者"));
+document.getElementById("queryMonthBtn").addEventListener("click", () => sendQuery("匯出"));
 
 // 發送查詢
 async function sendQuery(command) {
@@ -179,14 +171,6 @@ async function sendQuery(command) {
   
     // ✅ 查詢前清空舊的查詢結果
     document.getElementById("queryResult").innerHTML = "";
-  
-    // ✅ 如果有舊圖表，銷毀掉
-    if (chartInstance) {
-      chartInstance.destroy();
-      chartInstance = null;
-    }
-    const ctx = document.getElementById("chartCanvas").getContext("2d");
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
   
     // ✅ 顯示載入中
     document.getElementById("loading").style.display = "block";
@@ -276,82 +260,13 @@ function renderResult(command, json) {
     const totalAmount = rowsForDisplay.reduce((sum, r) => sum + Number(r[5] || 0), 0);
     html += `<div class="total">📌 總額：${totalAmount.toLocaleString()} 元（共 ${rowsForDisplay.length} 筆）</div>`;
 
-    // 長條圖資料：金額總和 + 幣別最大值
-    const dateSum = {};
-    const maxCurrencyByDate = {};
-    rowsForDisplay.forEach(r => {
-      const d = new Date(r[4]).toLocaleDateString("zh-TW");
-      const amount = Number(r[5]);
-      const currency = Number(r[13]);
-
-      dateSum[d] = (dateSum[d] || 0) + amount;
-      if (!maxCurrencyByDate[d] || currency > maxCurrencyByDate[d]) {
-        maxCurrencyByDate[d] = currency;
-      }
-    });
-
-    const sortedDates = Object.keys(dateSum).sort((a,b)=> new Date(a)-new Date(b));
-    const sumValues = sortedDates.map(d=> dateSum[d]);
-    const currencyValues = sortedDates.map(d=> maxCurrencyByDate[d] || 0);
-
-    renderChart("bar", sortedDates, [sumValues, currencyValues]);
-  }
-
-  // 分類、付款、店家、記帳者
-  const sections = [
-    { cmd: "分類", key: 6, title: "📂 選擇分類統計;標題按下即可排序" },
-    { cmd: "付款", key: 7, title: "💳 選擇付款統計;標題按下即可排序" },
-    { cmd: "店家", key: 8, title: "📋 選擇店家統計;標題按下即可排序" },
-    { cmd: "記帳者", key: 3, title: "👤 選擇記帳者統計;標題按下即可排序" }
-  ];
-
   sections.forEach(sec => {
     if (command === sec.cmd) {
       
       // ✅ 管理員用全部資料，一般使用者才過濾
       const rowsForCalc = (currentUser === adminUser)
         ? json.rows
-        : (json.rows ? json.rows.filter(r => r[3] === currentUser) : []);
-      
-      // 依 filteredRows 計算統計
-      const counts = {};
-      filteredRows.forEach(r => {
-        const value = r[sec.key] || "未知";
-        counts[value] = (counts[value] || 0) + Number(r[5] || 0); // 金額在 r[5]
-      });
-  
-      const labels = Object.keys(counts);
-      const values = Object.values(counts);
-      const total = values.reduce((a,b)=>a+b,0);
-
-      html += `<h5>${sec.title}</h5>`;
-      html += `<table id="dataTable">
-                 <tr>
-                   <th>${sec.cmd==="店家"?"店家":sec.cmd==="付款"?"付款方式":sec.cmd==="記帳者"?"記帳者":"分類方式"}</th>
-                   <th class="numeric">金額</th>
-                   <th class="numeric">佔比</th>
-                 </tr>`;
-      labels.forEach((l,i)=>{
-        const percent = ((values[i]/total)*100).toFixed(1);
-        html += `<tr>
-                   <td>${l}</td>
-                   <td class="numeric">${values[i].toLocaleString()}</td>
-                   <td class="numeric">${percent}%</td>
-                 </tr>`;
-      });
-      html += `</table>`;
-      html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${labels.length} 筆）</div>`;
-
-      // Pie Chart
-      renderChart("pie", labels, values);
-    }
-  });
-
-  document.getElementById("queryResult").innerHTML = html;
-
-  // 表格排序
-  const dataTable = document.getElementById("dataTable");
-  if (dataTable) makeTableSortable(dataTable);
+        : (json.rows ? json.rows.filter(r => r[3] === currentUser) : []);    
 }
 
 // 通用表格排序（支援數字/百分比/日期）
@@ -545,3 +460,4 @@ initApp();
 </script>
 </body>
 </html>
+
