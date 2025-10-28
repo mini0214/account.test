@@ -238,8 +238,8 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   const { jsPDF } = window.jspdf;
   const queryDiv = document.getElementById("queryResult");
   const chartCanvas = document.getElementById("chartCanvas");
-  const fontSize = 14; // 🔹 表格文字大小
-  const headerFontSize = 16; // 🔹 日期區間文字大小（與標題一致）
+  const fontSize = 14; // 表格文字大小
+  const headerFontSize = 16; // 標題與日期區間字體大小
 
   if (!queryDiv || queryDiv.innerHTML.trim() === "") {
     alert("目前沒有查詢結果");
@@ -256,7 +256,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     const startDateInput = document.getElementById("startDate")?.value || "";
     const endDateInput = document.getElementById("endDate")?.value || "";
 
-    // 🔹 轉換日期格式：yyyy-mm-dd → yyyy/mm/dd
+    // yyyy-mm-dd → yyyy/mm/dd
     const formatDate = (d) => d ? d.replaceAll("-", "/") : "";
     const startDate = formatDate(startDateInput);
     const endDate = formatDate(endDateInput);
@@ -270,7 +270,8 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
           ? firstTable.previousElementSibling.textContent
           : "";
       if (titleEl) {
-        titleText = titleEl.split(";")[0].trim(); // 只取分號前文字
+        // 只取分號前的文字
+        titleText = titleEl.split(";")[0].trim();
       }
     }
 
@@ -282,31 +283,31 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     tableContainer.style.background = "#fff";
     tableContainer.style.padding = "10px";
 
-    // --- 2️⃣ 加入日期區間 ---
-    const dateTitle = document.createElement("div");
-    dateTitle.style.textAlign = "left"; // 🔸靠左
-    dateTitle.style.fontSize = headerFontSize + "px"; // 🔸與標題一致
-    dateTitle.style.fontWeight = "bold";
-    dateTitle.style.marginBottom = "10px";
-    dateTitle.textContent =
+    // --- 2️⃣ 日期區間（第一行） ---
+    const dateDiv = document.createElement("div");
+    dateDiv.style.textAlign = "left";
+    dateDiv.style.fontSize = headerFontSize + "px";
+    dateDiv.style.fontWeight = "bold";
+    dateDiv.style.marginBottom = "5px";
+    dateDiv.textContent =
       startDate && endDate
-        ? `📅 日期區間: ${startDate}  ~  ${endDate}`
-        : "📅 日期期間: 未指定";
-    
-    // --- 標題 ---
+        ? `■ 日期區間: ${startDate} ~ ${endDate}`
+        : "■ 日期區間: 未指定";
+
+    // --- 3️⃣ 標題（第二行） ---
     const titleDiv = document.createElement("div");
     titleDiv.style.textAlign = "left";
     titleDiv.style.fontSize = headerFontSize + "px";
     titleDiv.style.fontWeight = "bold";
-    titleDiv.style.marginBottom = "5px";
-    titleDiv.textContent = `${titleText}`;
+    titleDiv.style.marginBottom = "10px";
+    titleDiv.textContent = titleText;
 
-    // 插入表格內容
+    // --- 插入順序：標題 → 日期區間 → 表格 ---
     tableContainer.appendChild(titleDiv);
-    tableContainer.appendChild(dateTitle);
+    tableContainer.appendChild(dateDiv);
     tableContainer.appendChild(queryDiv.cloneNode(true));
 
-    // 設定表格內文字大小
+    // 設定表格文字大小
     tableContainer.querySelectorAll("table, th, td").forEach(el => {
       el.style.fontSize = fontSize + "px";
     });
@@ -314,7 +315,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     document.body.appendChild(tableContainer);
     await new Promise(r => setTimeout(r, 300));
 
-    // --- 3️⃣ 轉成 Canvas ---
+    // --- 4️⃣ 轉成 Canvas ---
     const tableCanvas = await html2canvas(tableContainer, {
       scale: 2,
       useCORS: true,
@@ -322,7 +323,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     });
     document.body.removeChild(tableContainer);
 
-    // --- 4️⃣ 縮放成單頁 ---
+    // --- 5️⃣ 縮放成單頁 ---
     const maxWidth = pageWidth - margin * 2;
     const maxHeight = pageHeight - margin * 2;
     let imgWidth = tableCanvas.width;
@@ -333,7 +334,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
 
     pdf.addImage(tableCanvas, "PNG", margin, margin, imgWidth, imgHeight);
 
-    // --- 5️⃣ 圖表（可選） ---
+    // --- 6️⃣ 圖表（可選） ---
     if (chartCanvas && chartCanvas.width > 0) {
       pdf.addPage();
       const chartImg = chartCanvas.toDataURL("image/png");
@@ -351,7 +352,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
       );
     }
 
-    // --- 6️⃣ 檔名 ---
+    // --- 7️⃣ 檔名 ---
     const now = new Date();
     const hh = String(now.getHours()).padStart(2, "0");
     const mm = String(now.getMinutes()).padStart(2, "0");
@@ -777,8 +778,3 @@ initApp();
 </script>
 </body>
 </html>
-
-
-
-
-
