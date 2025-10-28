@@ -239,7 +239,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   const queryDiv = document.getElementById("queryResult");
   const chartCanvas = document.getElementById("chartCanvas");
   const fontSize = 14; // 表格文字大小
-  const headerFontSize = 16; // 標題與日期區間字體大小
+  const headerFontSize = 24; // 標題與日期區間字體大小
 
   if (!queryDiv || queryDiv.innerHTML.trim() === "") {
     alert("目前沒有查詢結果");
@@ -270,7 +270,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
           ? firstTable.previousElementSibling.textContent
           : "";
       if (titleEl) {
-        // 🔸 取分號前文字，例如「選擇查詢明細;標題按下即可排序」→「選擇查詢明細」
+        // 取分號前的字，例如「選擇查詢明細;標題按下即可排序」→「選擇查詢明細」
         titleText = titleEl.split(";")[0].trim();
       }
     }
@@ -283,29 +283,33 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     tableContainer.style.background = "#fff";
     tableContainer.style.padding = "10px";
 
-    // --- 2️⃣ 標題（第一行） ---
-    const titleDiv = document.createElement("div");
-    titleDiv.style.textAlign = "left";
-    titleDiv.style.fontSize = headerFontSize + "px";
-    titleDiv.style.fontWeight = "bold";
-    titleDiv.style.marginBottom = "5px";
-    titleDiv.textContent = titleText;
-
-    // --- 3️⃣ 日期區間（第二行） ---
+    // --- 2️⃣ 日期區間（第一行） ---
     const dateDiv = document.createElement("div");
     dateDiv.style.textAlign = "left";
     dateDiv.style.fontSize = headerFontSize + "px";
     dateDiv.style.fontWeight = "bold";
-    dateDiv.style.marginBottom = "10px";
+    dateDiv.style.marginBottom = "5px";
     dateDiv.textContent =
       startDate && endDate
         ? `■ 日期區間: ${startDate} ~ ${endDate}`
         : "■ 日期區間: 未指定";
 
-    // --- 插入順序：標題 → 日期區間 → 表格 ---
-    tableContainer.appendChild(titleDiv);
+    // --- 3️⃣ 標題（第二行） ---
+    const titleDiv = document.createElement("div");
+    titleDiv.style.textAlign = "left";
+    titleDiv.style.fontSize = headerFontSize + "px";
+    titleDiv.style.fontWeight = "bold";
+    titleDiv.style.marginBottom = "10px";
+    titleDiv.textContent = titleText;
+
+    // --- 插入順序：日期區間 → 標題 → 表格 ---
     tableContainer.appendChild(dateDiv);
-    tableContainer.appendChild(queryDiv.cloneNode(true));
+    tableContainer.appendChild(titleDiv);
+
+    // 克隆 queryDiv，但移除 H5（避免「第三行」重複出現）
+    const clonedQuery = queryDiv.cloneNode(true);
+    clonedQuery.querySelectorAll("h5").forEach(el => el.remove());
+    tableContainer.appendChild(clonedQuery);
 
     // 設定表格內文字大小
     tableContainer.querySelectorAll("table, th, td").forEach(el => {
@@ -778,5 +782,6 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
