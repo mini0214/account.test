@@ -231,7 +231,7 @@ async function sendQuery(command) {
     }
   } // ✅ sendQuery() 結束
 
-  // ✅ 匯出 PDF（包含表格 + 圖表）
+// ✅ 匯出 PDF（包含表格 + 圖表）
 document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   const { jsPDF } = window.jspdf;
 
@@ -243,45 +243,59 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     return;
   }
 
-  // 🔹 建立 PDF 文件
-  const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: "a4" });
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
+  try {
+    // 🔹 建立 PDF 文件
+    const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: "a4" });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
 
-  // 🔹 把表格與圖表包成一個暫時的容器
-  const exportContainer = document.createElement("div");
-  exportContainer.style.background = "#fff";
-  exportContainer.style.padding = "20px";
-  exportContainer.innerHTML = queryDiv.outerHTML;
+    // 🔹 建立暫時容器 (把表格和圖表都放進去)
+    const exportContainer = document.createElement("div");
+    exportContainer.style.background = "#fff";
+    exportContainer.style.padding = "20px";
+    exportContainer.innerHTML = queryDiv.outerHTML;
 
-  // 🔹 複製圖表
-  const chartClone = chartCanvas.cloneNode(true);
-  const chartImage = chartCanvas.toDataURL("image/png");
-  const img = document.createElement("img");
-  img.src = chartImage;
-  img.style.width = "100%";
-  img.style.marginTop = "20px";
-  exportContainer.appendChild(img);
+    // 🔹 如果圖表有內容，加進去
+    if (chartCanvas && chartCanvas.width > 0) {
+      const imgData = chartCanvas.toDataURL("image/png", 1.0);
+      const img = document.createElement("img");
+      img.src = imgData;
+      img.style.width = "100%";
+      img.style.marginTop = "20px";
+      exportContainer.appendChild(img);
+    }
 
-  // 🔹 轉成 Canvas 圖像
-  const canvas = await html2canvas(exportContainer, { scale: 2 });
-  const imgData = canvas.toDataURL("image/png");
+    // 🔹 等待 DOM 完成渲染
+    await new Promise(resolve => setTimeout(resolve, 200));
 
-  // 🔹 自動縮放圖片填滿 A4 寬度
-  const imgWidth = pageWidth - 40;
-  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    // 🔹 用 html2canvas 把整個 exportContainer 轉成圖像
+    const canvas = await html2canvas(exportContainer, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: "#fff"
+    });
 
-  pdf.addImage(imgData, "PNG", 20, 20, imgWidth, imgHeight);
+    const imgData = canvas.toDataURL("image/png");
+    const imgWidth = pageWidth - 40;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-  // 🔹 檔名：根據查詢日期與時間
-  const startDate = document.getElementById("startDate").value || "unknown";
-  const now = new Date();
-  const hh = String(now.getHours()).padStart(2, "0");
-  const mm = String(now.getMinutes()).padStart(2, "0");
-  const ss = String(now.getSeconds()).padStart(2, "0");
+    pdf.addImage(imgData, "PNG", 20, 20, imgWidth, imgHeight);
 
-  const filename = `非匯不可報表_${startDate}_${hh}${mm}${ss}.pdf`;
-  pdf.save(filename);
+    // 🔹 生成檔名
+    const startDate = document.getElementById("startDate").value || "unknown";
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mm = String(now.getMinutes()).padStart(2, "0");
+    const ss = String(now.getSeconds()).padStart(2, "0");
+
+    const filename = `非匯不可報表_${startDate}_${hh}${mm}${ss}.pdf`;
+    pdf.save(filename);
+
+  } catch (err) {
+    console.error("❌ 匯出 PDF 發生錯誤:", err);
+    alert("匯出 PDF 失敗：" + err.message);
+  }
 });
 
 // 顯示結果表格與圖表
@@ -695,6 +709,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
