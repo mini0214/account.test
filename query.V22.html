@@ -230,7 +230,7 @@ async function sendQuery(command) {
     }
   } // ✅ sendQuery() 結束
 
-// ✅ 匯出 PDF（包含表格 + 圖表 + 自動分頁 A4）
+// ✅ 匯出 PDF（包含表格 + 圖表 + 橫式A4 + 自動分頁 ）
 document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   const { jsPDF } = window.jspdf;
   const queryDiv = document.getElementById("queryResult");
@@ -242,9 +242,9 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   }
 
   try {
-    // A4 尺寸 portrait 直式
+    // A4 尺寸 landscape 橫式
     const pdf = new jsPDF({
-      orientation: "portrait",
+      orientation: "landscape",
       unit: "pt",
       format: "a4",
     });
@@ -255,7 +255,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     const exportContainer = document.createElement("div");
     exportContainer.style.background = "#fff";
     exportContainer.style.padding = "20px";
-    exportContainer.style.width = "800px"; // 固定寬度
+    exportContainer.style.width = "1100px"; // 固定寬度適應橫式
     exportContainer.innerHTML = queryDiv.outerHTML;
 
     if (chartCanvas && chartCanvas.width > 0) {
@@ -317,6 +317,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     alert("匯出 PDF 失敗：" + (err.message || "未定義錯誤"));
   }
 });
+
 
 // 顯示結果表格與圖表
 function renderResult(command, json) {
@@ -730,3 +731,4 @@ initApp();
 </script>
 </body>
 </html>
+
