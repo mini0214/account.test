@@ -244,18 +244,15 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   }
 
   try {
-    // 🔹 建立 PDF 文件
     const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: "a4" });
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
 
-    // 🔹 建立暫時容器 (把表格和圖表都放進去)
     const exportContainer = document.createElement("div");
     exportContainer.style.background = "#fff";
     exportContainer.style.padding = "20px";
     exportContainer.innerHTML = queryDiv.outerHTML;
 
-    // 🔹 如果圖表有內容，加進去
     if (chartCanvas && chartCanvas.width > 0) {
       const imgData = chartCanvas.toDataURL("image/png", 1.0);
       const img = document.createElement("img");
@@ -265,24 +262,27 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
       exportContainer.appendChild(img);
     }
 
-    // 🔹 等待 DOM 完成渲染
+    // 🔹 加到畫面上才能被 html2canvas 正確渲染
+    document.body.appendChild(exportContainer);
+
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    // 🔹 用 html2canvas 把整個 exportContainer 轉成圖像
     const canvas = await html2canvas(exportContainer, {
       scale: 2,
       useCORS: true,
-      logging: false,
-      backgroundColor: "#fff"
+      backgroundColor: "#fff",
+      logging: false
     });
+
+    document.body.removeChild(exportContainer);
 
     const imgData = canvas.toDataURL("image/png");
     const imgWidth = pageWidth - 40;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    const finalHeight = Math.min(imgHeight, pageHeight - 40);
 
-    pdf.addImage(imgData, "PNG", 20, 20, imgWidth, imgHeight);
+    pdf.addImage(imgData, "PNG", 20, 20, imgWidth, finalHeight);
 
-    // 🔹 生成檔名
     const startDate = document.getElementById("startDate").value || "unknown";
     const now = new Date();
     const hh = String(now.getHours()).padStart(2, "0");
@@ -294,7 +294,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
 
   } catch (err) {
     console.error("❌ 匯出 PDF 發生錯誤:", err);
-    alert("匯出 PDF 失敗：" + err.message);
+    alert("匯出 PDF 失敗：" + (err.message || "未定義錯誤"));
   }
 });
 
@@ -709,6 +709,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
