@@ -363,7 +363,22 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     const ss = String(now.getSeconds()).padStart(2, "0");
     const filename = `非匯不可報表_${startDate || "unknown"}_${hh}-${mm}-${ss}.pdf`;
 
-    pdf.save(filename);
+    // --- LIFF 判斷 ---
+    if (window.liff && liff.isInClient()) {
+      const blob = pdf.output("blob");
+      const objectUrl = URL.createObjectURL(blob);
+
+      await liff.sendMessages([{
+        type: "file",
+        originalContentUrl: objectUrl,
+        filename: filename
+      }]);
+
+      alert("PDF 已送到 LINE 聊天中！");
+    } else {
+      pdf.save(filename); // Web 端下載
+    }
+
   } catch (err) {
     console.error("❌ 匯出 PDF 發生錯誤:", err);
     alert("匯出 PDF 失敗：" + (err.message || "未定義錯誤"));
@@ -782,6 +797,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
