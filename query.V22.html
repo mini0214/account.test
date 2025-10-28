@@ -261,6 +261,19 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     const startDate = formatDate(startDateInput);
     const endDate = formatDate(endDateInput);
 
+    // === 取得表格標題 ===
+    const firstTable = queryDiv.querySelector("table");
+    let titleText = "報表";
+    if (firstTable) {
+      const titleEl =
+        firstTable.previousElementSibling && firstTable.previousElementSibling.tagName === "H5"
+          ? firstTable.previousElementSibling.textContent
+          : "";
+      if (titleEl) {
+        titleText = titleEl.split(";")[0].trim(); // 只取分號前文字
+      }
+    }
+
     // --- 1️⃣ 建立匯出容器 ---
     const tableContainer = document.createElement("div");
     tableContainer.style.position = "absolute";
@@ -280,7 +293,16 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
         ? `📅 日期區間: ${startDate}  ~  ${endDate}`
         : "📅 日期期間: 未指定";
 
+    // --- 標題 ---
+    const titleDiv = document.createElement("div");
+    titleDiv.style.textAlign = "left";
+    titleDiv.style.fontSize = headerFontSize + "px";
+    titleDiv.style.fontWeight = "bold";
+    titleDiv.style.marginBottom = "5px";
+    titleDiv.textContent = `📊 ${titleText}`;
+
     // 插入表格內容
+    tableContainer.appendChild(titleDiv);
     tableContainer.appendChild(dateTitle);
     tableContainer.appendChild(queryDiv.cloneNode(true));
 
@@ -755,5 +777,6 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
