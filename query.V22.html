@@ -52,6 +52,12 @@
 
 <!-- 📊 查詢結果顯示區 -->  
 <div id="queryResult"></div>
+
+<!-- ✅ 匯出按鈕獨立區塊（固定位置） -->
+<div id="exportArea" style="text-align:center; margin-top:10px; display:none;">
+  <button id="exportExcelBtn" class="green-btn">📤 匯出Excel</button>
+</div>
+  
 <canvas id="chartCanvas"></canvas>
 
 <script>
@@ -412,9 +418,6 @@ function renderResult(command, json) {
       });
       html += `</table>`;
       html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${labels.length} 筆）</div>`;
-      html += `<div style="text-align:center; margin-top:10px;">
-                <button id="exportExcelBtn" class="green-btn">📤 匯出Excel</button>
-               </div>`;
 
       // Pie Chart
       renderChart("pie", labels, values);
@@ -622,4 +625,5 @@ initApp();
 </script>
 </body>
 </html>
+
 
