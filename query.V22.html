@@ -7,8 +7,8 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script> 
   <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
   
   <style>
     body { font-family: Arial, sans-serif; padding: 50px; }
@@ -246,63 +246,45 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     const pageHeight = pdf.internal.pageSize.getHeight();
     const margin = 20;
 
-    // --- 1️⃣ 表格部分 ---
-    const tableContainer = document.createElement("div");
-    tableContainer.style.position = "absolute";
-    tableContainer.style.left = "-9999px";
-    tableContainer.style.width = "1100px"; // 適合橫式
-    tableContainer.style.background = "#fff";
-    tableContainer.style.padding = "10px";
-    tableContainer.innerHTML = queryDiv.outerHTML;
-
-    // 設定表格字體小字
-    tableContainer.querySelectorAll("table").forEach(t => t.style.fontSize = "16px");
-
-    document.body.appendChild(tableContainer);
-    await new Promise(r => setTimeout(r, 200));
-
-    const tableCanvas = await html2canvas(tableContainer, { scale: 2, useCORS: true, backgroundColor: "#fff" });
-    document.body.removeChild(tableContainer);
-
-    // 計算圖片寬高
-    const imgWidth = pageWidth - margin * 2;
-    const ratio = imgWidth / tableCanvas.width;
-    const totalHeight = tableCanvas.height * ratio;
-    let remainingHeight = totalHeight;
-    let yOffset = 0;
-
-    while (remainingHeight > 0) {
-      const renderHeight = Math.min(remainingHeight, pageHeight - margin * 2);
-      pdf.addImage(
-        tableCanvas,
-        "PNG",
-        margin,
-        margin,
-        imgWidth,
-        tableCanvas.height * ratio,
-        undefined,
-        "FAST",
-        0,
-        yOffset / ratio
+    // --- 1️⃣ 表格部分 (AutoTable 自動跨頁) ---
+    const table = queryDiv.querySelector("table");
+    if (table) {
+      const headers = Array.from(table.querySelectorAll("th")).map(th => th.innerText.trim());
+      const data = Array.from(table.querySelectorAll("tr")).slice(1).map(tr =>
+        Array.from(tr.querySelectorAll("td")).map(td => td.innerText.trim())
       );
-      remainingHeight -= renderHeight;
-      yOffset += renderHeight / ratio;
-      if (remainingHeight > 0) pdf.addPage();
+
+      pdf.autoTable({
+        head: [headers],
+        body: data,
+        startY: margin,
+        margin: { left: margin, right: margin },
+        styles: { fontSize: 16 }, // 表格字體小字
+        theme: 'grid',
+        headStyles: { fillColor: [220, 220, 220] },
+        didDrawPage: function (data) {
+          // 可以加頁碼
+          const str = "頁 " + pdf.internal.getNumberOfPages();
+          pdf.setFontSize(10);
+          pdf.text(str, pageWidth - margin - 50, pageHeight - 10);
+        },
+        pageBreak: 'auto'
+      });
     }
 
-    // --- 2️⃣ 圖表部分（單獨新頁，縮小適合A4） ---  
+    // --- 2️⃣ 圖表部分 ---  
     if (chartCanvas && chartCanvas.width > 0) {
       pdf.addPage(); // 圖表單獨新頁
       const chartImgData = chartCanvas.toDataURL("image/png");
-      
-      // 計算縮放比例，寬度不超過 pageWidth-margin*2，高度不超過 pageHeight-margin*2
+
+      // 計算縮放比例
       const chartMaxWidth = pageWidth - margin * 2;
       const chartMaxHeight = pageHeight - margin * 2;
       let chartWidth = chartCanvas.width;
       let chartHeight = chartCanvas.height;
       const widthRatio = chartMaxWidth / chartWidth;
       const heightRatio = chartMaxHeight / chartHeight;
-      const scaleRatio = Math.min(widthRatio, heightRatio, 1); // 不放大，縮小適應
+      const scaleRatio = Math.min(widthRatio, heightRatio, 1);
       chartWidth *= scaleRatio;
       chartHeight *= scaleRatio;
 
@@ -739,6 +721,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
