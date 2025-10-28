@@ -241,64 +241,62 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   }
 
   try {
-    // 橫式 A4
     const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
     const margin = 20;
 
-    // 建立隱藏容器
-    const exportContainer = document.createElement("div");
-    exportContainer.style.position = "absolute";
-    exportContainer.style.left = "-9999px";
-    exportContainer.style.width = "1100px"; // 適合橫式
-    exportContainer.style.background = "#fff";
-    exportContainer.style.padding = "10px";
-    exportContainer.innerHTML = queryDiv.outerHTML;
+    // --- 1️⃣ 表格部分 ---
+    const tableContainer = document.createElement("div");
+    tableContainer.style.position = "absolute";
+    tableContainer.style.left = "-9999px";
+    tableContainer.style.width = "1100px"; // 適合橫式
+    tableContainer.style.background = "#fff";
+    tableContainer.style.padding = "10px";
+    tableContainer.innerHTML = queryDiv.outerHTML;
 
-    // 設定表格小字
-    exportContainer.querySelectorAll("table").forEach(t => t.style.fontSize = "14px");
+    // 設定表格字體小字
+    tableContainer.querySelectorAll("table").forEach(t => t.style.fontSize = "14px");
 
-    // 加圖表
-    if (chartCanvas && chartCanvas.width > 0) {
-      const imgData = chartCanvas.toDataURL("image/png");
-      const img = document.createElement("img");
-      img.src = imgData;
-      img.style.width = "100%";
-      img.style.marginTop = "10px";
-      exportContainer.appendChild(img);
-    }
+    document.body.appendChild(tableContainer);
+    await new Promise(r => setTimeout(r, 200));
 
-    document.body.appendChild(exportContainer);
-    await new Promise(resolve => setTimeout(resolve, 200));
+    const tableCanvas = await html2canvas(tableContainer, { scale: 2, useCORS: true, backgroundColor: "#fff" });
+    document.body.removeChild(tableContainer);
 
-    // html2canvas 渲染
-    const canvas = await html2canvas(exportContainer, { scale: 2, useCORS: true, backgroundColor: "#fff" });
-    document.body.removeChild(exportContainer);
-
+    // 計算圖片寬高
     const imgWidth = pageWidth - margin * 2;
-    const ratio = imgWidth / canvas.width;
-    const totalHeight = canvas.height * ratio;
+    const ratio = imgWidth / tableCanvas.width;
+    const totalHeight = tableCanvas.height * ratio;
     let remainingHeight = totalHeight;
     let yOffset = 0;
 
     while (remainingHeight > 0) {
       const renderHeight = Math.min(remainingHeight, pageHeight - margin * 2);
       pdf.addImage(
-        canvas,
+        tableCanvas,
         "PNG",
         margin,
         margin,
         imgWidth,
-        canvas.height * ratio,
+        tableCanvas.height * ratio,
         undefined,
         "FAST",
         0,
-        (yOffset / ratio)
+        yOffset / ratio
       );
       remainingHeight -= renderHeight;
       yOffset += renderHeight / ratio;
       if (remainingHeight > 0) pdf.addPage();
+    }
+
+    // --- 2️⃣ 圖表部分 ---  
+    if (chartCanvas && chartCanvas.width > 0) {
+      pdf.addPage(); // 圖表單獨新頁
+      const chartImgData = chartCanvas.toDataURL("image/png");
+      const chartWidth = pageWidth - margin * 2;
+      const chartHeight = (chartCanvas.height * chartWidth) / chartCanvas.width;
+      pdf.addImage(chartImgData, "PNG", margin, margin, chartWidth, chartHeight);
     }
 
     const startDate = document.getElementById("startDate").value || "unknown";
@@ -306,7 +304,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     const hh = String(now.getHours()).padStart(2, "0");
     const mm = String(now.getMinutes()).padStart(2, "0");
     const ss = String(now.getSeconds()).padStart(2, "0");
-    const filename = `非匯不可報表_${startDate}_${hh}${mm}${ss}.pdf`;
+    const filename = `非匯不可報表_${startDate}_${hh}-${mm}-${ss}.pdf`;
 
     pdf.save(filename);
 
@@ -728,6 +726,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
