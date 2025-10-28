@@ -282,14 +282,6 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     tableContainer.style.background = "#fff";
     tableContainer.style.padding = "10px";
 
-    // --- 標題 ---
-    const titleDiv = document.createElement("div");
-    titleDiv.style.textAlign = "left";
-    titleDiv.style.fontSize = headerFontSize + "px";
-    titleDiv.style.fontWeight = "bold";
-    titleDiv.style.marginBottom = "5px";
-    titleDiv.textContent = `📊 ${titleText}`;
-
     // --- 2️⃣ 加入日期區間 ---
     const dateTitle = document.createElement("div");
     dateTitle.style.textAlign = "left"; // 🔸靠左
@@ -300,6 +292,14 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
       startDate && endDate
         ? `📅 日期區間: ${startDate}  ~  ${endDate}`
         : "📅 日期期間: 未指定";
+    
+    // --- 標題 ---
+    const titleDiv = document.createElement("div");
+    titleDiv.style.textAlign = "left";
+    titleDiv.style.fontSize = headerFontSize + "px";
+    titleDiv.style.fontWeight = "bold";
+    titleDiv.style.marginBottom = "5px";
+    titleDiv.textContent = `${titleText}`;
 
     // 插入表格內容
     tableContainer.appendChild(titleDiv);
@@ -777,6 +777,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
