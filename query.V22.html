@@ -4,13 +4,14 @@
   <meta charset="utf-8">
   <title>零用金支出帳簿</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Excel -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script> 
   <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
-  <!-- jsPDF 與 AutoTable -->
+  <!-- PDF -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 
   
   <style>
@@ -235,15 +236,6 @@ async function sendQuery(command) {
 // ✅ 匯出 PDF（包含表格 + 圖表 + 橫式A4 + 自動分頁 ）
 document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   const { jsPDF } = window.jspdf;
-
-  const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
-
-  // 加字型 (需完整 base64)
-  const fontBase64 = "5oCd5rqQ6buR6auUIFJlZ3VsYXI=";
-  pdf.addFileToVFS("SourceHanSans-Regular.ttf", fontBase64);
-  pdf.addFont("SourceHanSans-Regular.ttf", "SourceHanSans", "normal");
-  pdf.setFont("SourceHanSans");
-
   const queryDiv = document.getElementById("queryResult");
   const chartCanvas = document.getElementById("chartCanvas");
 
@@ -252,44 +244,78 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     return;
   }
 
-  // --- 表格 ---
-  const table = queryDiv.querySelector("table");
-  if (table) {
-    const headers = Array.from(table.querySelectorAll("th")).map(th => th.innerText.trim());
-    const data = Array.from(table.querySelectorAll("tr")).slice(1).map(tr =>
-      Array.from(tr.querySelectorAll("td")).map(td => td.innerText.trim())
-    );
-
-    pdf.autoTable({
-      head: [headers],
-      body: data,
-      startY: 40,
-      styles: { font: "SourceHanSans", fontSize: 16, cellPadding: 2 },
-      theme: 'grid'
-    });
-  }
-
-  // --- 圖表 ---
-  if (chartCanvas && chartCanvas.width > 0) {
-    pdf.addPage();
-    const imgData = chartCanvas.toDataURL("image/png");
+  try {
+    const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
     const margin = 20;
 
-    let imgWidth = chartCanvas.width;
-    let imgHeight = chartCanvas.height;
-    const ratio = Math.min((pageWidth - margin*2)/imgWidth, (pageHeight - margin*2)/imgHeight);
-    imgWidth *= ratio;
-    imgHeight *= ratio;
+    // --- 1️⃣ 表格部分 ---
+    const tableContainer = document.createElement("div");
+    tableContainer.style.position = "absolute";
+    tableContainer.style.left = "-9999px";
+    tableContainer.style.width = "1100px"; // 適合橫式
+    tableContainer.style.background = "#fff";
+    tableContainer.style.padding = "10px";
+    tableContainer.innerHTML = queryDiv.outerHTML;
 
-    pdf.addImage(imgData, "PNG", (pageWidth - imgWidth)/2, (pageHeight - imgHeight)/2, imgWidth, imgHeight);
+    // 設定表格字體小字
+    tableContainer.querySelectorAll("table").forEach(t => t.style.fontSize = "14px");
+
+    document.body.appendChild(tableContainer);
+    await new Promise(r => setTimeout(r, 200));
+
+    const tableCanvas = await html2canvas(tableContainer, { scale: 2, useCORS: true, backgroundColor: "#fff" });
+    document.body.removeChild(tableContainer);
+
+    // 計算圖片寬高
+    const imgWidth = pageWidth - margin * 2;
+    const ratio = imgWidth / tableCanvas.width;
+    const totalHeight = tableCanvas.height * ratio;
+    let remainingHeight = totalHeight;
+    let yOffset = 0;
+
+    while (remainingHeight > 0) {
+      const renderHeight = Math.min(remainingHeight, pageHeight - margin * 2);
+      pdf.addImage(
+        tableCanvas,
+        "PNG",
+        margin,
+        margin,
+        imgWidth,
+        tableCanvas.height * ratio,
+        undefined,
+        "FAST",
+        0,
+        yOffset / ratio
+      );
+      remainingHeight -= renderHeight;
+      yOffset += renderHeight / ratio;
+      if (remainingHeight > 0) pdf.addPage();
+    }
+
+    // --- 2️⃣ 圖表部分 ---  
+    if (chartCanvas && chartCanvas.width > 0) {
+      pdf.addPage(); // 圖表單獨新頁
+      const chartImgData = chartCanvas.toDataURL("image/png");
+      const chartWidth = pageWidth - margin * 2;
+      const chartHeight = (chartCanvas.height * chartWidth) / chartCanvas.width;
+      pdf.addImage(chartImgData, "PNG", margin, margin, chartWidth, chartHeight);
+    }
+
+    const startDate = document.getElementById("startDate").value || "unknown";
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mm = String(now.getMinutes()).padStart(2, "0");
+    const ss = String(now.getSeconds()).padStart(2, "0");
+    const filename = `非匯不可報表_${startDate}_${hh}-${mm}-${ss}.pdf`;
+
+    pdf.save(filename);
+
+  } catch (err) {
+    console.error("❌ 匯出 PDF 發生錯誤:", err);
+    alert("匯出 PDF 失敗：" + (err.message || "未定義錯誤"));
   }
-
-  const startDate = document.getElementById("startDate")?.value || "unknown";
-  const now = new Date();
-  const filename = `非匯不可報表_${startDate}_${now.getHours()}-${now.getMinutes()}-${now.getSeconds()}.pdf`;
-  pdf.save(filename);
 });
 
 // 顯示結果表格與圖表
@@ -704,6 +730,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
