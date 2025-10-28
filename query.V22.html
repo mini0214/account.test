@@ -238,6 +238,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   const { jsPDF } = window.jspdf;
   const queryDiv = document.getElementById("queryResult");
   const chartCanvas = document.getElementById("chartCanvas");
+  const fontSize = 14; // <-- 可自訂文字大小
 
   if (!queryDiv || queryDiv.innerHTML.trim() === "") {
     alert("目前沒有查詢結果");
@@ -258,7 +259,8 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     tableContainer.style.background = "#fff";
     tableContainer.style.padding = "10px";
     tableContainer.innerHTML = queryDiv.outerHTML;
-    tableContainer.querySelectorAll("table").forEach(t => t.style.fontSize = "14px");
+
+    tableContainer.querySelectorAll("table").forEach(t => t.style.fontSize = fontSize + "px");
 
     document.body.appendChild(tableContainer);
     await new Promise(r => setTimeout(r, 200));
@@ -298,14 +300,13 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
       pdf.addPage();
       const chartImgData = chartCanvas.toDataURL("image/png");
 
-      // 計算縮放比例，不變形，不超頁面
       const chartMaxWidth = pageWidth - margin * 2;
       const chartMaxHeight = pageHeight - margin * 2;
       let chartWidth = chartCanvas.width;
       let chartHeight = chartCanvas.height;
       const widthRatio = chartMaxWidth / chartWidth;
       const heightRatio = chartMaxHeight / chartHeight;
-      const scaleChart = Math.min(widthRatio, heightRatio, 1); // 不放大
+      const scaleChart = Math.min(widthRatio, heightRatio, 1);
 
       chartWidth *= scaleChart;
       chartHeight *= scaleChart;
@@ -740,6 +741,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
