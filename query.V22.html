@@ -230,8 +230,15 @@ async function sendQuery(command) {
   } // ✅ sendQuery() 結束
 
 // ✅ 匯出 PDF（包含表格 + 圖表 + 橫式A4 + 自動分頁 ）
+<script>
 document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   const { jsPDF } = window.jspdf;
+
+  // 中文字型 base64，思源黑體 Regular (自行轉 ttf -> base64)
+  const fontBase64 = "AAEAAA..."; // <-- 這裡填完整 base64
+  jsPDF.API.addFileToVFS("SourceHanSans-Regular.ttf", fontBase64);
+  jsPDF.API.addFont("SourceHanSans-Regular.ttf", "SourceHanSans", "normal");
+
   const queryDiv = document.getElementById("queryResult");
   const chartCanvas = document.getElementById("chartCanvas");
 
@@ -242,11 +249,12 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
 
   try {
     const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    pdf.setFont("SourceHanSans");
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
     const margin = 20;
 
-    // --- 1️⃣ 表格部分 (AutoTable 自動跨頁) ---
+    // --- 1️⃣ 表格 ---
     const table = queryDiv.querySelector("table");
     if (table) {
       const headers = Array.from(table.querySelectorAll("th")).map(th => th.innerText.trim());
@@ -259,32 +267,31 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
         body: data,
         startY: margin,
         margin: { left: margin, right: margin },
-        styles: { fontSize: 16 }, // 表格字體小字
+        styles: { font: "SourceHanSans", fontSize: 16, cellPadding: 2 }, // 小字
         theme: 'grid',
-        headStyles: { fillColor: [220, 220, 220] },
+        headStyles: { fillColor: [220, 220, 220], font: "SourceHanSans" },
         didDrawPage: function (data) {
-          // 可以加頁碼
           const str = "頁 " + pdf.internal.getNumberOfPages();
-          pdf.setFontSize(10);
+          pdf.setFontSize(8);
           pdf.text(str, pageWidth - margin - 50, pageHeight - 10);
         },
         pageBreak: 'auto'
       });
     }
 
-    // --- 2️⃣ 圖表部分 ---  
+    // --- 2️⃣ 圖表 ---
     if (chartCanvas && chartCanvas.width > 0) {
-      pdf.addPage(); // 圖表單獨新頁
+      pdf.addPage();
       const chartImgData = chartCanvas.toDataURL("image/png");
 
-      // 計算縮放比例
       const chartMaxWidth = pageWidth - margin * 2;
       const chartMaxHeight = pageHeight - margin * 2;
       let chartWidth = chartCanvas.width;
       let chartHeight = chartCanvas.height;
       const widthRatio = chartMaxWidth / chartWidth;
       const heightRatio = chartMaxHeight / chartHeight;
-      const scaleRatio = Math.min(widthRatio, heightRatio, 1);
+      const scaleRatio = Math.min(widthRatio, heightRatio); // 縮小符合 A4
+
       chartWidth *= scaleRatio;
       chartHeight *= scaleRatio;
 
@@ -294,7 +301,8 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
       pdf.addImage(chartImgData, "PNG", x, y, chartWidth, chartHeight);
     }
 
-    const startDate = document.getElementById("startDate").value || "unknown";
+    // --- 檔名 ---
+    const startDate = document.getElementById("startDate")?.value || "unknown";
     const now = new Date();
     const hh = String(now.getHours()).padStart(2, "0");
     const mm = String(now.getMinutes()).padStart(2, "0");
@@ -721,6 +729,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
