@@ -234,11 +234,12 @@ async function sendQuery(command) {
   } // ✅ sendQuery() 結束
 
 // ✅ 匯出 PDF（包含表格 + 圖表 + 橫式A4 + 自動分頁 ）
+// ✅ 匯出 PDF（包含表格 + 圖表 + 橫式A4 + 自動分頁 + 接續顯示 + 可自訂文字大小）
 document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   const { jsPDF } = window.jspdf;
   const queryDiv = document.getElementById("queryResult");
   const chartCanvas = document.getElementById("chartCanvas");
-  const fontSize = 14; // <-- 可自訂文字大小
+  const fontSize = 14; // 🔹這裡可以自由改字體大小 (例如 16、18、20...)
 
   if (!queryDiv || queryDiv.innerHTML.trim() === "") {
     alert("目前沒有查詢結果");
@@ -250,17 +251,21 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
     const margin = 20;
+    const usableHeight = pageHeight - margin * 2;
 
-    // --- 表格部分 ---
+    // --- 生成表格圖片 ---
     const tableContainer = document.createElement("div");
     tableContainer.style.position = "absolute";
     tableContainer.style.left = "-9999px";
-    tableContainer.style.width = "1100px"; // 適合橫式
+    tableContainer.style.width = "1100px";
     tableContainer.style.background = "#fff";
     tableContainer.style.padding = "10px";
     tableContainer.innerHTML = queryDiv.outerHTML;
 
-    tableContainer.querySelectorAll("table").forEach(t => t.style.fontSize = fontSize + "px");
+    // 🔹設定字體大小
+    tableContainer.querySelectorAll("table, th, td").forEach(el => {
+      el.style.fontSize = fontSize + "px";
+    });
 
     document.body.appendChild(tableContainer);
     await new Promise(r => setTimeout(r, 200));
@@ -270,50 +275,48 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
 
     const imgWidth = pageWidth - margin * 2;
     const scale = imgWidth / tableCanvas.width;
-    const imgHeight = tableCanvas.height * scale;
+    const fullImgHeight = tableCanvas.height * scale;
 
-    let yOffset = 0;
-    const pageInnerHeight = pageHeight - margin * 2;
+    // --- 分頁繪製（接續顯示，不重頭） ---
+    let y = 0;
+    while (y < fullImgHeight) {
+      const chunkHeight = Math.min(usableHeight, fullImgHeight - y);
 
-    while (yOffset < imgHeight) {
-      const renderHeight = Math.min(pageInnerHeight, imgHeight - yOffset);
-      pdf.addImage(
-        tableCanvas,
-        "PNG",
-        margin,
-        margin,
-        imgWidth,
-        renderHeight,
-        undefined,
-        "FAST",
-        0,
-        yOffset / scale,
-        tableCanvas.width,
-        renderHeight / scale
-      );
-      yOffset += renderHeight;
-      if (yOffset < imgHeight) pdf.addPage();
+      // 用 addImage 的 clip 參數控制可見區域（支援 jsPDF 2.5.0+）
+      pdf.addImage({
+        imageData: tableCanvas,
+        format: "PNG",
+        x: margin,
+        y: margin,
+        width: imgWidth,
+        height: fullImgHeight,
+        alias: undefined,
+        compression: "FAST",
+        rotation: 0,
+        // ✅ 這兩行確保「分頁接續」而非重頭開始
+        sx: 0,
+        sy: (y / scale),
+        sWidth: tableCanvas.width,
+        sHeight: chunkHeight / scale,
+      });
+
+      y += chunkHeight;
+      if (y < fullImgHeight) pdf.addPage();
     }
 
-    // --- 圖表部分 ---
+    // --- 圖表 ---
     if (chartCanvas && chartCanvas.width > 0) {
       pdf.addPage();
-      const chartImgData = chartCanvas.toDataURL("image/png");
-
+      const chartImg = chartCanvas.toDataURL("image/png");
       const chartMaxWidth = pageWidth - margin * 2;
       const chartMaxHeight = pageHeight - margin * 2;
-      let chartWidth = chartCanvas.width;
-      let chartHeight = chartCanvas.height;
-      const widthRatio = chartMaxWidth / chartWidth;
-      const heightRatio = chartMaxHeight / chartHeight;
-      const scaleChart = Math.min(widthRatio, heightRatio, 1);
-
-      chartWidth *= scaleChart;
-      chartHeight *= scaleChart;
-
-      pdf.addImage(chartImgData, "PNG", margin, margin, chartWidth, chartHeight);
+      let chartW = chartCanvas.width;
+      let chartH = chartCanvas.height;
+      const ratio = Math.min(chartMaxWidth / chartW, chartMaxHeight / chartH, 1);
+      pdf.addImage(chartImg, "PNG", margin, margin, chartW * ratio, chartH * ratio);
     }
 
+    // --- 檔名 ---
     const startDate = document.getElementById("startDate").value || "unknown";
     const now = new Date();
     const hh = String(now.getHours()).padStart(2, "0");
@@ -322,7 +325,6 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     const filename = `非匯不可報表_${startDate}_${hh}-${mm}-${ss}.pdf`;
 
     pdf.save(filename);
-
   } catch (err) {
     console.error("❌ 匯出 PDF 發生錯誤:", err);
     alert("匯出 PDF 失敗：" + (err.message || "未定義錯誤"));
@@ -741,6 +743,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
