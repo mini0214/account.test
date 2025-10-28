@@ -241,22 +241,27 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   }
 
   try {
+    // 橫式 A4
     const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 20;
 
+    // 建立隱藏容器
     const exportContainer = document.createElement("div");
     exportContainer.style.position = "absolute";
     exportContainer.style.left = "-9999px";
     exportContainer.style.width = "1100px"; // 適合橫式
     exportContainer.style.background = "#fff";
-    exportContainer.style.padding = "20px";
+    exportContainer.style.padding = "10px";
     exportContainer.innerHTML = queryDiv.outerHTML;
 
-    exportContainer.querySelectorAll("table").forEach(t => t.style.fontSize = "12px");
+    // 設定表格小字
+    exportContainer.querySelectorAll("table").forEach(t => t.style.fontSize = "14px");
 
+    // 加圖表
     if (chartCanvas && chartCanvas.width > 0) {
-      const imgData = chartCanvas.toDataURL("image/png", 1.0);
+      const imgData = chartCanvas.toDataURL("image/png");
       const img = document.createElement("img");
       img.src = imgData;
       img.style.width = "100%";
@@ -267,20 +272,32 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     document.body.appendChild(exportContainer);
     await new Promise(resolve => setTimeout(resolve, 200));
 
+    // html2canvas 渲染
     const canvas = await html2canvas(exportContainer, { scale: 2, useCORS: true, backgroundColor: "#fff" });
     document.body.removeChild(exportContainer);
 
-    const imgWidth = pageWidth - 40;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    const imgData = canvas.toDataURL("image/png");
-
-    let remainingHeight = imgHeight;
-    let positionY = 20;
+    const imgWidth = pageWidth - margin * 2;
+    const ratio = imgWidth / canvas.width;
+    const totalHeight = canvas.height * ratio;
+    let remainingHeight = totalHeight;
+    let yOffset = 0;
 
     while (remainingHeight > 0) {
-      const renderHeight = Math.min(remainingHeight, pageHeight - 40);
-      pdf.addImage(imgData, "PNG", 20, 20, imgWidth, renderHeight, undefined, "FAST", 0, ((imgHeight - remainingHeight) * (canvas.width / imgWidth)));
+      const renderHeight = Math.min(remainingHeight, pageHeight - margin * 2);
+      pdf.addImage(
+        canvas,
+        "PNG",
+        margin,
+        margin,
+        imgWidth,
+        canvas.height * ratio,
+        undefined,
+        "FAST",
+        0,
+        (yOffset / ratio)
+      );
       remainingHeight -= renderHeight;
+      yOffset += renderHeight / ratio;
       if (remainingHeight > 0) pdf.addPage();
     }
 
@@ -711,6 +728,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
