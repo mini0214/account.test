@@ -364,19 +364,36 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     const filename = `非匯不可報表_${startDate || "unknown"}_${hh}-${mm}-${ss}.pdf`;
 
     // --- LIFF 判斷 ---
+ // --- 上傳 GitHub ---
+    async function uploadToGitHub(blob, filename) {
+      const token = "0939868013"; // 有 repo 寫入權限
+      const owner = "mini0214";
+      const repo = "account.test";
+      const branch = "gh-pages"; // GitHub Pages branch
+
+      const arrayBuffer = await blob.arrayBuffer();
+      const base64 = btoa(new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), ""));
+
+      const url = `https://api.github.com/repos/${owner}/${repo}/contents/file/${filename}`;
+      const res = await fetch(url, {
+        method: "PUT",
+        headers: { "Authorization": `token ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ message: `Add ${filename}`, content: base64, branch })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "GitHub 上傳失敗");
+      return `https://${owner}.github.io/${repo}/file/${filename}`;
+    }
+
+    const blob = pdf.output("blob");
+
     if (window.liff && liff.isInClient()) {
-      const blob = pdf.output("blob");
-      const objectUrl = URL.createObjectURL(blob);
-
-      await liff.sendMessages([{
-        type: "file",
-        originalContentUrl: objectUrl,
-        filename: filename
-      }]);
-
+      const ghUrl = await uploadToGitHub(blob, filename);
+      await liff.sendMessages([{ type: "file", originalContentUrl: ghUrl, filename }]);
       alert("PDF 已送到 LINE 聊天中！");
     } else {
-      pdf.save(filename); // Web 端下載
+      pdf.save(filename);
     }
 
   } catch (err) {
@@ -797,6 +814,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
