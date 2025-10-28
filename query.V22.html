@@ -238,7 +238,8 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   const { jsPDF } = window.jspdf;
   const queryDiv = document.getElementById("queryResult");
   const chartCanvas = document.getElementById("chartCanvas");
-  const fontSize = 14; // 🔹 可自訂表格文字大小
+  const fontSize = 14; // 🔹 表格文字大小
+  const headerFontSize = 16; // 🔹 日期區間文字大小（與標題一致）
 
   if (!queryDiv || queryDiv.innerHTML.trim() === "") {
     alert("目前沒有查詢結果");
@@ -251,11 +252,16 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     const pageHeight = pdf.internal.pageSize.getHeight();
     const margin = 20;
 
-    // === 取得日期區間（動態抓 input）===
-    const startDate = document.getElementById("startDate")?.value || "";
-    const endDate = document.getElementById("endDate")?.value || "";
+    // === 取得日期區間 ===
+    const startDateInput = document.getElementById("startDate")?.value || "";
+    const endDateInput = document.getElementById("endDate")?.value || "";
 
-    // --- 1️⃣ 建立匯出用容器 ---
+    // 🔹 轉換日期格式：yyyy-mm-dd → yyyy/mm/dd
+    const formatDate = (d) => d ? d.replaceAll("-", "/") : "";
+    const startDate = formatDate(startDateInput);
+    const endDate = formatDate(endDateInput);
+
+    // --- 1️⃣ 建立匯出容器 ---
     const tableContainer = document.createElement("div");
     tableContainer.style.position = "absolute";
     tableContainer.style.left = "-9999px";
@@ -263,17 +269,18 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     tableContainer.style.background = "#fff";
     tableContainer.style.padding = "10px";
 
-    // 🔹 在表格上方插入日期區間文字
+    // --- 2️⃣ 加入日期區間 ---
     const dateTitle = document.createElement("div");
-    dateTitle.style.textAlign = "center";
-    dateTitle.style.fontSize = "16px";
+    dateTitle.style.textAlign = "left"; // 🔸靠左
+    dateTitle.style.fontSize = headerFontSize + "px"; // 🔸與標題一致
     dateTitle.style.fontWeight = "bold";
     dateTitle.style.marginBottom = "10px";
-    dateTitle.textContent = startDate && endDate
-      ? `📅 期間：${startDate} ～ ${endDate}`
-      : "📅 查詢結果";
+    dateTitle.textContent =
+      startDate && endDate
+        ? `■期間: ${startDate}  ~  ${endDate}`
+        : "■期間: 未指定";
 
-    // 加入到容器
+    // 插入表格內容
     tableContainer.appendChild(dateTitle);
     tableContainer.appendChild(queryDiv.cloneNode(true));
 
@@ -285,7 +292,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     document.body.appendChild(tableContainer);
     await new Promise(r => setTimeout(r, 300));
 
-    // --- 2️⃣ 轉成 Canvas ---
+    // --- 3️⃣ 轉成 Canvas ---
     const tableCanvas = await html2canvas(tableContainer, {
       scale: 2,
       useCORS: true,
@@ -293,19 +300,18 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     });
     document.body.removeChild(tableContainer);
 
-    // --- 3️⃣ 縮放至單頁 ---
+    // --- 4️⃣ 縮放成單頁 ---
     const maxWidth = pageWidth - margin * 2;
     const maxHeight = pageHeight - margin * 2;
     let imgWidth = tableCanvas.width;
     let imgHeight = tableCanvas.height;
     const ratio = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
-
     imgWidth *= ratio;
     imgHeight *= ratio;
 
     pdf.addImage(tableCanvas, "PNG", margin, margin, imgWidth, imgHeight);
 
-    // --- 4️⃣ 圖表（可選） ---
+    // --- 5️⃣ 圖表（可選） ---
     if (chartCanvas && chartCanvas.width > 0) {
       pdf.addPage();
       const chartImg = chartCanvas.toDataURL("image/png");
@@ -323,7 +329,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
       );
     }
 
-    // --- 5️⃣ 檔名 ---
+    // --- 6️⃣ 檔名 ---
     const now = new Date();
     const hh = String(now.getHours()).padStart(2, "0");
     const mm = String(now.getMinutes()).padStart(2, "0");
@@ -749,3 +755,4 @@ initApp();
 </script>
 </body>
 </html>
+
