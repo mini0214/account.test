@@ -254,7 +254,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     const tableContainer = document.createElement("div");
     tableContainer.style.position = "absolute";
     tableContainer.style.left = "-9999px";
-    tableContainer.style.width = "1100px";
+    tableContainer.style.width = "1100px"; // 適合橫式
     tableContainer.style.background = "#fff";
     tableContainer.style.padding = "10px";
     tableContainer.innerHTML = queryDiv.outerHTML;
@@ -267,13 +267,14 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     document.body.removeChild(tableContainer);
 
     const imgWidth = pageWidth - margin * 2;
-    const ratio = imgWidth / tableCanvas.width;
-    const totalHeight = tableCanvas.height * ratio;
-    let yOffset = 0;
+    const scale = imgWidth / tableCanvas.width;
+    const imgHeight = tableCanvas.height * scale;
 
-    // 每頁裁切顯示，不重複表頭
-    while (yOffset < totalHeight) {
-      const renderHeight = Math.min(pageHeight - margin * 2, totalHeight - yOffset);
+    let yOffset = 0;
+    const pageInnerHeight = pageHeight - margin * 2;
+
+    while (yOffset < imgHeight) {
+      const renderHeight = Math.min(pageInnerHeight, imgHeight - yOffset);
       pdf.addImage(
         tableCanvas,
         "PNG",
@@ -284,30 +285,30 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
         undefined,
         "FAST",
         0,
-        yOffset / ratio,
+        yOffset / scale,
         tableCanvas.width,
-        renderHeight / ratio
+        renderHeight / scale
       );
       yOffset += renderHeight;
-      if (yOffset < totalHeight) pdf.addPage();
+      if (yOffset < imgHeight) pdf.addPage();
     }
 
     // --- 圖表部分 ---
     if (chartCanvas && chartCanvas.width > 0) {
-      pdf.addPage(); // 單獨新頁
+      pdf.addPage();
       const chartImgData = chartCanvas.toDataURL("image/png");
 
-      // 計算縮放比例，不超出頁面
+      // 計算縮放比例，不變形，不超頁面
       const chartMaxWidth = pageWidth - margin * 2;
       const chartMaxHeight = pageHeight - margin * 2;
       let chartWidth = chartCanvas.width;
       let chartHeight = chartCanvas.height;
       const widthRatio = chartMaxWidth / chartWidth;
       const heightRatio = chartMaxHeight / chartHeight;
-      const scale = Math.min(widthRatio, heightRatio, 1); // 不放大，只縮小
+      const scaleChart = Math.min(widthRatio, heightRatio, 1); // 不放大
 
-      chartWidth *= scale;
-      chartHeight *= scale;
+      chartWidth *= scaleChart;
+      chartHeight *= scaleChart;
 
       pdf.addImage(chartImgData, "PNG", margin, margin, chartWidth, chartHeight);
     }
@@ -739,6 +740,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
