@@ -230,10 +230,9 @@ async function sendQuery(command) {
     }
   } // ✅ sendQuery() 結束
 
-// ✅ 匯出 PDF（包含表格 + 圖表）
+// ✅ 匯出 PDF（包含表格 + 圖表 + 自動分頁 A4）
 document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   const { jsPDF } = window.jspdf;
-
   const queryDiv = document.getElementById("queryResult");
   const chartCanvas = document.getElementById("chartCanvas");
 
@@ -243,13 +242,20 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   }
 
   try {
-    const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: "a4" });
+    // A4 尺寸 portrait 直式
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "pt",
+      format: "a4",
+    });
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
 
+    // 🔹 建立暫時容器，包含表格與圖表
     const exportContainer = document.createElement("div");
     exportContainer.style.background = "#fff";
     exportContainer.style.padding = "20px";
+    exportContainer.style.width = "800px"; // 固定寬度
     exportContainer.innerHTML = queryDiv.outerHTML;
 
     if (chartCanvas && chartCanvas.width > 0) {
@@ -261,36 +267,51 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
       exportContainer.appendChild(img);
     }
 
-    // 🔹 加到畫面上才能被 html2canvas 正確渲染
     document.body.appendChild(exportContainer);
+    await new Promise((resolve) => setTimeout(resolve, 200));
 
-    await new Promise(resolve => setTimeout(resolve, 200));
-
+    // 🔹 轉為 Canvas
     const canvas = await html2canvas(exportContainer, {
       scale: 2,
       useCORS: true,
       backgroundColor: "#fff",
-      logging: false
     });
-
     document.body.removeChild(exportContainer);
 
     const imgData = canvas.toDataURL("image/png");
-    const imgWidth = pageWidth - 40;
+    const imgWidth = pageWidth - 40; // 左右留邊
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    const finalHeight = Math.min(imgHeight, pageHeight - 40);
 
-    pdf.addImage(imgData, "PNG", 20, 20, imgWidth, finalHeight);
+    // 🔹 自動分頁：超出A4高度就分頁
+    let yPosition = 0;
+    let page = 0;
+    while (yPosition < imgHeight) {
+      if (page > 0) pdf.addPage();
+      pdf.addImage(
+        imgData,
+        "PNG",
+        20,
+        20,
+        imgWidth,
+        imgHeight,
+        undefined,
+        "FAST",
+        0,
+        yPosition * (canvas.width / imgWidth)
+      );
+      yPosition += pageHeight - 40; // 每頁高度減去邊界
+      page++;
+    }
 
+    // 🔹 檔名
     const startDate = document.getElementById("startDate").value || "unknown";
     const now = new Date();
     const hh = String(now.getHours()).padStart(2, "0");
     const mm = String(now.getMinutes()).padStart(2, "0");
     const ss = String(now.getSeconds()).padStart(2, "0");
-
     const filename = `非匯不可報表_${startDate}_${hh}${mm}${ss}.pdf`;
-    pdf.save(filename);
 
+    pdf.save(filename);
   } catch (err) {
     console.error("❌ 匯出 PDF 發生錯誤:", err);
     alert("匯出 PDF 失敗：" + (err.message || "未定義錯誤"));
@@ -358,83 +379,6 @@ function renderResult(command, json) {
     // ✅ 總額 & 筆數同樣用 rowsForDisplay
     const totalAmount = rowsForDisplay.reduce((sum, r) => sum + Number(r[5] || 0), 0);
     html += `<div class="total">📌 總額：${totalAmount.toLocaleString()} 元（共 ${rowsForDisplay.length} 筆）</div>`;
-
-    // ✅ 匯出 Excel 功能
-    document.getElementById("exportExcelBtn").addEventListener("click", exportExcel);
-    
-    function exportExcel() {
-      const queryDiv = document.getElementById("queryResult");
-      if (!queryDiv) return alert("目前沒有查詢結果");
-    
-      const tables = queryDiv.querySelectorAll("table");
-      if (tables.length === 0) return alert("沒有可匯出的表格");
-    
-      const wb = XLSX.utils.book_new();
-    
-      tables.forEach((table, idx) => {
-        // 取日期區間，與資料日期一樣所以統一格式為 YYYY/MM/DD
-        const startDate = (document.getElementById("startDate").value || "unknown").replace(/-/g, "/");
-        const endDate = (document.getElementById("endDate").value || "unknown").replace(/-/g, "/");
-        const dateRange = `日期區間：${startDate} ~ ${endDate}`;
-        
-        // 取表格標題
-        let rawTitle = table.previousElementSibling && table.previousElementSibling.tagName === "H5"
-            ? table.previousElementSibling.textContent
-            : `工作表${idx + 1}`;
-        const titleElement = rawTitle.split(";")[0].trim();
-        
-        // 取總額資訊
-        const totalElement = table.nextElementSibling && table.nextElementSibling.classList.contains("total")
-          ? table.nextElementSibling.textContent
-          : "";
-    
-        // 轉換表格為二維陣列
-        const wsData = [];
-        wsData.push([dateRange]);            // 第一列：日期區間
-        wsData.push([titleElement]);         // 第二列：標題
-        wsData.push([totalElement]);         // 第三列：總額資訊
-        
-        // 第三列：表頭
-        const headers = Array.from(table.querySelectorAll("th")).map(th => th.innerText.trim());
-        wsData.push(headers);
-        
-        // 第四列起：資料
-        const rows = Array.from(table.querySelectorAll("tr")).slice(1);
-        rows.forEach(row => {
-          const rowData = Array.from(row.querySelectorAll("td")).map((td, i) => {
-            let text = td.innerText.trim();
-        
-            // 🔹 自動補零日期格式：2025/10/1 → 2025/10/01
-            if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(text)) {
-              const [y, m, d] = text.split("/");
-              const mm = m.padStart(2, "0");
-              const dd = d.padStart(2, "0");
-              text = `${y}/${mm}/${dd}`;
-            }
-        
-            return text;
-          });
-          wsData.push(rowData);
-        });
-    
-        // 生成工作表
-        const ws = XLSX.utils.aoa_to_sheet(wsData);
-        XLSX.utils.book_append_sheet(wb, ws, titleElement.substring(0, 20)); // 名稱最多 31 字
-      });
-    
-      // 檔名
-      const now = new Date();  // 本地時間（瀏覽器時間）
-      const hh = String(now.getHours()).padStart(2,"0");
-      const min = String(now.getMinutes()).padStart(2,"0");
-      const ss = String(now.getSeconds()).padStart(2,"0");
-      
-      const startDate = document.getElementById("startDate").value || "unknown"; // YYYY-MM-DD
-      const timestamp = `${startDate}-${hh}-${min}-${ss}`;
-      const filename = `非匯不可報表_${timestamp}.xlsx`;
-    
-      // 下載
-      XLSX.writeFile(wb, filename);
-    }
 
     // 長條圖資料：金額總和 + 幣別最大值
     const dateSum = {};
@@ -703,15 +647,86 @@ chartInstance = new Chart(ctx, {
     });
   }
 }
+    
+    // ✅ 匯出 Excel 功能
+    document.getElementById("exportExcelBtn").addEventListener("click", exportExcel);
+    
+    function exportExcel() {
+      const queryDiv = document.getElementById("queryResult");
+      if (!queryDiv) return alert("目前沒有查詢結果");
+    
+      const tables = queryDiv.querySelectorAll("table");
+      if (tables.length === 0) return alert("沒有可匯出的表格");
+    
+      const wb = XLSX.utils.book_new();
+    
+      tables.forEach((table, idx) => {
+        // 取日期區間，與資料日期一樣所以統一格式為 YYYY/MM/DD
+        const startDate = (document.getElementById("startDate").value || "unknown").replace(/-/g, "/");
+        const endDate = (document.getElementById("endDate").value || "unknown").replace(/-/g, "/");
+        const dateRange = `日期區間：${startDate} ~ ${endDate}`;
+        
+        // 取表格標題
+        let rawTitle = table.previousElementSibling && table.previousElementSibling.tagName === "H5"
+            ? table.previousElementSibling.textContent
+            : `工作表${idx + 1}`;
+        const titleElement = rawTitle.split(";")[0].trim();
+        
+        // 取總額資訊
+        const totalElement = table.nextElementSibling && table.nextElementSibling.classList.contains("total")
+          ? table.nextElementSibling.textContent
+          : "";
+    
+        // 轉換表格為二維陣列
+        const wsData = [];
+        wsData.push([dateRange]);            // 第一列：日期區間
+        wsData.push([titleElement]);         // 第二列：標題
+        wsData.push([totalElement]);         // 第三列：總額資訊
+        
+        // 第三列：表頭
+        const headers = Array.from(table.querySelectorAll("th")).map(th => th.innerText.trim());
+        wsData.push(headers);
+        
+        // 第四列起：資料
+        const rows = Array.from(table.querySelectorAll("tr")).slice(1);
+        rows.forEach(row => {
+          const rowData = Array.from(row.querySelectorAll("td")).map((td, i) => {
+            let text = td.innerText.trim();
+        
+            // 🔹 自動補零日期格式：2025/10/1 → 2025/10/01
+            if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(text)) {
+              const [y, m, d] = text.split("/");
+              const mm = m.padStart(2, "0");
+              const dd = d.padStart(2, "0");
+              text = `${y}/${mm}/${dd}`;
+            }
+        
+            return text;
+          });
+          wsData.push(rowData);
+        });
+    
+        // 生成工作表
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        XLSX.utils.book_append_sheet(wb, ws, titleElement.substring(0, 20)); // 名稱最多 31 字
+      });
+    
+      // 檔名
+      const now = new Date();  // 本地時間（瀏覽器時間）
+      const hh = String(now.getHours()).padStart(2,"0");
+      const min = String(now.getMinutes()).padStart(2,"0");
+      const ss = String(now.getSeconds()).padStart(2,"0");
+      
+      const startDate = document.getElementById("startDate").value || "unknown"; // YYYY-MM-DD
+      const timestamp = `${startDate}-${hh}-${min}-${ss}`;
+      const filename = `非匯不可報表_${timestamp}.xlsx`;
+    
+      // 下載
+      XLSX.writeFile(wb, filename);
+    }
+  
 // ✅ 呼叫初始化
 initApp();
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
