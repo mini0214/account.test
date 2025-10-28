@@ -256,7 +256,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     tableContainer.innerHTML = queryDiv.outerHTML;
 
     // 設定表格字體小字
-    tableContainer.querySelectorAll("table").forEach(t => t.style.fontSize = "14px");
+    tableContainer.querySelectorAll("table").forEach(t => t.style.fontSize = "16px");
 
     document.body.appendChild(tableContainer);
     await new Promise(r => setTimeout(r, 200));
@@ -290,13 +290,26 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
       if (remainingHeight > 0) pdf.addPage();
     }
 
-    // --- 2️⃣ 圖表部分 ---  
+    // --- 2️⃣ 圖表部分（單獨新頁，縮小適合A4） ---  
     if (chartCanvas && chartCanvas.width > 0) {
       pdf.addPage(); // 圖表單獨新頁
       const chartImgData = chartCanvas.toDataURL("image/png");
-      const chartWidth = pageWidth - margin * 2;
-      const chartHeight = (chartCanvas.height * chartWidth) / chartCanvas.width;
-      pdf.addImage(chartImgData, "PNG", margin, margin, chartWidth, chartHeight);
+      
+      // 計算縮放比例，寬度不超過 pageWidth-margin*2，高度不超過 pageHeight-margin*2
+      const chartMaxWidth = pageWidth - margin * 2;
+      const chartMaxHeight = pageHeight - margin * 2;
+      let chartWidth = chartCanvas.width;
+      let chartHeight = chartCanvas.height;
+      const widthRatio = chartMaxWidth / chartWidth;
+      const heightRatio = chartMaxHeight / chartHeight;
+      const scaleRatio = Math.min(widthRatio, heightRatio, 1); // 不放大，縮小適應
+      chartWidth *= scaleRatio;
+      chartHeight *= scaleRatio;
+
+      const x = (pageWidth - chartWidth) / 2;
+      const y = (pageHeight - chartHeight) / 2;
+
+      pdf.addImage(chartImgData, "PNG", x, y, chartWidth, chartHeight);
     }
 
     const startDate = document.getElementById("startDate").value || "unknown";
@@ -726,6 +739,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
