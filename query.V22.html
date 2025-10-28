@@ -238,7 +238,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   const { jsPDF } = window.jspdf;
   const queryDiv = document.getElementById("queryResult");
   const chartCanvas = document.getElementById("chartCanvas");
-  const fontSize = 14; // 🔹可自行調整文字大小
+  const fontSize = 14; // 🔹 可自訂文字大小
 
   if (!queryDiv || queryDiv.innerHTML.trim() === "") {
     alert("目前沒有查詢結果");
@@ -250,66 +250,54 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
     const margin = 20;
-    const usableHeight = pageHeight - margin * 2;
 
-    // --- 1️⃣ 表格區 ---
+    // --- 1️⃣ 表格容器 ---
     const tableContainer = document.createElement("div");
     tableContainer.style.position = "absolute";
     tableContainer.style.left = "-9999px";
-    tableContainer.style.width = "1100px";
+    tableContainer.style.width = "1200px";
     tableContainer.style.background = "#fff";
     tableContainer.style.padding = "10px";
     tableContainer.innerHTML = queryDiv.outerHTML;
 
-    // 🔹設定表格字體大小
+    // 設定表格文字大小
     tableContainer.querySelectorAll("table, th, td").forEach(el => {
       el.style.fontSize = fontSize + "px";
     });
 
     document.body.appendChild(tableContainer);
-    await new Promise(r => setTimeout(r, 300)); // 確保 DOM 完成渲染
+    await new Promise(r => setTimeout(r, 300));
 
     const tableCanvas = await html2canvas(tableContainer, { scale: 2, useCORS: true, backgroundColor: "#fff" });
     document.body.removeChild(tableContainer);
 
-    const imgWidth = pageWidth - margin * 2;
-    const scale = imgWidth / tableCanvas.width;
-    const fullImgHeight = tableCanvas.height * scale;
+    // --- 2️⃣ 圖片縮放至單頁 ---
+    const maxWidth = pageWidth - margin * 2;
+    const maxHeight = pageHeight - margin * 2;
+    let imgWidth = tableCanvas.width;
+    let imgHeight = tableCanvas.height;
+    const ratio = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
 
-    // --- 2️⃣ 自動分頁（接續顯示資料流，不重複） ---
-    let y = 0;
-    while (y < fullImgHeight) {
-      const pageChunkHeight = Math.min(usableHeight, fullImgHeight - y);
+    imgWidth *= ratio;
+    imgHeight *= ratio;
 
-      pdf.addImage({
-        imageData: tableCanvas,
-        format: "PNG",
-        x: margin,
-        y: margin,
-        width: imgWidth,
-        height: fullImgHeight,
-        compression: "FAST",
-        // 🔹這兩個屬性是關鍵：告訴 jsPDF 這次要裁切圖片的哪一段
-        sx: 0,
-        sy: y / scale,
-        sWidth: tableCanvas.width,
-        sHeight: pageChunkHeight / scale,
-      });
+    pdf.addImage(
+      tableCanvas,
+      "PNG",
+      margin,
+      margin,
+      imgWidth,
+      imgHeight
+    );
 
-      y += pageChunkHeight;
-      if (y < fullImgHeight) pdf.addPage(); // 還有內容就換頁
-    }
-
-    // --- 3️⃣ 圖表 ---
+    // --- 3️⃣ 圖表（可選） ---
     if (chartCanvas && chartCanvas.width > 0) {
-      pdf.addPage();
-      const chartImgData = chartCanvas.toDataURL("image/png");
+      pdf.addPage(); // 圖表另外一頁
+      const chartImg = chartCanvas.toDataURL("image/png");
       const chartMaxWidth = pageWidth - margin * 2;
       const chartMaxHeight = pageHeight - margin * 2;
-      let chartW = chartCanvas.width;
-      let chartH = chartCanvas.height;
-      const ratio = Math.min(chartMaxWidth / chartW, chartMaxHeight / chartH, 1);
-      pdf.addImage(chartImgData, "PNG", margin, margin, chartW * ratio, chartH * ratio);
+      const chartRatio = Math.min(chartMaxWidth / chartCanvas.width, chartMaxHeight / chartCanvas.height);
+      pdf.addImage(chartImg, "PNG", margin, margin, chartCanvas.width * chartRatio, chartCanvas.height * chartRatio);
     }
 
     // --- 4️⃣ 檔名 ---
@@ -739,3 +727,4 @@ initApp();
 </script>
 </body>
 </html>
+
