@@ -270,7 +270,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
           ? firstTable.previousElementSibling.textContent
           : "";
       if (titleEl) {
-        // 只取分號前的文字
+        // 🔸 取分號前文字，例如「選擇查詢明細;標題按下即可排序」→「選擇查詢明細」
         titleText = titleEl.split(";")[0].trim();
       }
     }
@@ -283,31 +283,31 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     tableContainer.style.background = "#fff";
     tableContainer.style.padding = "10px";
 
-    // --- 2️⃣ 日期區間（第一行） ---
-    const dateDiv = document.createElement("div");
-    dateDiv.style.textAlign = "left";
-    dateDiv.style.fontSize = headerFontSize + "px";
-    dateDiv.style.fontWeight = "bold";
-    dateDiv.style.marginBottom = "5px";
-    dateDiv.textContent =
-      startDate && endDate
-        ? `■ 日期區間: ${startDate} ~ ${endDate}`
-        : "■ 日期區間: 未指定";
-
-    // --- 3️⃣ 標題（第二行） ---
+    // --- 2️⃣ 標題（第一行） ---
     const titleDiv = document.createElement("div");
     titleDiv.style.textAlign = "left";
     titleDiv.style.fontSize = headerFontSize + "px";
     titleDiv.style.fontWeight = "bold";
-    titleDiv.style.marginBottom = "10px";
+    titleDiv.style.marginBottom = "5px";
     titleDiv.textContent = titleText;
+
+    // --- 3️⃣ 日期區間（第二行） ---
+    const dateDiv = document.createElement("div");
+    dateDiv.style.textAlign = "left";
+    dateDiv.style.fontSize = headerFontSize + "px";
+    dateDiv.style.fontWeight = "bold";
+    dateDiv.style.marginBottom = "10px";
+    dateDiv.textContent =
+      startDate && endDate
+        ? `■ 日期區間: ${startDate} ~ ${endDate}`
+        : "■ 日期區間: 未指定";
 
     // --- 插入順序：標題 → 日期區間 → 表格 ---
     tableContainer.appendChild(titleDiv);
     tableContainer.appendChild(dateDiv);
     tableContainer.appendChild(queryDiv.cloneNode(true));
 
-    // 設定表格文字大小
+    // 設定表格內文字大小
     tableContainer.querySelectorAll("table, th, td").forEach(el => {
       el.style.fontSize = fontSize + "px";
     });
@@ -778,4 +778,5 @@ initApp();
 </script>
 </body>
 </html>
+
 
