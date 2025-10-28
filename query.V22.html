@@ -236,10 +236,13 @@ async function sendQuery(command) {
 document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   const { jsPDF } = window.jspdf;
 
-  // 中文字型 base64，微軟正黑體 (自行轉 ttf -> base64)
-  const fontBase64 = "5b6u6Luf5q2j6buR6auU"; // <-- 這裡填完整 base64
-  jsPDF.API.addFileToVFS("SourceHanSans-Regular.ttf", fontBase64);
-  jsPDF.API.addFont("SourceHanSans-Regular.ttf", "SourceHanSans", "normal");
+  const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+
+  // 加字型 (需完整 base64)
+  const fontBase64 = "5b6u6Luf5q2j6buR6auULnR0Zg==";
+  pdf.addFileToVFS("SourceHanSans-Regular.ttf", fontBase64);
+  pdf.addFont("SourceHanSans-Regular.ttf", "SourceHanSans", "normal");
+  pdf.setFont("SourceHanSans");
 
   const queryDiv = document.getElementById("queryResult");
   const chartCanvas = document.getElementById("chartCanvas");
@@ -249,74 +252,44 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     return;
   }
 
-  try {
-    const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
-    pdf.setFont("SourceHanSans");
+  // --- 表格 ---
+  const table = queryDiv.querySelector("table");
+  if (table) {
+    const headers = Array.from(table.querySelectorAll("th")).map(th => th.innerText.trim());
+    const data = Array.from(table.querySelectorAll("tr")).slice(1).map(tr =>
+      Array.from(tr.querySelectorAll("td")).map(td => td.innerText.trim())
+    );
+
+    pdf.autoTable({
+      head: [headers],
+      body: data,
+      startY: 40,
+      styles: { font: "SourceHanSans", fontSize: 16, cellPadding: 2 },
+      theme: 'grid'
+    });
+  }
+
+  // --- 圖表 ---
+  if (chartCanvas && chartCanvas.width > 0) {
+    pdf.addPage();
+    const imgData = chartCanvas.toDataURL("image/png");
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
     const margin = 20;
 
-    // --- 1️⃣ 表格 ---
-    const table = queryDiv.querySelector("table");
-    if (table) {
-      const headers = Array.from(table.querySelectorAll("th")).map(th => th.innerText.trim());
-      const data = Array.from(table.querySelectorAll("tr")).slice(1).map(tr =>
-        Array.from(tr.querySelectorAll("td")).map(td => td.innerText.trim())
-      );
+    let imgWidth = chartCanvas.width;
+    let imgHeight = chartCanvas.height;
+    const ratio = Math.min((pageWidth - margin*2)/imgWidth, (pageHeight - margin*2)/imgHeight);
+    imgWidth *= ratio;
+    imgHeight *= ratio;
 
-      pdf.autoTable({
-        head: [headers],
-        body: data,
-        startY: margin,
-        margin: { left: margin, right: margin },
-        styles: { font: "SourceHanSans", fontSize: 16, cellPadding: 2 }, // 小字
-        theme: 'grid',
-        headStyles: { fillColor: [220, 220, 220], font: "SourceHanSans" },
-        didDrawPage: function (data) {
-          const str = "頁 " + pdf.internal.getNumberOfPages();
-          pdf.setFontSize(8);
-          pdf.text(str, pageWidth - margin - 50, pageHeight - 10);
-        },
-        pageBreak: 'auto'
-      });
-    }
-
-    // --- 2️⃣ 圖表 ---
-    if (chartCanvas && chartCanvas.width > 0) {
-      pdf.addPage();
-      const chartImgData = chartCanvas.toDataURL("image/png");
-
-      const chartMaxWidth = pageWidth - margin * 2;
-      const chartMaxHeight = pageHeight - margin * 2;
-      let chartWidth = chartCanvas.width;
-      let chartHeight = chartCanvas.height;
-      const widthRatio = chartMaxWidth / chartWidth;
-      const heightRatio = chartMaxHeight / chartHeight;
-      const scaleRatio = Math.min(widthRatio, heightRatio); // 縮小符合 A4
-
-      chartWidth *= scaleRatio;
-      chartHeight *= scaleRatio;
-
-      const x = (pageWidth - chartWidth) / 2;
-      const y = (pageHeight - chartHeight) / 2;
-
-      pdf.addImage(chartImgData, "PNG", x, y, chartWidth, chartHeight);
-    }
-
-    // --- 檔名 ---
-    const startDate = document.getElementById("startDate")?.value || "unknown";
-    const now = new Date();
-    const hh = String(now.getHours()).padStart(2, "0");
-    const mm = String(now.getMinutes()).padStart(2, "0");
-    const ss = String(now.getSeconds()).padStart(2, "0");
-    const filename = `非匯不可報表_${startDate}_${hh}-${mm}-${ss}.pdf`;
-
-    pdf.save(filename);
-
-  } catch (err) {
-    console.error("❌ 匯出 PDF 發生錯誤:", err);
-    alert("匯出 PDF 失敗：" + (err.message || "未定義錯誤"));
+    pdf.addImage(imgData, "PNG", (pageWidth - imgWidth)/2, (pageHeight - imgHeight)/2, imgWidth, imgHeight);
   }
+
+  const startDate = document.getElementById("startDate")?.value || "unknown";
+  const now = new Date();
+  const filename = `非匯不可報表_${startDate}_${now.getHours()}-${now.getMinutes()}-${now.getSeconds()}.pdf`;
+  pdf.save(filename);
 });
 
 // 顯示結果表格與圖表
@@ -731,6 +704,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
