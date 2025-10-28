@@ -330,7 +330,19 @@ function renderResult(command, json) {
         // 第四列起：資料
         const rows = Array.from(table.querySelectorAll("tr")).slice(1);
         rows.forEach(row => {
-          const rowData = Array.from(row.querySelectorAll("td")).map(td => td.innerText.trim());
+          const rowData = Array.from(row.querySelectorAll("td")).map((td, i) => {
+            let text = td.innerText.trim();
+        
+            // 🔹 自動補零日期格式：2025/10/1 → 2025/10/01
+            if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(text)) {
+              const [y, m, d] = text.split("/");
+              const mm = m.padStart(2, "0");
+              const dd = d.padStart(2, "0");
+              text = `${y}/${mm}/${dd}`;
+            }
+        
+            return text;
+          });
           wsData.push(rowData);
         });
     
@@ -625,5 +637,6 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
