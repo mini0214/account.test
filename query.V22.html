@@ -54,15 +54,14 @@
   </div>
 
 <!-- 📊 查詢結果顯示區 -->  
-<div id="queryResult"></div>
-
+<div id="queryResult"></div> 
+<canvas id="chartCanvas"></canvas>
+  
 <!-- ✅ 匯出按鈕獨立區塊（固定位置） -->
 <div id="exportArea" style="text-align:center; margin-top:10px; display:none;">
   <button id="exportExcelBtn" class="green-btn">📤 匯出Excel</button>
   <button id="exportPdfBtn" class="green-btn">📄 匯出PDF</button>
 </div>
-  
-<canvas id="chartCanvas"></canvas>
 
 <script>
 //const LIFF_ID = "2008096451-jPJ50MOY"; // 換成你的 LIFF ID
@@ -709,6 +708,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
