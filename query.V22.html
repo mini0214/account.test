@@ -54,10 +54,6 @@
 <div id="queryResult"></div>
 <canvas id="chartCanvas"></canvas>
 
-<div id="exportArea" style="text-align:center; margin-top:20px; display:none;">
-  <button id="exportExcelBtn"  class="green-btn">📤 匯出Excel</button>
-</div>
-
 <script>
 //const LIFF_ID = "2008096451-jPJ50MOY"; // 換成你的 LIFF ID
 //const VERSION = "V17_#43";             // 固定版次
@@ -416,6 +412,9 @@ function renderResult(command, json) {
       });
       html += `</table>`;
       html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${labels.length} 筆）</div>`;
+      html += `<div style="text-align:center; margin-top:10px;">
+                <button id="exportExcelBtn" class="green-btn">📤 匯出Excel</button>
+               </div>`;
 
       // Pie Chart
       renderChart("pie", labels, values);
@@ -623,3 +622,4 @@ initApp();
 </script>
 </body>
 </html>
+
