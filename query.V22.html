@@ -239,7 +239,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   const queryDiv = document.getElementById("queryResult");
   const chartCanvas = document.getElementById("chartCanvas");
   const fontSize = 14; // 表格文字大小
-  const headerFontSize = 24; // 標題與日期區間字體大小
+  const headerFontSize = 32; // 標題與日期區間字體大小
 
   if (!queryDiv || queryDiv.innerHTML.trim() === "") {
     alert("目前沒有查詢結果");
@@ -291,8 +291,8 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     dateDiv.style.marginBottom = "5px";
     dateDiv.textContent =
       startDate && endDate
-        ? `■ 日期區間: ${startDate} ~ ${endDate}`
-        : "■ 日期區間: 未指定";
+        ? `📅 日期區間: ${startDate} ~ ${endDate}`
+        : "📅 日期區間: 未指定";
 
     // --- 3️⃣ 標題（第二行） ---
     const titleDiv = document.createElement("div");
@@ -782,6 +782,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
