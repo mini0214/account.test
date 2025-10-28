@@ -9,7 +9,6 @@
   <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
   
   <style>
     body { font-family: Arial, sans-serif; padding: 50px; }
@@ -242,15 +241,10 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   }
 
   try {
-    const pdf = new jsPDF({
-      orientation: "landscape",
-      unit: "pt",
-      format: "a4",
-    });
+    const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
 
-    // 🔹 暫存容器，不顯示在頁面上
     const exportContainer = document.createElement("div");
     exportContainer.style.position = "absolute";
     exportContainer.style.left = "-9999px";
@@ -259,12 +253,8 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     exportContainer.style.padding = "20px";
     exportContainer.innerHTML = queryDiv.outerHTML;
 
-    // 🔹 調整表格字體
-    exportContainer.querySelectorAll("table").forEach(t => {
-      t.style.fontSize = "14px"; // PDF 表格字體
-    });
+    exportContainer.querySelectorAll("table").forEach(t => t.style.fontSize = "12px");
 
-    // 🔹 加入圖表
     if (chartCanvas && chartCanvas.width > 0) {
       const imgData = chartCanvas.toDataURL("image/png", 1.0);
       const img = document.createElement("img");
@@ -280,18 +270,18 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     const canvas = await html2canvas(exportContainer, { scale: 2, useCORS: true, backgroundColor: "#fff" });
     document.body.removeChild(exportContainer);
 
-    const imgData = canvas.toDataURL("image/png");
     const imgWidth = pageWidth - 40;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    const imgData = canvas.toDataURL("image/png");
 
-    // 🔹 自動分頁
-    let yPosition = 0;
-    let page = 0;
-    while (yPosition < imgHeight) {
-      if (page > 0) pdf.addPage();
-      pdf.addImage(imgData, "PNG", 20, 20, imgWidth, imgHeight, undefined, "FAST", 0, yPosition * (canvas.width / imgWidth));
-      yPosition += pageHeight - 40;
-      page++;
+    let remainingHeight = imgHeight;
+    let positionY = 20;
+
+    while (remainingHeight > 0) {
+      const renderHeight = Math.min(remainingHeight, pageHeight - 40);
+      pdf.addImage(imgData, "PNG", 20, 20, imgWidth, renderHeight, undefined, "FAST", 0, ((imgHeight - remainingHeight) * (canvas.width / imgWidth)));
+      remainingHeight -= renderHeight;
+      if (remainingHeight > 0) pdf.addPage();
     }
 
     const startDate = document.getElementById("startDate").value || "unknown";
@@ -299,7 +289,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     const hh = String(now.getHours()).padStart(2, "0");
     const mm = String(now.getMinutes()).padStart(2, "0");
     const ss = String(now.getSeconds()).padStart(2, "0");
-    const filename = `非匯不可報表_${startDate}_${hh}-${mm}-${ss}.pdf`;
+    const filename = `非匯不可報表_${startDate}_${hh}${mm}${ss}.pdf`;
 
     pdf.save(filename);
 
@@ -721,5 +711,6 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
