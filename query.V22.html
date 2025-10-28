@@ -239,7 +239,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
 
   // 加字型 (需完整 base64)
-  const fontBase64 = "5b6u6Luf5q2j6buR6auULnR0Zg==";
+  const fontBase64 = "QzpcV2luZG93c1xGb250c1zlvq7ou5/mraPpu5Hpq5QudHRm";
   pdf.addFileToVFS("SourceHanSans-Regular.ttf", fontBase64);
   pdf.addFont("SourceHanSans-Regular.ttf", "SourceHanSans", "normal");
   pdf.setFont("SourceHanSans");
@@ -704,6 +704,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
