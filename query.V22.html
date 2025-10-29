@@ -635,26 +635,7 @@ chartInstance = new Chart(ctx, {
       const tables = queryDiv.querySelectorAll("table");
       if (tables.length === 0) return alert("沒有可匯出的表格");
 
-      // 🔹 檢查是否在 LINE LIFF 內
-      let inLine = false;
-      try {
-        if (typeof liff !== "undefined" && typeof liff.isInClient === "function") {
-          // 等待 LIFF SDK 準備好
-          if (typeof liff.ready === "object" && typeof liff.ready.then === "function") {
-            await liff.ready.catch(() => {});
-          }
-          inLine = liff.isInClient();  // 👈 要加括號！
-        }
-      } catch (err) {
-        console.warn("⚠️ LIFF 環境檢查失敗，略過：", err);
-      }
-    
-      if (inLine) {
-        alert("⚠️ LINE 暫不支援 Excel 匯出功能，請改用網頁版開啟後再匯出。");
-        return;
-      }
-
-      // 🔹 以下為一般瀏覽器下載 Excel 流程
+            // 🔹 以下為一般瀏覽器下載 Excel 流程
       const wb = XLSX.utils.book_new();
     
       tables.forEach((table, idx) => {
@@ -718,9 +699,20 @@ chartInstance = new Chart(ctx, {
       const timestamp = `${startDate}-${hh}-${min}-${ss}`;
       const filename = `非匯不可報表_${timestamp}.xlsx`;
     
-      // 下載
-      XLSX.writeFile(wb, filename);
-    }
+      try {
+          if (liff.isInClient()) {
+            // LINE 內建瀏覽器：只提示訊息
+            alert(`LINE 內建瀏覽器無法下載，請在 Web 使用此功能`);
+                  
+          } else {
+            // Web：正常下載
+            XLSX.writeFile(wb, filename);
+          }
+        } catch(err) {
+          console.error("❌ 匯出 Excel 發生錯誤:", err);
+          alert("匯出 Excel 失敗：" + (err.message || "未定義錯誤"));
+        }
+      }
   
     // ✅ 匯出 PDF（包含表格 + 圖表 + 橫式A4 + 表格及圖表各自一頁 + 可自訂文字大小）
     document.getElementById("exportPdfBtn").addEventListener("click", async () => {
@@ -864,6 +856,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
