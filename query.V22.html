@@ -635,25 +635,6 @@ chartInstance = new Chart(ctx, {
       const tables = queryDiv.querySelectorAll("table");
       if (tables.length === 0) return alert("沒有可匯出的表格");
 
-      // 🔹 檢查是否在 LINE LIFF 內
-      let inLine = false;
-        try {
-          if (typeof liff !== "undefined" && liff.isInClient) {
-            // 部分版本 LIFF SDK 不支援 await liff.ready
-            if (typeof liff.ready === "object" && typeof liff.ready.then === "function") {
-              await liff.ready.catch(() => {});
-            }
-            inLine = liff.isInClient();
-          }
-        } catch (err) {
-          console.warn("⚠️ LIFF 環境檢查失敗，略過：", err);
-        }
-      
-        if (inLine) {
-          alert("⚠️ LINE 暫不支援 Excel 匯出功能，請改用網頁版開啟後再匯出。");
-          return;
-        }
-
       // 🔹 以下為一般瀏覽器下載 Excel 流程
       const wb = XLSX.utils.book_new();
     
@@ -864,6 +845,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
