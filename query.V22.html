@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>零用金支出帳簿1129</title>
+  <title>零用金支出帳簿1133</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -247,52 +247,66 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   try {
     // ===== 建立 PDF =====
     const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 20;
 
-    // 用 html2canvas 把表格轉圖片
-    const tableCanvas = await html2canvas(queryDiv, { scale: 2, useCORS: true });
-    const imgData = tableCanvas.toDataURL("image/png");
-    pdf.addImage(imgData, "PNG", 20, 20, pdf.internal.pageSize.getWidth() - 40, pdf.internal.pageSize.getHeight() - 40);
+    // ===== 先將 queryDiv 轉成 Canvas =====
+    const clonedDiv = queryDiv.cloneNode(true);
+    clonedDiv.style.position = "absolute";
+    clonedDiv.style.left = "-9999px";
+    document.body.appendChild(clonedDiv);
 
-    // 如果有圖表，再新增一頁
+    const tableCanvas = await html2canvas(clonedDiv, { scale: 2, useCORS: true });
+    document.body.removeChild(clonedDiv);
+
+    let imgWidth = tableCanvas.width;
+    let imgHeight = tableCanvas.height;
+    const ratio = Math.min((pageWidth - margin*2)/imgWidth, (pageHeight - margin*2)/imgHeight);
+    imgWidth *= ratio;
+    imgHeight *= ratio;
+
+    pdf.addImage(tableCanvas, "PNG", margin, margin, imgWidth, imgHeight);
+
+    // ===== 如果有圖表也加入 PDF =====
     if (chartCanvas && chartCanvas.width > 0) {
       pdf.addPage();
       const chartImg = chartCanvas.toDataURL("image/png");
-      pdf.addImage(
-        chartImg,
-        "PNG",
-        20,
-        20,
-        pdf.internal.pageSize.getWidth() - 40,
-        pdf.internal.pageSize.getHeight() - 40
-      );
+      const chartRatio = Math.min((pageWidth - margin*2)/chartCanvas.width, (pageHeight - margin*2)/chartCanvas.height);
+      pdf.addImage(chartImg, "PNG", margin, margin, chartCanvas.width * chartRatio, chartCanvas.height * chartRatio);
     }
 
-    // ===== 轉 Base64 =====
-    const pdfBlob = await pdf.output("blob");
-    const base64Data = await new Promise((resolve) => {
+    // ===== 轉成 Base64 =====
+    const pdfBlob = pdf.output("blob");
+    const base64Data = await new Promise(resolve => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result.split(",")[1]);
       reader.readAsDataURL(pdfBlob);
     });
 
     const filename = `非匯不可報表_${Date.now()}.pdf`;
+    const downloadUrl = `https://mini0214.github.io/account.test/download.html?data=${encodeURIComponent(base64Data)}&name=${encodeURIComponent(filename)}`;
 
-    // ===== 判斷 LINE =====
+    // ===== LINE 判斷 =====
     if (window.liff && liff.isInClient()) {
-      const downloadUrl = `https://你的GitHubPages網址/download.html?data=${encodeURIComponent(base64Data)}&name=${encodeURIComponent(filename)}`;
-      liff.openWindow({ url: downloadUrl, external: true }); // ✅ 強制用外部瀏覽器
+      // 在 LINE 內開外部頁面下載 PDF
+      liff.openWindow({ url: downloadUrl, external: true });
     } else {
-      // 一般瀏覽器直接下載
+      // 一般瀏覽器下載
       const byteChars = atob(base64Data);
       const byteNumbers = new Array(byteChars.length);
-      for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
-      const blob = new Blob([new Uint8Array(byteNumbers)], { type: "application/pdf" });
+      for (let i = 0; i < byteChars.length; i++) {
+        byteNumbers[i] = byteChars.charCodeAt(i);
+      }
+      const blobData = new Blob([new Uint8Array(byteNumbers)], { type: "application/pdf" });
       const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(blobData);
+      a.href = url;
       a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     }
 
   } catch (err) {
@@ -713,6 +727,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
