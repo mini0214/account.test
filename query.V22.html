@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>零用金支出帳簿1029</title>
+  <title>零用金支出帳簿1050</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -239,8 +239,6 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   const { jsPDF } = window.jspdf;
   const queryDiv = document.getElementById("queryResult");
   const chartCanvas = document.getElementById("chartCanvas");
-  const fontSize = 14;
-  const headerFontSize = 24;
 
   if (!queryDiv || queryDiv.innerHTML.trim() === "") {
     alert("目前沒有查詢結果");
@@ -248,129 +246,59 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   }
 
   try {
+    // ===== 建立 PDF =====
     const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const margin = 20;
+    const pdfBlob = await pdf.output("blob");
 
-    // === 日期區間 ===
-    const startDateInput = document.getElementById("startDate")?.value || "";
-    const endDateInput = document.getElementById("endDate")?.value || "";
-    const formatDate = (d) => d ? d.replaceAll("-", "/") : "";
-    const startDate = formatDate(startDateInput);
-    const endDate = formatDate(endDateInput);
-
-    // === 標題 ===
-    const firstTable = queryDiv.querySelector("table");
-    let titleText = "報表";
-    if (firstTable) {
-      const titleEl =
-        firstTable.previousElementSibling && firstTable.previousElementSibling.tagName === "H5"
-          ? firstTable.previousElementSibling.textContent
-          : "";
-      if (titleEl) titleText = titleEl.split(";")[0].trim();
-    }
-
-    // === 建立暫存容器 ===
-    const tableContainer = document.createElement("div");
-    tableContainer.style.position = "absolute";
-    tableContainer.style.left = "-9999px";
-    tableContainer.style.width = "1200px";
-    tableContainer.style.background = "#fff";
-    tableContainer.style.padding = "10px";
-
-    const dateDiv = document.createElement("div");
-    dateDiv.style.fontSize = headerFontSize + "px";
-    dateDiv.style.fontWeight = "bold";
-    dateDiv.textContent =
-      startDate && endDate
-        ? `📅 日期區間: ${startDate} ~ ${endDate}`
-        : "📅 日期區間: 未指定";
-
-    const titleDiv = document.createElement("div");
-    titleDiv.style.fontSize = headerFontSize + "px";
-    titleDiv.style.fontWeight = "bold";
-    titleDiv.style.marginBottom = "10px";
-    titleDiv.textContent = titleText;
-
-    tableContainer.appendChild(dateDiv);
-    tableContainer.appendChild(titleDiv);
-
-    const clonedQuery = queryDiv.cloneNode(true);
-    clonedQuery.querySelectorAll("h5").forEach(el => el.remove());
-    tableContainer.appendChild(clonedQuery);
-    tableContainer.querySelectorAll("table, th, td").forEach(el => {
-      el.style.fontSize = fontSize + "px";
-    });
-
-    document.body.appendChild(tableContainer);
-    await new Promise(r => setTimeout(r, 300));
-
-    const tableCanvas = await html2canvas(tableContainer, { scale: 2, useCORS: true });
-    document.body.removeChild(tableContainer);
-
-    const maxWidth = pageWidth - margin * 2;
-    const maxHeight = pageHeight - margin * 2;
-    let imgWidth = tableCanvas.width;
-    let imgHeight = tableCanvas.height;
-    const ratio = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
-    imgWidth *= ratio;
-    imgHeight *= ratio;
-
-    pdf.addImage(tableCanvas, "PNG", margin, margin, imgWidth, imgHeight);
-
-    if (chartCanvas && chartCanvas.width > 0) {
-      pdf.addPage();
-      const chartImg = chartCanvas.toDataURL("image/png");
-      const chartRatio = Math.min(
-        (pageWidth - margin * 2) / chartCanvas.width,
-        (pageHeight - margin * 2) / chartCanvas.height
-      );
-      pdf.addImage(
-        chartImg,
-        "PNG",
-        margin,
-        margin,
-        chartCanvas.width * chartRatio,
-        chartCanvas.height * chartRatio
-      );
-    }
-
-    // === 產生 PDF Blob 並轉成 Base64 ===
-    const blob = pdf.output("blob");
+    // ===== 轉成 Base64 =====
     const base64Data = await new Promise((resolve) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result.split(",")[1]);
-      reader.readAsDataURL(blob);
+      reader.readAsDataURL(pdfBlob);
     });
 
-    const filename = `非匯不可報表_${Date.now()}.pdf`;
+    // ===== 上傳到 GitHub =====
+    const filename = `report_${Date.now()}.pdf`;
+    const GITHUB_USER = "你的GitHub帳號";
+    const GITHUB_REPO = "account.test";
+    const GITHUB_BRANCH = "gh-pages"; // Pages 分支
+    const GITHUB_TOKEN = "你的 Personal Access Token";
 
-    // === 判斷是否在 LINE 內 ===
-    if (window.liff && liff.isInClient()) {
-      // 🚀 開啟外部頁面（download.html）進行下載
-      const targetUrl = `https://mini0214.github.io/account.test/download.html?data=${encodeURIComponent(base64Data)}&name=${encodeURIComponent(filename)}`;
-      liff.openWindow({
-        url: targetUrl,
-        external: true
-      });
-    } else {
-      // 🖥️ 一般瀏覽器直接下載
-      const byteChars = atob(base64Data);
-      const byteNumbers = new Array(byteChars.length);
-      for (let i = 0; i < byteChars.length; i++) {
-        byteNumbers[i] = byteChars.charCodeAt(i);
+    const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${filename}`;
+    const payload = {
+      message: `upload PDF ${Date.now()}`,
+      content: base64Data,
+      branch: GITHUB_BRANCH
+    };
+
+    const resp = await fetch(url, {
+      method: "PUT",
+      headers: {
+        "Authorization": `token ${GITHUB_TOKEN}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await resp.json();
+    if (result.content && result.content.download_url) {
+      const pdfUrl = result.content.download_url;
+
+      // ===== LINE 判斷 =====
+      if (window.liff && liff.isInClient()) {
+        liff.openWindow({ url: pdfUrl, external: true });
+      } else {
+        // 一般瀏覽器下載
+        const a = document.createElement("a");
+        a.href = pdfUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
       }
-      const blobData = new Blob([new Uint8Array(byteNumbers)], { type: "application/pdf" });
-      const url = URL.createObjectURL(blobData);
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+    } else {
+      console.error("上傳失敗", result);
+      alert("PDF 上傳失敗");
     }
 
   } catch (err) {
@@ -378,7 +306,6 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     alert("匯出 PDF 失敗：" + (err.message || "未定義錯誤"));
   }
 });
-
 
 // 顯示結果表格與圖表
 function renderResult(command, json) {
@@ -792,6 +719,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
