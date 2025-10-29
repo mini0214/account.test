@@ -234,7 +234,6 @@ async function sendQuery(command) {
   } // ✅ sendQuery() 結束
 
 // ✅ 匯出 PDF（包含表格 + 圖表 + 橫式A4 + 表格及圖表各自一頁 + 可自訂文字大小）
-// ✅ 匯出 PDF（支援 LINE 內開啟外部頁面下載）
 document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   const { jsPDF } = window.jspdf;
   const queryDiv = document.getElementById("queryResult");
@@ -246,7 +245,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   }
 
   try {
-    // ===== 建立 PDF =====
+    // ===== 生成 PDF =====
     const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
     const pdfBlob = await pdf.output("blob");
 
@@ -257,48 +256,32 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
       reader.readAsDataURL(pdfBlob);
     });
 
-    // ===== 上傳到 GitHub =====
-    const filename = `report_${Date.now()}.pdf`;
-    const GITHUB_USER = "mini0214";
-    const GITHUB_REPO = "account.test";
-    const GITHUB_BRANCH = "gh-pages"; // Pages 分支
-    const GITHUB_TOKEN = "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";
+    const filename = `非匯不可報表_${Date.now()}.pdf`;
 
-    const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${filename}`;
-    const payload = {
-      message: `upload PDF ${Date.now()}`,
-      content: base64Data,
-      branch: GITHUB_BRANCH
-    };
+    // ===== 生成下載頁面 URL（download.html） =====
+    const pdfUrl = `https://mini0214.github.io/account.test/download.html?data=${encodeURIComponent(base64Data)}&name=${encodeURIComponent(filename)}`;
 
-    const resp = await fetch(url, {
-      method: "PUT",
-      headers: {
-        "Authorization": `token ${GITHUB_TOKEN}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const result = await resp.json();
-    if (result.content && result.content.download_url) {
-      const pdfUrl = result.content.download_url;
-
-      // ===== LINE 判斷 =====
-      if (window.liff && liff.isInClient()) {
-        liff.openWindow({ url: pdfUrl, external: true });
-      } else {
-        // 一般瀏覽器下載
-        const a = document.createElement("a");
-        a.href = pdfUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      }
+    // ===== 判斷是否在 LINE =====
+    if (window.liff && liff.isInClient()) {
+      // 🚀 在 LINE 內開啟外部頁面下載
+      liff.openWindow({ url: pdfUrl, external: true });
     } else {
-      console.error("上傳失敗", result);
-      alert("PDF 上傳失敗");
+      // 🖥️ 一般瀏覽器直接下載
+      const byteChars = atob(base64Data);
+      const byteNumbers = new Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) {
+        byteNumbers[i] = byteChars.charCodeAt(i);
+      }
+      const blobData = new Blob([new Uint8Array(byteNumbers)], { type: "application/pdf" });
+      const url = URL.createObjectURL(blobData);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     }
 
   } catch (err) {
@@ -719,6 +702,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
