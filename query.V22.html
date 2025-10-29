@@ -563,7 +563,77 @@ chartInstance = new Chart(ctx, {
     });
   }
 }
-    
+
+    // ✅ 匯出 CSV 功能
+    document.getElementById("exportCsvBtn").addEventListener("click", exportCsv);
+  
+    function exportCsv() {
+      const queryDiv = document.getElementById("queryResult");
+      if (!queryDiv) return alert("目前沒有查詢結果");
+  
+      const tables = queryDiv.querySelectorAll("table");
+      if (tables.length === 0) return alert("沒有可匯出的表格");
+  
+      let csvContent = "";
+  
+      tables.forEach((table, idx) => {
+        // 取日期區間
+        const startDate = (document.getElementById("startDate").value || "unknown").replace(/-/g, "/");
+        const endDate = (document.getElementById("endDate").value || "unknown").replace(/-/g, "/");
+        csvContent += `📅 日期區間：${startDate} ~ ${endDate}\n`;
+  
+        // 標題
+        let rawTitle = table.previousElementSibling && table.previousElementSibling.tagName === "H5"
+            ? table.previousElementSibling.textContent
+            : `工作表${idx + 1}`;
+        const titleElement = rawTitle.split(";")[0].trim();
+        csvContent += `${titleElement}\n`;
+  
+        // 總額
+        const totalElement = table.nextElementSibling && table.nextElementSibling.classList.contains("total")
+          ? table.nextElementSibling.textContent
+          : "";
+        if (totalElement) csvContent += `${totalElement}\n`;
+  
+        // 表頭
+        const headers = Array.from(table.querySelectorAll("th")).map(th => `"${th.innerText.trim()}"`);
+        csvContent += headers.join(",") + "\n";
+  
+        // 資料列
+        const rows = Array.from(table.querySelectorAll("tr")).slice(1);
+        rows.forEach(row => {
+          const cols = Array.from(row.querySelectorAll("td")).map(td => {
+            let text = td.innerText.trim().replace(/"/g, '""'); // 轉義雙引號
+            if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(text)) {
+              const [y, m, d] = text.split("/");
+              text = `${y}/${m.padStart(2, "0")}/${d.padStart(2, "0")}`;
+            }
+            return `"${text}"`;
+          });
+          csvContent += cols.join(",") + "\n";
+        });
+  
+        csvContent += "\n"; // 各表間空行
+      });
+  
+      // 🔹 建立 CSV Blob
+      const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, "0");
+      const mm = String(now.getMinutes()).padStart(2, "0");
+      const ss = String(now.getSeconds()).padStart(2, "0");
+      const startDate = document.getElementById("startDate").value || "unknown";
+      const filename = `非匯不可報表_${startDate}_${hh}${mm}${ss}.csv`;
+  
+      // 🔹 在 LIFF 環境下的安全下載方式
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  
     // ✅ 匯出 Excel 功能
     document.getElementById("exportExcelBtn").addEventListener("click", exportExcel);
     
@@ -641,146 +711,147 @@ chartInstance = new Chart(ctx, {
       XLSX.writeFile(wb, filename);
     }
   
-// ✅ 匯出 PDF（包含表格 + 圖表 + 橫式A4 + 表格及圖表各自一頁 + 可自訂文字大小）
-document.getElementById("exportPdfBtn").addEventListener("click", async () => {
-  const { jsPDF } = window.jspdf;
-  const queryDiv = document.getElementById("queryResult");
-  const chartCanvas = document.getElementById("chartCanvas");
-  const fontSize = 14; // 表格文字大小
-  const headerFontSize = 24; // 標題與日期區間字體大小
-
-  if (!queryDiv || queryDiv.innerHTML.trim() === "") {
-    alert("目前沒有查詢結果");
-    return;
-  }
-
-  try {
-    const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const margin = 20;
-
-    // === 取得日期區間 ===
-    const startDateInput = document.getElementById("startDate")?.value || "";
-    const endDateInput = document.getElementById("endDate")?.value || "";
-
-    // yyyy-mm-dd → yyyy/mm/dd
-    const formatDate = (d) => d ? d.replaceAll("-", "/") : "";
-    const startDate = formatDate(startDateInput);
-    const endDate = formatDate(endDateInput);
-
-    // === 取得表格標題 ===
-    const firstTable = queryDiv.querySelector("table");
-    let titleText = "報表";
-    if (firstTable) {
-      const titleEl =
-        firstTable.previousElementSibling && firstTable.previousElementSibling.tagName === "H5"
-          ? firstTable.previousElementSibling.textContent
-          : "";
-      if (titleEl) {
-        // 取分號前的字，例如「選擇查詢明細;標題按下即可排序」→「選擇查詢明細」
-        titleText = titleEl.split(";")[0].trim();
+    // ✅ 匯出 PDF（包含表格 + 圖表 + 橫式A4 + 表格及圖表各自一頁 + 可自訂文字大小）
+    document.getElementById("exportPdfBtn").addEventListener("click", async () => {
+      const { jsPDF } = window.jspdf;
+      const queryDiv = document.getElementById("queryResult");
+      const chartCanvas = document.getElementById("chartCanvas");
+      const fontSize = 14; // 表格文字大小
+      const headerFontSize = 24; // 標題與日期區間字體大小
+    
+      if (!queryDiv || queryDiv.innerHTML.trim() === "") {
+        alert("目前沒有查詢結果");
+        return;
       }
-    }
-
-    // --- 1️⃣ 建立匯出容器 ---
-    const tableContainer = document.createElement("div");
-    tableContainer.style.position = "absolute";
-    tableContainer.style.left = "-9999px";
-    tableContainer.style.width = "1200px";
-    tableContainer.style.background = "#fff";
-    tableContainer.style.padding = "10px";
-
-    // --- 2️⃣ 日期區間（第一行） ---
-    const dateDiv = document.createElement("div");
-    dateDiv.style.textAlign = "left";
-    dateDiv.style.fontSize = headerFontSize + "px";
-    dateDiv.style.fontWeight = "bold";
-    dateDiv.style.marginBottom = "5px";
-    dateDiv.textContent =
-      startDate && endDate
-        ? `📅 日期區間: ${startDate} ~ ${endDate}`
-        : "📅 日期區間: 未指定";
-
-    // --- 3️⃣ 標題（第二行） ---
-    const titleDiv = document.createElement("div");
-    titleDiv.style.textAlign = "left";
-    titleDiv.style.fontSize = headerFontSize + "px";
-    titleDiv.style.fontWeight = "bold";
-    titleDiv.style.marginBottom = "10px";
-    titleDiv.textContent = titleText;
-
-    // --- 插入順序：日期區間 → 標題 → 表格 ---
-    tableContainer.appendChild(dateDiv);
-    tableContainer.appendChild(titleDiv);
-
-    // 克隆 queryDiv，但移除 H5（避免「第三行」重複出現）
-    const clonedQuery = queryDiv.cloneNode(true);
-    clonedQuery.querySelectorAll("h5").forEach(el => el.remove());
-    tableContainer.appendChild(clonedQuery);
-
-    // 設定表格內文字大小
-    tableContainer.querySelectorAll("table, th, td").forEach(el => {
-      el.style.fontSize = fontSize + "px";
+    
+      try {
+        const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const margin = 20;
+    
+        // === 取得日期區間 ===
+        const startDateInput = document.getElementById("startDate")?.value || "";
+        const endDateInput = document.getElementById("endDate")?.value || "";
+    
+        // yyyy-mm-dd → yyyy/mm/dd
+        const formatDate = (d) => d ? d.replaceAll("-", "/") : "";
+        const startDate = formatDate(startDateInput);
+        const endDate = formatDate(endDateInput);
+    
+        // === 取得表格標題 ===
+        const firstTable = queryDiv.querySelector("table");
+        let titleText = "報表";
+        if (firstTable) {
+          const titleEl =
+            firstTable.previousElementSibling && firstTable.previousElementSibling.tagName === "H5"
+              ? firstTable.previousElementSibling.textContent
+              : "";
+          if (titleEl) {
+            // 取分號前的字，例如「選擇查詢明細;標題按下即可排序」→「選擇查詢明細」
+            titleText = titleEl.split(";")[0].trim();
+          }
+        }
+    
+        // --- 1️⃣ 建立匯出容器 ---
+        const tableContainer = document.createElement("div");
+        tableContainer.style.position = "absolute";
+        tableContainer.style.left = "-9999px";
+        tableContainer.style.width = "1200px";
+        tableContainer.style.background = "#fff";
+        tableContainer.style.padding = "10px";
+    
+        // --- 2️⃣ 日期區間（第一行） ---
+        const dateDiv = document.createElement("div");
+        dateDiv.style.textAlign = "left";
+        dateDiv.style.fontSize = headerFontSize + "px";
+        dateDiv.style.fontWeight = "bold";
+        dateDiv.style.marginBottom = "5px";
+        dateDiv.textContent =
+          startDate && endDate
+            ? `📅 日期區間: ${startDate} ~ ${endDate}`
+            : "📅 日期區間: 未指定";
+    
+        // --- 3️⃣ 標題（第二行） ---
+        const titleDiv = document.createElement("div");
+        titleDiv.style.textAlign = "left";
+        titleDiv.style.fontSize = headerFontSize + "px";
+        titleDiv.style.fontWeight = "bold";
+        titleDiv.style.marginBottom = "10px";
+        titleDiv.textContent = titleText;
+    
+        // --- 插入順序：日期區間 → 標題 → 表格 ---
+        tableContainer.appendChild(dateDiv);
+        tableContainer.appendChild(titleDiv);
+    
+        // 克隆 queryDiv，但移除 H5（避免「第三行」重複出現）
+        const clonedQuery = queryDiv.cloneNode(true);
+        clonedQuery.querySelectorAll("h5").forEach(el => el.remove());
+        tableContainer.appendChild(clonedQuery);
+    
+        // 設定表格內文字大小
+        tableContainer.querySelectorAll("table, th, td").forEach(el => {
+          el.style.fontSize = fontSize + "px";
+        });
+    
+        document.body.appendChild(tableContainer);
+        await new Promise(r => setTimeout(r, 300));
+    
+        // --- 4️⃣ 轉成 Canvas ---
+        const tableCanvas = await html2canvas(tableContainer, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#fff"
+        });
+        document.body.removeChild(tableContainer);
+    
+        // --- 5️⃣ 縮放成單頁 ---
+        const maxWidth = pageWidth - margin * 2;
+        const maxHeight = pageHeight - margin * 2;
+        let imgWidth = tableCanvas.width;
+        let imgHeight = tableCanvas.height;
+        const ratio = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
+        imgWidth *= ratio;
+        imgHeight *= ratio;
+    
+        pdf.addImage(tableCanvas, "PNG", margin, margin, imgWidth, imgHeight);
+    
+        // --- 6️⃣ 圖表（可選） ---
+        if (chartCanvas && chartCanvas.width > 0) {
+          pdf.addPage();
+          const chartImg = chartCanvas.toDataURL("image/png");
+          const chartRatio = Math.min(
+            (pageWidth - margin * 2) / chartCanvas.width,
+            (pageHeight - margin * 2) / chartCanvas.height
+          );
+          pdf.addImage(
+            chartImg,
+            "PNG",
+            margin,
+            margin,
+            chartCanvas.width * chartRatio,
+            chartCanvas.height * chartRatio
+          );
+        }
+    
+        // --- 7️⃣ 檔名 ---
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, "0");
+        const mm = String(now.getMinutes()).padStart(2, "0");
+        const ss = String(now.getSeconds()).padStart(2, "0");
+        const filename = `非匯不可報表_${startDate || "unknown"}_${hh}-${mm}-${ss}.pdf`;
+    
+        pdf.save(filename);
+      } catch (err) {
+        console.error("❌ 匯出 PDF 發生錯誤:", err);
+        alert("匯出 PDF 失敗：" + (err.message || "未定義錯誤"));
+      }
     });
-
-    document.body.appendChild(tableContainer);
-    await new Promise(r => setTimeout(r, 300));
-
-    // --- 4️⃣ 轉成 Canvas ---
-    const tableCanvas = await html2canvas(tableContainer, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#fff"
-    });
-    document.body.removeChild(tableContainer);
-
-    // --- 5️⃣ 縮放成單頁 ---
-    const maxWidth = pageWidth - margin * 2;
-    const maxHeight = pageHeight - margin * 2;
-    let imgWidth = tableCanvas.width;
-    let imgHeight = tableCanvas.height;
-    const ratio = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
-    imgWidth *= ratio;
-    imgHeight *= ratio;
-
-    pdf.addImage(tableCanvas, "PNG", margin, margin, imgWidth, imgHeight);
-
-    // --- 6️⃣ 圖表（可選） ---
-    if (chartCanvas && chartCanvas.width > 0) {
-      pdf.addPage();
-      const chartImg = chartCanvas.toDataURL("image/png");
-      const chartRatio = Math.min(
-        (pageWidth - margin * 2) / chartCanvas.width,
-        (pageHeight - margin * 2) / chartCanvas.height
-      );
-      pdf.addImage(
-        chartImg,
-        "PNG",
-        margin,
-        margin,
-        chartCanvas.width * chartRatio,
-        chartCanvas.height * chartRatio
-      );
-    }
-
-    // --- 7️⃣ 檔名 ---
-    const now = new Date();
-    const hh = String(now.getHours()).padStart(2, "0");
-    const mm = String(now.getMinutes()).padStart(2, "0");
-    const ss = String(now.getSeconds()).padStart(2, "0");
-    const filename = `非匯不可報表_${startDate || "unknown"}_${hh}-${mm}-${ss}.pdf`;
-
-    pdf.save(filename);
-  } catch (err) {
-    console.error("❌ 匯出 PDF 發生錯誤:", err);
-    alert("匯出 PDF 失敗：" + (err.message || "未定義錯誤"));
-  }
-});
   
 // ✅ 呼叫初始化
 initApp();
 </script>
 </body>
 </html>
+
 
