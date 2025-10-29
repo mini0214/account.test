@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>零用金支出帳簿1144</title>
+  <title>零用金支出帳簿1154</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -238,8 +238,6 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   const { jsPDF } = window.jspdf;
   const queryDiv = document.getElementById("queryResult");
   const chartCanvas = document.getElementById("chartCanvas");
-  const fontSize = 14;
-  const headerFontSize = 24;
 
   if (!queryDiv || queryDiv.innerHTML.trim() === "") {
     alert("目前沒有查詢結果");
@@ -247,29 +245,20 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   }
 
   try {
+    // ===== 生成 PDF =====
     const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
     const margin = 20;
 
-    // ===== 建立暫存容器並複製 queryDiv =====
-    const tableContainer = document.createElement("div");
-    tableContainer.style.position = "absolute";
-    tableContainer.style.left = "-9999px";
-    tableContainer.style.width = "1200px";
-    tableContainer.style.background = "#fff";
-    tableContainer.style.padding = "10px";
+    // 將 queryDiv 轉成 Canvas
+    const clonedDiv = queryDiv.cloneNode(true);
+    clonedDiv.style.position = "absolute";
+    clonedDiv.style.left = "-9999px";
+    document.body.appendChild(clonedDiv);
 
-    const clonedQuery = queryDiv.cloneNode(true);
-    clonedQuery.querySelectorAll("h5").forEach(el => el.remove());
-    clonedQuery.querySelectorAll("table, th, td").forEach(el => el.style.fontSize = fontSize + "px");
-    tableContainer.appendChild(clonedQuery);
-    document.body.appendChild(tableContainer);
-    await new Promise(r => setTimeout(r, 300)); // 確保渲染完成
-
-    // ===== 將 queryDiv 轉成 Canvas =====
-    const tableCanvas = await html2canvas(tableContainer, { scale: 2, useCORS: true });
-    document.body.removeChild(tableContainer);
+    const tableCanvas = await html2canvas(clonedDiv, { scale: 2, useCORS: true });
+    document.body.removeChild(clonedDiv);
 
     let imgWidth = tableCanvas.width;
     let imgHeight = tableCanvas.height;
@@ -279,7 +268,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
 
     pdf.addImage(tableCanvas, "PNG", margin, margin, imgWidth, imgHeight);
 
-    // ===== 如果有圖表也加入 PDF =====
+    // 如果有圖表也加入 PDF
     if (chartCanvas && chartCanvas.width > 0) {
       pdf.addPage();
       const chartImg = chartCanvas.toDataURL("image/png");
@@ -287,7 +276,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
       pdf.addImage(chartImg, "PNG", margin, margin, chartCanvas.width * chartRatio, chartCanvas.height * chartRatio);
     }
 
-    // ===== 轉成 Base64 =====
+    // 轉成 Base64
     const pdfBlob = pdf.output("blob");
     const base64Data = await new Promise(resolve => {
       const reader = new FileReader();
@@ -295,10 +284,10 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
       reader.readAsDataURL(pdfBlob);
     });
 
-    const filename = `非匯不可報表_${Date.now()}.pdf`;
-    const downloadUrl = `https://mini0214.github.io/account.test/download.html?data=${encodeURIComponent(base64Data)}&name=${encodeURIComponent(filename)}`;
+    const filename = `ZooFinancial_${Date.now()}.pdf`;
+    const downloadUrl = `https://你的GitHubPages帳號.github.io/zoo/download.html?data=${encodeURIComponent(base64Data)}&name=${encodeURIComponent(filename)}`;
 
-    // ===== LINE 判斷 =====
+    // 判斷是否在 LINE
     if (window.liff && liff.isInClient()) {
       // 在 LINE 內開外部頁面下載 PDF
       liff.openWindow({ url: downloadUrl, external: true });
@@ -306,9 +295,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
       // 一般瀏覽器直接下載
       const byteChars = atob(base64Data);
       const byteNumbers = new Array(byteChars.length);
-      for (let i = 0; i < byteChars.length; i++) {
-        byteNumbers[i] = byteChars.charCodeAt(i);
-      }
+      for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
       const blobData = new Blob([new Uint8Array(byteNumbers)], { type: "application/pdf" });
       const a = document.createElement("a");
       const url = URL.createObjectURL(blobData);
@@ -738,6 +725,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
