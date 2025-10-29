@@ -635,7 +635,7 @@ chartInstance = new Chart(ctx, {
       const tables = queryDiv.querySelectorAll("table");
       if (tables.length === 0) return alert("沒有可匯出的表格");
 
-            // 🔹 以下為一般瀏覽器下載 Excel 流程
+      // 🔹 以下為一般瀏覽器下載 Excel 流程
       const wb = XLSX.utils.book_new();
     
       tables.forEach((table, idx) => {
@@ -863,3 +863,4 @@ initApp();
 </script>
 </body>
 </html>
+
