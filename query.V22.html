@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>零用金支出帳簿1401</title>
+  <title>零用金支出帳簿1416</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -236,7 +236,7 @@ async function sendQuery(command) {
   } // ✅ sendQuery() 結束
 
 // ✅ 匯出 PDF（包含表格 + 圖表 + 橫式A4 + 表格及圖表各自一頁 + 可自訂文字大小）
-document.getElementById("exportExcelBtn").addEventListener("click", async () => {
+document.getElementById("exportCsvBtn").addEventListener("click", () => {
   const queryDiv = document.getElementById("queryResult");
   if (!queryDiv || queryDiv.innerHTML.trim() === "") {
     alert("目前沒有查詢結果");
@@ -244,38 +244,48 @@ document.getElementById("exportExcelBtn").addEventListener("click", async () => 
   }
 
   try {
-    // --- 生成 Excel Blob ---
-    const workbook = XLSX.utils.table_to_book(queryDiv.querySelector("table"), { sheet: "報表" });
-    const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const blob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-
-    // --- 轉 Base64 ---
-    const base64Data = await new Promise(resolve => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result.split(",")[1]);
-      reader.readAsDataURL(blob);
-    });
-
-    const filename = `非匯不可報表_${Date.now()}.xlsx`;
-
-    // --- LINE 內部判斷 ---
-    const downloadUrl = `https://mini0214.github.io/account.test/download.html?data=${encodeURIComponent(base64Data)}&name=${encodeURIComponent(filename)}`;
-    if (window.liff && liff.isInClient()) {
-      // 在 LINE 內開外部頁面下載
-      liff.openWindow({ url: downloadUrl, external: true });
-    } else {
-      // 一般瀏覽器直接下載
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+    const tables = queryDiv.querySelectorAll("table");
+    if (!tables.length) {
+      alert("沒有表格可以匯出");
+      return;
     }
 
+    let csvContent = "";
+    tables.forEach((table, idx) => {
+      Array.from(table.rows).forEach(row => {
+        const rowData = Array.from(row.cells).map(cell => {
+          // 用雙引號包住，避免逗號干擾
+          return `"${cell.textContent.trim().replace(/"/g, '""')}"`;
+        }).join(",");
+        csvContent += rowData + "\r\n";
+      });
+      // 分隔表格
+      if (idx < tables.length - 1) csvContent += "\r\n";
+    });
+
+    // 檔名
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mm = String(now.getMinutes()).padStart(2, "0");
+    const ss = String(now.getSeconds()).padStart(2, "0");
+    const startDateInput = document.getElementById("startDate")?.value || "unknown";
+    const filename = `非匯不可報表_${startDateInput}_${hh}-${mm}-${ss}.csv`;
+
+    // 生成 Blob
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    // LINE / 一般瀏覽器下載
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   } catch (err) {
-    console.error("❌ 匯出 Excel 發生錯誤:", err);
-    alert("匯出 Excel 失敗：" + (err.message || "未定義錯誤"));
+    console.error("❌ 匯出 CSV 發生錯誤:", err);
+    alert("匯出 CSV 失敗：" + (err.message || "未定義錯誤"));
   }
 });
   
@@ -691,6 +701,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
