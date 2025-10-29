@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>零用金支出帳簿1107</title>
+  <title>零用金支出帳簿1129</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -245,77 +245,54 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   }
 
   try {
+    // ===== 建立 PDF =====
     const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const margin = 20;
-    const fontSize = 14;
 
-    // === 建立暫存容器抓表格 ===
-    const tableContainer = document.createElement("div");
-    tableContainer.style.position = "absolute";
-    tableContainer.style.left = "-9999px";
-    tableContainer.style.width = "1200px";
-    tableContainer.style.background = "#fff";
-    tableContainer.style.padding = "10px";
+    // 用 html2canvas 把表格轉圖片
+    const tableCanvas = await html2canvas(queryDiv, { scale: 2, useCORS: true });
+    const imgData = tableCanvas.toDataURL("image/png");
+    pdf.addImage(imgData, "PNG", 20, 20, pdf.internal.pageSize.getWidth() - 40, pdf.internal.pageSize.getHeight() - 40);
 
-    // 複製表格內容
-    const clonedQuery = queryDiv.cloneNode(true);
-    clonedQuery.querySelectorAll("h5").forEach(el => el.remove());
-    tableContainer.appendChild(clonedQuery);
-    tableContainer.querySelectorAll("table, th, td").forEach(el => el.style.fontSize = fontSize + "px");
-    document.body.appendChild(tableContainer);
-
-    // === html2canvas 轉圖片 ===
-    const tableCanvas = await html2canvas(tableContainer, { scale: 2, useCORS: true });
-    document.body.removeChild(tableContainer);
-    const tableImg = tableCanvas.toDataURL("image/png");
-
-    // === 將表格加入 PDF ===
-    let imgWidth = tableCanvas.width;
-    let imgHeight = tableCanvas.height;
-    const ratio = Math.min((pageWidth - margin*2) / imgWidth, (pageHeight - margin*2) / imgHeight);
-    imgWidth *= ratio;
-    imgHeight *= ratio;
-    pdf.addImage(tableImg, "PNG", margin, margin, imgWidth, imgHeight);
-
-    // === 將圖表加入 PDF（如果有） ===
+    // 如果有圖表，再新增一頁
     if (chartCanvas && chartCanvas.width > 0) {
       pdf.addPage();
       const chartImg = chartCanvas.toDataURL("image/png");
-      const chartRatio = Math.min((pageWidth - margin*2) / chartCanvas.width, (pageHeight - margin*2) / chartCanvas.height);
-      pdf.addImage(chartImg, "PNG", margin, margin, chartCanvas.width * chartRatio, chartCanvas.height * chartRatio);
+      pdf.addImage(
+        chartImg,
+        "PNG",
+        20,
+        20,
+        pdf.internal.pageSize.getWidth() - 40,
+        pdf.internal.pageSize.getHeight() - 40
+      );
     }
 
-    // === 轉成 Base64 ===
-    const blob = pdf.output("blob");
-    const base64Data = await new Promise(resolve => {
+    // ===== 轉 Base64 =====
+    const pdfBlob = await pdf.output("blob");
+    const base64Data = await new Promise((resolve) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result.split(",")[1]);
-      reader.readAsDataURL(blob);
+      reader.readAsDataURL(pdfBlob);
     });
 
     const filename = `非匯不可報表_${Date.now()}.pdf`;
 
-    // === LINE 內判斷下載 ===
+    // ===== 判斷 LINE =====
     if (window.liff && liff.isInClient()) {
       const downloadUrl = `https://你的GitHubPages網址/download.html?data=${encodeURIComponent(base64Data)}&name=${encodeURIComponent(filename)}`;
-      liff.openWindow({ url: downloadUrl, external: true });
+      liff.openWindow({ url: downloadUrl, external: true }); // ✅ 強制用外部瀏覽器
     } else {
-      // 一般瀏覽器下載
+      // 一般瀏覽器直接下載
       const byteChars = atob(base64Data);
       const byteNumbers = new Array(byteChars.length);
       for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
-      const blobData = new Blob([new Uint8Array(byteNumbers)], { type: "application/pdf" });
-      const url = URL.createObjectURL(blobData);
-
+      const blob = new Blob([new Uint8Array(byteNumbers)], { type: "application/pdf" });
       const a = document.createElement("a");
-      a.href = url;
+      a.href = URL.createObjectURL(blob);
       a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
     }
 
   } catch (err) {
@@ -736,6 +713,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
