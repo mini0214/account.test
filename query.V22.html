@@ -259,10 +259,10 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
 
     // ===== 上傳到 GitHub =====
     const filename = `report_${Date.now()}.pdf`;
-    const GITHUB_USER = "你的GitHub帳號";
+    const GITHUB_USER = "mini0214";
     const GITHUB_REPO = "account.test";
     const GITHUB_BRANCH = "gh-pages"; // Pages 分支
-    const GITHUB_TOKEN = "你的 Personal Access Token";
+    const GITHUB_TOKEN = "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";
 
     const url = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${filename}`;
     const payload = {
@@ -719,6 +719,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
