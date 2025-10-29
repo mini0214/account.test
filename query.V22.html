@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>零用金支出帳簿1050</title>
+  <title>零用金支出帳簿1107</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -245,33 +245,67 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
   }
 
   try {
-    // ===== 生成 PDF =====
     const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
-    const pdfBlob = await pdf.output("blob");
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 20;
+    const fontSize = 14;
 
-    // ===== 轉成 Base64 =====
-    const base64Data = await new Promise((resolve) => {
+    // === 建立暫存容器抓表格 ===
+    const tableContainer = document.createElement("div");
+    tableContainer.style.position = "absolute";
+    tableContainer.style.left = "-9999px";
+    tableContainer.style.width = "1200px";
+    tableContainer.style.background = "#fff";
+    tableContainer.style.padding = "10px";
+
+    // 複製表格內容
+    const clonedQuery = queryDiv.cloneNode(true);
+    clonedQuery.querySelectorAll("h5").forEach(el => el.remove());
+    tableContainer.appendChild(clonedQuery);
+    tableContainer.querySelectorAll("table, th, td").forEach(el => el.style.fontSize = fontSize + "px");
+    document.body.appendChild(tableContainer);
+
+    // === html2canvas 轉圖片 ===
+    const tableCanvas = await html2canvas(tableContainer, { scale: 2, useCORS: true });
+    document.body.removeChild(tableContainer);
+    const tableImg = tableCanvas.toDataURL("image/png");
+
+    // === 將表格加入 PDF ===
+    let imgWidth = tableCanvas.width;
+    let imgHeight = tableCanvas.height;
+    const ratio = Math.min((pageWidth - margin*2) / imgWidth, (pageHeight - margin*2) / imgHeight);
+    imgWidth *= ratio;
+    imgHeight *= ratio;
+    pdf.addImage(tableImg, "PNG", margin, margin, imgWidth, imgHeight);
+
+    // === 將圖表加入 PDF（如果有） ===
+    if (chartCanvas && chartCanvas.width > 0) {
+      pdf.addPage();
+      const chartImg = chartCanvas.toDataURL("image/png");
+      const chartRatio = Math.min((pageWidth - margin*2) / chartCanvas.width, (pageHeight - margin*2) / chartCanvas.height);
+      pdf.addImage(chartImg, "PNG", margin, margin, chartCanvas.width * chartRatio, chartCanvas.height * chartRatio);
+    }
+
+    // === 轉成 Base64 ===
+    const blob = pdf.output("blob");
+    const base64Data = await new Promise(resolve => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result.split(",")[1]);
-      reader.readAsDataURL(pdfBlob);
+      reader.readAsDataURL(blob);
     });
 
     const filename = `非匯不可報表_${Date.now()}.pdf`;
 
-    // ===== 生成下載頁面 URL（download.html） =====
-    const pdfUrl = `https://mini0214.github.io/account.test/download.html?data=${encodeURIComponent(base64Data)}&name=${encodeURIComponent(filename)}`;
-
-    // ===== 判斷是否在 LINE =====
+    // === LINE 內判斷下載 ===
     if (window.liff && liff.isInClient()) {
-      // 🚀 在 LINE 內開啟外部頁面下載
-      liff.openWindow({ url: pdfUrl, external: true });
+      const downloadUrl = `https://你的GitHubPages網址/download.html?data=${encodeURIComponent(base64Data)}&name=${encodeURIComponent(filename)}`;
+      liff.openWindow({ url: downloadUrl, external: true });
     } else {
-      // 🖥️ 一般瀏覽器直接下載
+      // 一般瀏覽器下載
       const byteChars = atob(base64Data);
       const byteNumbers = new Array(byteChars.length);
-      for (let i = 0; i < byteChars.length; i++) {
-        byteNumbers[i] = byteChars.charCodeAt(i);
-      }
+      for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
       const blobData = new Blob([new Uint8Array(byteNumbers)], { type: "application/pdf" });
       const url = URL.createObjectURL(blobData);
 
@@ -289,7 +323,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     alert("匯出 PDF 失敗：" + (err.message || "未定義錯誤"));
   }
 });
-
+  
 // 顯示結果表格與圖表
 function renderResult(command, json) {
   let html = "";
@@ -702,6 +736,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
