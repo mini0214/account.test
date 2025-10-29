@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>零用金支出帳簿1333</title>
+  <title>零用金支出帳簿1353</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -238,47 +238,40 @@ async function sendQuery(command) {
 // ✅ 匯出 PDF（包含表格 + 圖表 + 橫式A4 + 表格及圖表各自一頁 + 可自訂文字大小）
 document.getElementById("exportExcelBtn").addEventListener("click", async () => {
   const queryDiv = document.getElementById("queryResult");
-
   if (!queryDiv || queryDiv.innerHTML.trim() === "") {
     alert("目前沒有查詢結果");
     return;
   }
 
   try {
-    // 1️⃣ 取得 table DOM
-    const table = queryDiv.querySelector("table");
-    if (!table) {
-      alert("沒有找到表格");
-      return;
+    // --- 生成 Excel Blob ---
+    const workbook = XLSX.utils.table_to_book(queryDiv.querySelector("table"), { sheet: "報表" });
+    const wbout = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+
+    // --- 轉 Base64 ---
+    const base64Data = await new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result.split(",")[1]);
+      reader.readAsDataURL(blob);
+    });
+
+    const filename = `非匯不可報表_${Date.now()}.xlsx`;
+
+    // --- LINE 內部判斷 ---
+    const downloadUrl = `https://你的域名/download.html?data=${encodeURIComponent(base64Data)}&name=${encodeURIComponent(filename)}`;
+    if (window.liff && liff.isInClient()) {
+      // 在 LINE 內開外部頁面下載
+      liff.openWindow({ url: downloadUrl, external: true });
+    } else {
+      // 一般瀏覽器直接下載
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     }
-
-    // 2️⃣ 使用 SheetJS 轉成 worksheet
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.table_to_sheet(table);
-
-    // 3️⃣ 加入 worksheet 到 workbook
-    XLSX.utils.book_append_sheet(wb, ws, "報表");
-
-    // 4️⃣ 產生 Excel Blob
-    const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-    const blob = new Blob([wbout], { type: "application/octet-stream" });
-
-    // 5️⃣ 生成檔名
-    const now = new Date();
-    const hh = String(now.getHours()).padStart(2, "0");
-    const mm = String(now.getMinutes()).padStart(2, "0");
-    const ss = String(now.getSeconds()).padStart(2, "0");
-    const filename = `非匯不可報表_${hh}-${mm}-${ss}.xlsx`;
-
-    // 6️⃣ 下載 Excel（LINE 內部瀏覽器友善）
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
 
   } catch (err) {
     console.error("❌ 匯出 Excel 發生錯誤:", err);
@@ -698,6 +691,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
