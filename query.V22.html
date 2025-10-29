@@ -253,14 +253,14 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     const pageHeight = pdf.internal.pageSize.getHeight();
     const margin = 20;
 
-    // 日期區間
+    // === 日期區間 ===
     const startDateInput = document.getElementById("startDate")?.value || "";
     const endDateInput = document.getElementById("endDate")?.value || "";
     const formatDate = (d) => d ? d.replaceAll("-", "/") : "";
     const startDate = formatDate(startDateInput);
     const endDate = formatDate(endDateInput);
 
-    // 標題
+    // === 標題 ===
     const firstTable = queryDiv.querySelector("table");
     let titleText = "報表";
     if (firstTable) {
@@ -271,7 +271,7 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
       if (titleEl) titleText = titleEl.split(";")[0].trim();
     }
 
-    // 建立暫存容器
+    // === 建立暫存容器 ===
     const tableContainer = document.createElement("div");
     tableContainer.style.position = "absolute";
     tableContainer.style.left = "-9999px";
@@ -336,19 +336,34 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
       );
     }
 
+    // === 產生 PDF Blob 並轉成 Base64 ===
     const blob = pdf.output("blob");
-    const url = URL.createObjectURL(blob);
+    const base64Data = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result.split(",")[1]);
+      reader.readAsDataURL(blob);
+    });
+
     const filename = `非匯不可報表_${Date.now()}.pdf`;
 
-    // ✅ 判斷是否在 LINE 內
+    // === 判斷是否在 LINE 內 ===
     if (window.liff && liff.isInClient()) {
-      // 開啟外部頁面下載 PDF
+      // 🚀 開啟外部頁面（download.html）進行下載
+      const targetUrl = `https://mini0214.github.io/account.test/download.html?data=${encodeURIComponent(base64Data)}&name=${encodeURIComponent(filename)}`;
       liff.openWindow({
-        url: `https://mini0214.github.io/account.test/download.html?file=${encodeURIComponent(url)}&name=${encodeURIComponent(filename)}`,
+        url: targetUrl,
         external: true
       });
     } else {
-      // 一般瀏覽器直接下載
+      // 🖥️ 一般瀏覽器直接下載
+      const byteChars = atob(base64Data);
+      const byteNumbers = new Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) {
+        byteNumbers[i] = byteChars.charCodeAt(i);
+      }
+      const blobData = new Blob([new Uint8Array(byteNumbers)], { type: "application/pdf" });
+      const url = URL.createObjectURL(blobData);
+
       const a = document.createElement("a");
       a.href = url;
       a.download = filename;
@@ -363,7 +378,6 @@ document.getElementById("exportPdfBtn").addEventListener("click", async () => {
     alert("匯出 PDF 失敗：" + (err.message || "未定義錯誤"));
   }
 });
-
 
 // 顯示結果表格與圖表
 function renderResult(command, json) {
@@ -777,6 +791,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
