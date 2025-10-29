@@ -634,7 +634,19 @@ chartInstance = new Chart(ctx, {
     
       const tables = queryDiv.querySelectorAll("table");
       if (tables.length === 0) return alert("沒有可匯出的表格");
-    
+
+      // 🔹 檢查是否在 LINE LIFF 內
+      try {
+        if (typeof liff !== "undefined") {
+          await liff.ready;
+          if (liff.isInClient()) {
+            alert("⚠️ LINE 暫不支援 Excel 匯出功能，請使用網頁版開啟後再匯出。");
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("LIFF 檢查錯誤，繼續匯出:", err);
+      }
       const wb = XLSX.utils.book_new();
     
       tables.forEach((table, idx) => {
@@ -844,4 +856,5 @@ initApp();
 </script>
 </body>
 </html>
+
 
