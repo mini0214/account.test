@@ -10,26 +10,46 @@
   <button id="downloadBtn" style="font-size:18px;padding:10px 30px;">下載 PDF</button>
 
   <script>
+    console.log("✅ download.html 已載入");
     const urlParams = new URLSearchParams(window.location.search);
-    const file = urlParams.get("file");
+    const data = urlParams.get("data");
     const name = urlParams.get("name") || "report.pdf";
 
-    if (file) {
+    if (data) {
+      const byteChars = atob(data);
+      const byteNumbers = new Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) {
+        byteNumbers[i] = byteChars.charCodeAt(i);
+      }
+      const blob = new Blob([new Uint8Array(byteNumbers)], { type: "application/pdf" });
+      const blobUrl = URL.createObjectURL(blob);
+
       const a = document.createElement("a");
-      a.href = file;
+      a.href = blobUrl;
       a.download = name;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+    } else {
+      alert("❌ 沒有接收到 PDF 資料");
     }
 
     document.getElementById("downloadBtn").addEventListener("click", () => {
-      const a = document.createElement("a");
-      a.href = file;
-      a.download = name;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      if (data) {
+        const byteChars = atob(data);
+        const byteNumbers = new Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) {
+          byteNumbers[i] = byteChars.charCodeAt(i);
+        }
+        const blob = new Blob([new Uint8Array(byteNumbers)], { type: "application/pdf" });
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
     });
   </script>
 </body>
