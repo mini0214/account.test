@@ -596,7 +596,7 @@ chartInstance = new Chart(ctx, {
       const mm = String(now.getMinutes()).padStart(2, "0");
       const ss = String(now.getSeconds()).padStart(2, "0");
       const startDateInput = document.getElementById("startDate")?.value || "unknown";
-      const filename = `非匯不可報表_${startDateInput}-${hh}-${mm}-${ss}.csv`;
+      const filename = `非匯不可CSV_${startDateInput}-${hh}-${mm}-${ss}.csv`;
   
       // ✅ 判斷是否在 LINE 內建瀏覽器
       if (liff.isInClient()) {
@@ -697,7 +697,7 @@ chartInstance = new Chart(ctx, {
       
       const startDate = document.getElementById("startDate").value || "unknown"; // YYYY-MM-DD
       const timestamp = `${startDate}-${hh}-${min}-${ss}`;
-      const filename = `非匯不可報表_${timestamp}.xlsx`;
+      const filename = `非匯不可EXCEL_${timestamp}.xlsx`;
     
       try {
           if (liff.isInClient()) {
@@ -842,7 +842,7 @@ chartInstance = new Chart(ctx, {
         const hh = String(now.getHours()).padStart(2, "0");
         const mm = String(now.getMinutes()).padStart(2, "0");
         const ss = String(now.getSeconds()).padStart(2, "0");
-        const filename = `非匯不可報表_${startDate || "unknown"}-${hh}-${mm}-${ss}.pdf`;
+        const filename = `非匯不可PDF_${startDate || "unknown"}-${hh}-${mm}-${ss}.pdf`;
     
         if (liff.isInClient()) {
           // LINE 內建瀏覽器：只提示訊息
@@ -863,5 +863,6 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
