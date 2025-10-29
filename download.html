@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="utf-8" />
-  <title>下載 PDF</title>
+  <meta charset="utf-8">
+  <title>下載 Excel</title>
 </head>
-<body style="font-family:sans-serif;text-align:center;padding-top:100px;">
+<body style="text-align:center;padding-top:100px;font-family:sans-serif;">
   <h2>📄 下載報表</h2>
   <p>若未自動下載，請點下方按鈕：</p>
-  <button id="downloadBtn" style="font-size:18px;padding:10px 30px;">下載 PDF</button>
+  <button id="downloadBtn" style="font-size:18px;padding:10px 30px;">下載 Excel</button>
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
     const data = urlParams.get("data");
-    const name = urlParams.get("name") || "report.pdf";
+    const name = urlParams.get("name") || "report.xlsx";
 
-    function downloadPDF(base64Data, filename) {
+    function downloadExcel(base64Data, filename) {
       const byteChars = atob(base64Data);
       const byteNumbers = new Array(byteChars.length);
       for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
-      const blob = new Blob([new Uint8Array(byteNumbers)], { type: "application/pdf" });
+      const blob = new Blob([new Uint8Array(byteNumbers)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
       const blobUrl = URL.createObjectURL(blob);
 
       const a = document.createElement("a");
@@ -28,14 +28,14 @@
       a.click();
       document.body.removeChild(a);
 
-      setTimeout(() => window.close(), 500); // 下載後自動關閉
+      setTimeout(() => window.close(), 500);
     }
 
-    if (data) downloadPDF(data, name);
-    else alert("❌ 沒有接收到 PDF 資料");
+    if (data) downloadExcel(data, name);
+    else alert("❌ 沒有接收到 Excel 資料");
 
     document.getElementById("downloadBtn").addEventListener("click", () => {
-      if (data) downloadPDF(data, name);
+      if (data) downloadExcel(data, name);
     });
   </script>
 </body>
