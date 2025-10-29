@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>零用金支出帳簿1353</title>
+  <title>零用金支出帳簿1401</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -259,7 +259,7 @@ document.getElementById("exportExcelBtn").addEventListener("click", async () => 
     const filename = `非匯不可報表_${Date.now()}.xlsx`;
 
     // --- LINE 內部判斷 ---
-    const downloadUrl = `https://你的域名/download.html?data=${encodeURIComponent(base64Data)}&name=${encodeURIComponent(filename)}`;
+    const downloadUrl = `https://mini0214.github.io/account.test/download.html?data=${encodeURIComponent(base64Data)}&name=${encodeURIComponent(filename)}`;
     if (window.liff && liff.isInClient()) {
       // 在 LINE 內開外部頁面下載
       liff.openWindow({ url: downloadUrl, external: true });
@@ -691,6 +691,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
