@@ -13,32 +13,43 @@
     console.log("✅ download.html 已載入");
 
     const urlParams = new URLSearchParams(window.location.search);
-    const data = urlParams.get("data");
-    const name = urlParams.get("name") || "report.pdf";
+    const base64Data = urlParams.get("data");
+    const filename = urlParams.get("name") || "report.pdf";
 
-    function downloadPDF(base64Data, filename) {
-      const byteChars = atob(base64Data);
-      const byteNumbers = new Array(byteChars.length);
-      for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
-      const blob = new Blob([new Uint8Array(byteNumbers)], { type: "application/pdf" });
-      const blobUrl = URL.createObjectURL(blob);
+    function downloadPDF(data, name) {
+      try {
+        const byteChars = atob(data);
+        const byteNumbers = new Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+        const blob = new Blob([new Uint8Array(byteNumbers)], { type: "application/pdf" });
+        const blobUrl = URL.createObjectURL(blob);
 
-      const a = document.createElement("a");
-      a.href = blobUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
 
-      // 外部瀏覽器下載完成後自動關閉頁面
-      setTimeout(() => window.close(), 500);
+        // 等待下載完成後自動關閉頁面
+        setTimeout(() => {
+          window.close();
+        }, 500);
+      } catch (err) {
+        console.error("❌ PDF 下載失敗", err);
+        alert("PDF 下載失敗");
+      }
     }
 
-    if (data) downloadPDF(data, name);
-    else alert("❌ 沒有接收到 PDF 資料");
+    if (base64Data) {
+      // 自動下載
+      downloadPDF(base64Data, filename);
+    } else {
+      alert("❌ 沒有接收到 PDF 資料");
+    }
 
     document.getElementById("downloadBtn").addEventListener("click", () => {
-      if (data) downloadPDF(data, name);
+      if (base64Data) downloadPDF(base64Data, filename);
     });
   </script>
 </body>
