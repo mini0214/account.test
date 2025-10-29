@@ -565,83 +565,50 @@ chartInstance = new Chart(ctx, {
 }
 
     // ✅ 匯出 CSV 功能
-    document.getElementById("exportCsvBtn").addEventListener("click", exportCsv);
+    document.getElementById("exportCsvBtn").addEventListener("click", async () => {
+    const queryDiv = document.getElementById("queryResult");
+    if (!queryDiv || queryDiv.innerHTML.trim() === "") {
+      alert("目前沒有查詢結果");
+      return;
+    }
   
-    function exportCsv() {
-      const queryDiv = document.getElementById("queryResult");
-      if (!queryDiv) return alert("目前沒有查詢結果");
-  
+    try {
       const tables = queryDiv.querySelectorAll("table");
-      if (tables.length === 0) return alert("沒有可匯出的表格");
+      if (!tables.length) {
+        alert("沒有表格可以匯出");
+        return;
+      }
   
       let csvContent = "";
-  
       tables.forEach((table, idx) => {
-        // 取日期區間
-        const startDate = (document.getElementById("startDate").value || "unknown").replace(/-/g, "/");
-        const endDate = (document.getElementById("endDate").value || "unknown").replace(/-/g, "/");
-        csvContent += `📅 日期區間：${startDate} ~ ${endDate}\n`;
-  
-        // 標題
-        let rawTitle = table.previousElementSibling && table.previousElementSibling.tagName === "H5"
-            ? table.previousElementSibling.textContent
-            : `工作表${idx + 1}`;
-        const titleElement = rawTitle.split(";")[0].trim();
-        csvContent += `${titleElement}\n`;
-  
-        // 總額
-        const totalElement = table.nextElementSibling && table.nextElementSibling.classList.contains("total")
-          ? table.nextElementSibling.textContent
-          : "";
-        if (totalElement) csvContent += `${totalElement}\n`;
-  
-        // 表頭
-        const headers = Array.from(table.querySelectorAll("th")).map(th => `"${th.innerText.trim()}"`);
-        csvContent += headers.join(",") + "\n";
-  
-        // 資料列
-        const rows = Array.from(table.querySelectorAll("tr")).slice(1);
-        rows.forEach(row => {
-          const cols = Array.from(row.querySelectorAll("td")).map(td => {
-            let text = td.innerText.trim().replace(/"/g, '""'); // 轉義雙引號
-            if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(text)) {
-              const [y, m, d] = text.split("/");
-              text = `${y}/${m.padStart(2, "0")}/${d.padStart(2, "0")}`;
-            }
-            return `"${text}"`;
-          });
-          csvContent += cols.join(",") + "\n";
+        Array.from(table.rows).forEach(row => {
+          const rowData = Array.from(row.cells).map(cell => {
+            return `"${cell.textContent.trim().replace(/"/g, '""')}"`;
+          }).join(",");
+          csvContent += rowData + "\r\n";
         });
-  
-        csvContent += "\n"; // 各表間空行
+        if (idx < tables.length - 1) csvContent += "\r\n";
       });
   
+      // 檔名
       const now = new Date();
       const hh = String(now.getHours()).padStart(2, "0");
       const mm = String(now.getMinutes()).padStart(2, "0");
       const ss = String(now.getSeconds()).padStart(2, "0");
-      const startDate = document.getElementById("startDate").value || "unknown";
-      const filename = `非匯不可報表_${startDate}_${hh}-${mm}-${ss}.csv`;
+      const startDateInput = document.getElementById("startDate")?.value || "unknown";
+      const filename = `非匯不可報表_${startDateInput}_${hh}-${mm}-${ss}.csv`;
   
       // ✅ 判斷是否在 LINE 內建瀏覽器
       if (liff.isInClient()) {
-        // 傳送內容長度限制：LINE 單則文字訊息最長約 5000 字元
-        const chunks = [];
-        for (let i = 0; i < csvContent.length; i += 4500) {
-          chunks.push(csvContent.slice(i, i + 4500));
-        }
-  
-        for (let i = 0; i < chunks.length; i++) {
-          await liff.sendMessages([{
-            type: "text",
-            text: `📄 [${filename}] (第 ${i + 1}/${chunks.length} 段)\n\n${chunks[i]}`
-          }]);
-        }
-  
-        alert(`✅ CSV 已分段透過 LINE 傳送 (${chunks.length} 則訊息)，請在 LINE 查看`);
+        // 透過 LIFF 傳訊息給自己
+        await liff.sendMessages([{
+          type: "text",
+          text: `📄 CSV 檔案「${filename}」內容:\n\n${csvContent}`
+        }]);
+        alert("✅ CSV 已透過 LINE 傳送在聊天內，請在 LINE 查看");
       } else {
-        // ✅ 一般瀏覽器下載
-        const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
+        // 一般瀏覽器下載
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -650,14 +617,13 @@ chartInstance = new Chart(ctx, {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        alert("✅ CSV 已下載完成");
       }
   
     } catch (err) {
       console.error("❌ 匯出 CSV 發生錯誤:", err);
       alert("匯出 CSV 失敗：" + (err.message || "未定義錯誤"));
     }
-  }
+  });
   
     // ✅ 匯出 Excel 功能
     document.getElementById("exportExcelBtn").addEventListener("click", exportExcel);
@@ -878,3 +844,4 @@ initApp();
 </script>
 </body>
 </html>
+
