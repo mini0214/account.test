@@ -616,23 +616,48 @@ chartInstance = new Chart(ctx, {
         csvContent += "\n"; // 各表間空行
       });
   
-      // 🔹 建立 CSV Blob
-      const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
       const now = new Date();
       const hh = String(now.getHours()).padStart(2, "0");
       const mm = String(now.getMinutes()).padStart(2, "0");
       const ss = String(now.getSeconds()).padStart(2, "0");
       const startDate = document.getElementById("startDate").value || "unknown";
-      const filename = `非匯不可報表_${startDate}_${hh}${mm}${ss}.csv`;
+      const filename = `非匯不可報表_${startDate}_${hh}-${mm}-${ss}.csv`;
   
-      // 🔹 在 LIFF 環境下的安全下載方式
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // ✅ 判斷是否在 LINE 內建瀏覽器
+      if (liff.isInClient()) {
+        // 傳送內容長度限制：LINE 單則文字訊息最長約 5000 字元
+        const chunks = [];
+        for (let i = 0; i < csvContent.length; i += 4500) {
+          chunks.push(csvContent.slice(i, i + 4500));
+        }
+  
+        for (let i = 0; i < chunks.length; i++) {
+          await liff.sendMessages([{
+            type: "text",
+            text: `📄 [${filename}] (第 ${i + 1}/${chunks.length} 段)\n\n${chunks[i]}`
+          }]);
+        }
+  
+        alert(`✅ CSV 已分段透過 LINE 傳送 (${chunks.length} 則訊息)，請在 LINE 查看`);
+      } else {
+        // ✅ 一般瀏覽器下載
+        const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        alert("✅ CSV 已下載完成");
+      }
+  
+    } catch (err) {
+      console.error("❌ 匯出 CSV 發生錯誤:", err);
+      alert("匯出 CSV 失敗：" + (err.message || "未定義錯誤"));
     }
+  }
   
     // ✅ 匯出 Excel 功能
     document.getElementById("exportExcelBtn").addEventListener("click", exportExcel);
@@ -853,5 +878,3 @@ initApp();
 </script>
 </body>
 </html>
-
-
