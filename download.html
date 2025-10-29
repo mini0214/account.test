@@ -1,42 +1,46 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   <title>下載 PDF</title>
 </head>
 <body style="font-family:sans-serif;text-align:center;padding-top:100px;">
-<h2>📄 下載報表</h2>
-<p>若未自動下載，請點下方按鈕：</p>
-<button id="downloadBtn" style="font-size:18px;padding:10px 30px;">下載 PDF</button>
+  <h2>📄 下載報表</h2>
+  <p>若未自動下載，請點下方按鈕：</p>
+  <button id="downloadBtn" style="font-size:18px;padding:10px 30px;">下載 PDF</button>
 
-<script>
-console.log("✅ download.html 已載入");
-const urlParams = new URLSearchParams(window.location.search);
-const data = urlParams.get("data");
-const name = urlParams.get("name") || "report.pdf";
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const data = urlParams.get("data");
+    const name = urlParams.get("name") || "report.pdf";
 
-function downloadPDF(base64Data, filename) {
-  const byteChars = atob(base64Data);
-  const byteNumbers = new Array(byteChars.length);
-  for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
-  const blob = new Blob([new Uint8Array(byteNumbers)], { type: "application/pdf" });
-  const blobUrl = URL.createObjectURL(blob);
+    function downloadPDF(base64Data, filename) {
+      const byteChars = atob(base64Data);
+      const byteNumbers = new Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+      const blob = new Blob([new Uint8Array(byteNumbers)], { type: "application/pdf" });
+      const blobUrl = URL.createObjectURL(blob);
 
-  const a = document.createElement("a");
-  a.href = blobUrl;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
 
-  setTimeout(() => window.close(), 500); // 下載後自動關閉
-}
+      // 自動關閉頁面
+      setTimeout(() => window.close(), 500);
+    }
 
-if (data) downloadPDF(data, name);
+    if (data) {
+      downloadPDF(data, name); // 自動下載
+    } else {
+      alert("❌ 沒有接收到 PDF 資料");
+    }
 
-document.getElementById("downloadBtn").addEventListener("click", () => {
-  if (data) downloadPDF(data, name);
-});
-</script>
+    document.getElementById("downloadBtn").addEventListener("click", () => {
+      if (data) downloadPDF(data, name);
+    });
+  </script>
 </body>
 </html>
