@@ -88,7 +88,12 @@ let VERSION = "V";   // ✅ 從設定檔 D10
 let LIFF_IDq = "";   // ✅ 從設定檔 D12
 let htmlUrl = "";    // ✅ 從設定檔 D14
   
-       if (!API_URL) {
+let currentUser = null; // ✅ 先定義變數，不要一開始就用 json 登入者的資料
+let chartInstance = null;
+
+document.getElementById("version").textContent = VERSION;
+
+        if (!API_URL) {
           alert("無法取得網頁版 URL，請確認 API_URL 有值111");
           return;
         }
@@ -96,11 +101,6 @@ let htmlUrl = "";    // ✅ 從設定檔 D14
           alert("無法取得網頁版 URL，請確認 htmlUrl 有值111");
           return;
         }
-
-let currentUser = null; // ✅ 先定義變數，不要一開始就用 json 登入者的資料
-let chartInstance = null;
-
-document.getElementById("version").textContent = VERSION;
 
 // ----------------------------------------------------
 // ✅ 設定,設定載入
@@ -947,6 +947,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
