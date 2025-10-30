@@ -594,6 +594,9 @@ chartInstance = new Chart(ctx, {
           ? table.previousElementSibling.textContent
           : `工作表${idx + 1}`;
         let titleText = rawTitle.split(";")[0].trim();
+
+        // 🔹 CSV 內容使用原始標題（保留 emoji）
+        let csvTitleText = titleText;
   
         // 🔹 移除 emoji、空白、"選擇" 等字
         titleText = titleText
@@ -612,7 +615,7 @@ chartInstance = new Chart(ctx, {
   
         // ✅ 匯出表頭資訊
         csvContent += `"${dateRange}"\r\n`;
-        csvContent += `"${titleText}"\r\n`;
+        csvContent += `"${csvTitleText}"\r\n`; // ← 保留 emoji
         if (totalElement) csvContent += `"${totalElement}"\r\n`;
   
         // ✅ 匯出表格資料
@@ -908,6 +911,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
