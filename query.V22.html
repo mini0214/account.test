@@ -634,96 +634,83 @@ chartInstance = new Chart(ctx, {
     
       const tables = queryDiv.querySelectorAll("table");
       if (tables.length === 0) return alert("沒有可匯出的表格");
-
-      // 🔹 以下為一般瀏覽器下載 Excel 流程
+    
       const wb = XLSX.utils.book_new();
-      let lastTitle = "報表"; // 預設標題，防止未定義
+      let lastTitle = "報表";
     
       tables.forEach((table, idx) => {
-        // 取日期區間，與資料日期一樣所以統一格式為 YYYY/MM/DD
         const startDate = (document.getElementById("startDate").value || "unknown").replace(/-/g, "/");
         const endDate = (document.getElementById("endDate").value || "unknown").replace(/-/g, "/");
         const dateRange = `📅 日期區間：${startDate} ~ ${endDate}`;
-        
-        // 取表格標題
+    
+        // ✅ 改成 let
         let rawTitle = table.previousElementSibling && table.previousElementSibling.tagName === "H5"
-            ? table.previousElementSibling.textContent
-            : `工作表${idx + 1}`;
-        const titleElement = rawTitle.split(";")[0].trim();
-
-        // 🔹 清理掉多餘字眼與 emoji（只留下主題關鍵詞）
+          ? table.previousElementSibling.textContent
+          : `工作表${idx + 1}`;
+        let titleElement = rawTitle.split(";")[0].trim();
+    
+        // 🔹 清理多餘字元與 emoji
         titleElement = titleElement
-          .replace(/^選擇/, "")            // 移除開頭「選擇」
-          .replace(/查詢$/, "")            // 移除結尾「查詢」
-          .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, "") // 移除所有 emoji
-          .replace(/\s+/g, "")             // 移除多餘空白
+          .replace(/^選擇/, "")
+          .replace(/查詢$/, "")
+          .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, "")
+          .replace(/\s+/g, "")
           .trim();
-  
-        lastTitle = titleElement || lastTitle; // 保存最後一個標題供檔名用
-        
-        // 取總額資訊
+    
+        lastTitle = titleElement || lastTitle;
+    
         const totalElement = table.nextElementSibling && table.nextElementSibling.classList.contains("total")
           ? table.nextElementSibling.textContent
           : "";
     
-        // 轉換表格為二維陣列
         const wsData = [];
-        wsData.push([dateRange]);            // 第一列：日期區間
-        wsData.push([titleElement]);         // 第二列：標題
-        wsData.push([totalElement]);         // 第三列：總額資訊
-        
-        // 第三列：表頭
+        wsData.push([dateRange]);
+        wsData.push([titleElement]);
+        wsData.push([totalElement]);
+    
         const headers = Array.from(table.querySelectorAll("th")).map(th => th.innerText.trim());
         wsData.push(headers);
-        
-        // 第四列起：資料
+    
         const rows = Array.from(table.querySelectorAll("tr")).slice(1);
         rows.forEach(row => {
-          const rowData = Array.from(row.querySelectorAll("td")).map((td, i) => {
+          const rowData = Array.from(row.querySelectorAll("td")).map(td => {
             let text = td.innerText.trim();
-        
-            // 🔹 自動補零日期格式：2025/10/1 → 2025/10/01
             if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(text)) {
               const [y, m, d] = text.split("/");
               const mm = m.padStart(2, "0");
               const dd = d.padStart(2, "0");
               text = `${y}/${mm}/${dd}`;
             }
-        
             return text;
           });
           wsData.push(rowData);
         });
     
-        // 生成工作表
         const ws = XLSX.utils.aoa_to_sheet(wsData);
-        XLSX.utils.book_append_sheet(wb, ws, titleElement.substring(0, 20)); // 名稱最多 31 字
+        XLSX.utils.book_append_sheet(wb, ws, titleElement.substring(0, 20));
       });
-   
-      // 檔名
-      const now = new Date();  // 本地時間（瀏覽器時間）
-      const hh = String(now.getHours()).padStart(2,"0");
-      const min = String(now.getMinutes()).padStart(2,"0");
-      const ss = String(now.getSeconds()).padStart(2,"0");
-      
-      const startDate = document.getElementById("startDate").value || "unknown"; // YYYY-MM-DD
+    
+      // 🔹 檔名
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, "0");
+      const min = String(now.getMinutes()).padStart(2, "0");
+      const ss = String(now.getSeconds()).padStart(2, "0");
+    
+      const startDate = document.getElementById("startDate").value || "unknown";
       const timestamp = `${startDate}-${hh}-${min}-${ss}`;
       const filename = `非匯不可EXCEL_${lastTitle}_${timestamp}.xlsx`;
     
       try {
-          if (liff.isInClient()) {
-            // LINE 內建瀏覽器：只提示訊息
-            alert(`LINE 內建瀏覽器無法下載，請在 Web 使用此功能`);
-                  
-          } else {
-            // Web：正常下載
-            XLSX.writeFile(wb, filename);
-          }
-        } catch(err) {
-          console.error("❌ 匯出 Excel 發生錯誤:", err);
-          alert("匯出 Excel 失敗：" + (err.message || "未定義錯誤"));
+        if (liff.isInClient()) {
+          alert(`LINE 內建瀏覽器無法下載，請在 Web 使用此功能`);
+        } else {
+          XLSX.writeFile(wb, filename);
         }
+      } catch (err) {
+        console.error("❌ 匯出 Excel 發生錯誤:", err);
+        alert("匯出 Excel 失敗：" + (err.message || "未定義錯誤"));
       }
+    }
   
     // ✅ 匯出 PDF（包含表格 + 圖表 + 橫式A4 + 表格及圖表各自一頁 + 可自訂文字大小）
     document.getElementById("exportPdfBtn").addEventListener("click", async () => {
@@ -884,6 +871,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
