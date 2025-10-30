@@ -86,8 +86,7 @@ let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbz3mlLl
 let API_URL = "";    // ✅ 從設定檔 D6
 let VERSION = "V";   // ✅ 從設定檔 D10
 let LIFF_IDq = "";   // ✅ 從設定檔 D12
-let htmlUrl = "";    // ✅ 從設定檔 D14
-  
+
 let currentUser = null; // ✅ 先定義變數，不要一開始就用 json 登入者的資料
 let chartInstance = null;
 
@@ -124,30 +123,15 @@ async function initApp(){
   try {
     const settings = await loadSettings();
     if (!settings) throw new Error("設定格式錯誤");
-
-        if (!D14) {
-          alert("無法取得網頁版 URL，請確認 D14 有值000");
-          return;
-        }
        
     // 🔹 從設定帶入
     FALLBACK_GAS_SETTINGS_URL = (settings.SETTINGS_URL || FALLBACK_GAS_SETTINGS_URL).trim();// 自動轉換成設定檔內的固定 D5
     API_URL = (settings.API_URL || "").trim();
     VERSION = (settings.D10 || "V").trim();
     LIFF_IDq = (settings.D12 || "").trim();
-    htmlUrl = (settings.D14 || "").trim();
-
-        if (!API_URL) {
-          alert("無法取得網頁版 URL，請確認 設定,初始化 API_URL 有值log");
-          return;
-        }
-        if (!htmlUrl) {
-          alert("無法取得網頁版 URL，請確認 設定,初始化 htmlUrl 有值log");
-          return;
-        }
     
     document.getElementById("version").textContent = VERSION;
-    console.log("✅ 設定成功:", { FALLBACK_GAS_SETTINGS_URL, API_URL, LIFF_IDq, VERSION, htmlUrl });
+    console.log("✅ 設定成功:", { FALLBACK_GAS_SETTINGS_URL, API_URL, LIFF_IDq, VERSION });
     
     if (!LIFF_IDq) throw new Error("❌ LIFF ID 尚未設定，請確認設定表 D12");
     
@@ -760,10 +744,18 @@ chartInstance = new Chart(ctx, {
       const startDate = document.getElementById("startDate").value || "unknown";
       const timestamp = `${startDate}-${hh}-${min}-${ss}`;
       const filename = `非匯不可EXCEL_${lastTitle}_${timestamp}.xlsx`;
+
+      const htmlUrl = "https://mini0214.github.io/account.test/query.V22.html"; // 網頁版 URL
     
       try {
         if (liff.isInClient()) {
-          alert(`LINE 內建瀏覽器無法下載，請在 Web 使用此功能`);
+          // LINE 內建瀏覽器：透過 LIFF 傳訊息給自己，訊息中帶 URL
+          await liff.sendMessages([{
+            type: "text",
+            text: `${htmlUrl}`
+          }]);
+          // LINE 內建瀏覽器：只提示訊息          
+          alert(`LINE 內建瀏覽器無法下載，網址已在訊息內，請自行將網址COPY貼在流覽器上使用此功能`); 
         } else {
           XLSX.writeFile(wb, filename);
         }
@@ -913,12 +905,8 @@ chartInstance = new Chart(ctx, {
         const ss = String(now.getSeconds()).padStart(2, "0");
         const filename = `非匯不可PDF_${titleText || "報表"}_${fileDate}-${hh}-${mm}-${ss}.pdf`;
 
-        //const htmlUrl = "https://mini0214.github.io/account.test/query.V22.html"; // 網頁版 URL
-        if (!htmlUrl) {
-          alert("無法取得網頁版 URL，請確認 D14 有值");
-          return;
-        }
-        
+        const htmlUrl = "https://mini0214.github.io/account.test/query.V22.html"; // 網頁版 URL
+    
         if (liff.isInClient()) {
           // LINE 內建瀏覽器：透過 LIFF 傳訊息給自己，訊息中帶 URL
           await liff.sendMessages([{
@@ -926,7 +914,7 @@ chartInstance = new Chart(ctx, {
             text: `${htmlUrl}`
           }]);
           // LINE 內建瀏覽器：只提示訊息          
-          alert(`LINE 內建瀏覽器無法下載，網址${htmlUrl}已在訊息內，請自行將網址COPY貼在流覽器上使用此功能`);                 
+          alert(`LINE 內建瀏覽器無法下載，網址已在訊息內，請自行將網址COPY貼在流覽器上使用此功能`);                 
         } else {
           // Web：正常下載
           pdf.save(filename);
@@ -943,12 +931,3 @@ initApp();
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
