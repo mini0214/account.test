@@ -86,7 +86,16 @@ let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbz3mlLl
 let API_URL = "";    // ✅ 從設定檔 D6
 let VERSION = "V";   // ✅ 從設定檔 D10
 let LIFF_IDq = "";   // ✅ 從設定檔 D12
-//let htmlUrl = "";    // ✅ 從設定檔 D14
+let htmlUrl = "";    // ✅ 從設定檔 D14
+  
+       if (!API_URL) {
+          alert("無法取得網頁版 URL，請確認 API_URL 有值111");
+          return;
+        }
+        if (!htmlUrl) {
+          alert("無法取得網頁版 URL，請確認 htmlUrl 有值111");
+          return;
+        }
 
 let currentUser = null; // ✅ 先定義變數，不要一開始就用 json 登入者的資料
 let chartInstance = null;
@@ -133,11 +142,11 @@ async function initApp(){
     htmlUrl = (settings.D14 || "").trim();
 
         if (!API_URL) {
-          alert("無法取得網頁版 URL，請確認 API_URL 有值log");
+          alert("無法取得網頁版 URL，請確認 設定,初始化 API_URL 有值log");
           return;
         }
         if (!htmlUrl) {
-          alert("無法取得網頁版 URL，請確認 htmlUrl 有值log");
+          alert("無法取得網頁版 URL，請確認 設定,初始化 htmlUrl 有值log");
           return;
         }
     
@@ -938,6 +947,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
