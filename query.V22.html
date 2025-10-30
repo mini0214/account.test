@@ -102,14 +102,7 @@ async function tryFetchText(url){
   try { const j = JSON.parse(text); return { ok: true, json: j }; }
   catch(e){ return { ok: false, text }; }
 }
-        if (!API_URL) {
-          alert("無法取得網頁版 URL，請確認 API_URL 有值111");
-          return;
-        }
-        if (!htmlUrl) {
-          alert("無法取得網頁版 URL，請確認 htmlUrl 有值111");
-          return;
-        }
+
 // ----------------------------------------------------
 // ✅ 設定,從設定GAS讀取設定
 // ----------------------------------------------------
@@ -945,6 +938,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
