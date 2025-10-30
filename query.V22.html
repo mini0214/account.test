@@ -649,6 +649,16 @@ chartInstance = new Chart(ctx, {
             ? table.previousElementSibling.textContent
             : `工作表${idx + 1}`;
         const titleElement = rawTitle.split(";")[0].trim();
+
+        // 🔹 清理掉多餘字眼與 emoji（只留下主題關鍵詞）
+        titleElement = titleElement
+          .replace(/^選擇/, "")            // 移除開頭「選擇」
+          .replace(/查詢$/, "")            // 移除結尾「查詢」
+          .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, "") // 移除所有 emoji
+          .replace(/\s+/g, "")             // 移除多餘空白
+          .trim();
+  
+        lastTitle = titleElement || lastTitle; // 保存最後一個標題供檔名用
         
         // 取總額資訊
         const totalElement = table.nextElementSibling && table.nextElementSibling.classList.contains("total")
@@ -688,17 +698,7 @@ chartInstance = new Chart(ctx, {
         const ws = XLSX.utils.aoa_to_sheet(wsData);
         XLSX.utils.book_append_sheet(wb, ws, titleElement.substring(0, 20)); // 名稱最多 31 字
       });
-
-      // 🔹 清理掉多餘字眼與 emoji（只留下主題關鍵詞）
-      titleElement = titleElement
-        .replace(/^選擇/, "")            // 移除開頭「選擇」
-        .replace(/查詢$/, "")            // 移除結尾「查詢」
-        .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, "") // 移除所有 emoji
-        .replace(/\s+/g, "")             // 移除多餘空白
-        .trim();
-
-      lastTitle = titleElement || lastTitle; // 保存最後一個標題供檔名用
-    
+   
       // 檔名
       const now = new Date();  // 本地時間（瀏覽器時間）
       const hh = String(now.getHours()).padStart(2,"0");
@@ -883,5 +883,6 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
