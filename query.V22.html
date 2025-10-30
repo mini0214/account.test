@@ -838,7 +838,13 @@ chartInstance = new Chart(ctx, {
             chartCanvas.height * chartRatio
           );
         }
-    
+
+        // 🔹 清理掉多餘字眼（只留下關鍵主題）
+        titleText = titleText
+          .replace(/^選擇/, "")   // 移除開頭「選擇」
+          .replace(/\s+/g, "")    // 移除多餘空白
+          .trim();
+        
         // --- 7️⃣ 檔名 ---
         const now = new Date();
         const hh = String(now.getHours()).padStart(2, "0");
@@ -865,5 +871,6 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
