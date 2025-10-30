@@ -669,7 +669,7 @@ chartInstance = new Chart(ctx, {
     // ✅ 匯出 Excel 功能
     document.getElementById("exportExcelBtn").addEventListener("click", exportExcel);
     
-    function exportExcel() {
+    async function exportExcel() {
       const queryDiv = document.getElementById("queryResult");
       if (!queryDiv) return alert("目前沒有查詢結果");
     
@@ -933,6 +933,3 @@ initApp();
 </script>
 </body>
 </html>
-
-
-
