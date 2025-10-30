@@ -580,13 +580,50 @@ chartInstance = new Chart(ctx, {
       }
   
       let csvContent = "";
+
+      // 日期區間
+      const startDate = (document.getElementById("startDate")?.value || "unknown").replace(/-/g, "/");
+      const endDate = (document.getElementById("endDate")?.value || "unknown").replace(/-/g, "/");
+      const dateRange = `📅 日期區間：${startDate} ~ ${endDate}`;
+
+      let lastTitle = "報表";
+      
       tables.forEach((table, idx) => {
+        // 🔹 抓取標題（h5）
+        let rawTitle = table.previousElementSibling && table.previousElementSibling.tagName === "H5"
+          ? table.previousElementSibling.textContent
+          : `工作表${idx + 1}`;
+        let titleText = rawTitle.split(";")[0].trim();
+  
+        // 🔹 移除 emoji、空白、"選擇" 等字
+        titleText = titleText
+          .replace(/^選擇/, "")
+          .replace(/查詢$/, "")
+          .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, "")
+          .replace(/\s+/g, "")
+          .trim();
+  
+        lastTitle = titleText || lastTitle;
+
+      // 🔹 抓取總額資訊（若有 .total 元素）
+        const totalElement = table.nextElementSibling && table.nextElementSibling.classList.contains("total")
+          ? table.nextElementSibling.textContent.trim()
+          : "";
+  
+        // ✅ 匯出表頭資訊
+        csvContent += `"${dateRange}"\r\n`;
+        csvContent += `"${titleText}"\r\n`;
+        if (totalElement) csvContent += `"${totalElement}"\r\n`;
+  
+        // ✅ 匯出表格資料
         Array.from(table.rows).forEach(row => {
           const rowData = Array.from(row.cells).map(cell => {
             return `"${cell.textContent.trim().replace(/"/g, '""')}"`;
           }).join(",");
           csvContent += rowData + "\r\n";
         });
+  
+        // 🔹 多表格間加空白行
         if (idx < tables.length - 1) csvContent += "\r\n";
       });
   
@@ -596,7 +633,7 @@ chartInstance = new Chart(ctx, {
       const mm = String(now.getMinutes()).padStart(2, "0");
       const ss = String(now.getSeconds()).padStart(2, "0");
       const startDateInput = document.getElementById("startDate")?.value || "unknown";
-      const filename = `非匯不可CSV_${startDateInput}-${hh}-${mm}-${ss}.csv`;
+      const filename = `非匯不可CSV_${lastTitle}_${startDateInput}-${hh}-${mm}-${ss}.csv`;
   
       // ✅ 判斷是否在 LINE 內建瀏覽器
       if (liff.isInClient()) {
@@ -871,6 +908,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
