@@ -896,22 +896,17 @@ chartInstance = new Chart(ctx, {
         const mm = String(now.getMinutes()).padStart(2, "0");
         const ss = String(now.getSeconds()).padStart(2, "0");
         const filename = `非匯不可PDF_${titleText || "報表"}_${fileDate}-${hh}-${mm}-${ss}.pdf`;
+
+        const pdfUrl = "https://mini0214.github.io/account.test/query.V22.html"; // PDF 網頁版 URL
     
         if (liff.isInClient()) {
-          // LINE 內建瀏覽器：只提示訊息
-          //alert(`LINE 內建瀏覽器無法下載，請在 Web 使用此功能`);
-          // LINE 內建瀏覽器：生成頁面提示 + 連結
-          const linkDiv = document.createElement("div");
-          linkDiv.innerHTML = `
-            <p>LINE 內建瀏覽器無法下載 PDF，請點擊下面連結在 Web 版操作：</p>
-            <a href="https://mini0214.github.io/account.test/query.V22.html" target="_blank">🔗 開啟 Web 版匯出 PDF</a>
-          `;
-          linkDiv.style.padding = "10px";
-          linkDiv.style.border = "1px solid #ccc";
-          linkDiv.style.marginTop = "10px";
-          document.body.appendChild(linkDiv);
-          
-          alert("LINE 內建瀏覽器無法下載，請點擊此連結在 Web 版操作：\n\nhttps://mini0214.github.io/account.test/query.V22.html");
+          // LINE 內建瀏覽器：透過 LIFF 傳訊息給自己，訊息中帶 URL
+          await liff.sendMessages([{
+            type: "text",
+            text: `請點擊下列連結在 Web 版下載：\n\n${pdfUrl}`
+          }]);
+          // LINE 內建瀏覽器：只提示訊息          
+          alert(`LINE 內建瀏覽器無法下載，請在 Web 使用此功能`);                 
         } else {
           // Web：正常下載
           pdf.save(filename);
@@ -928,4 +923,5 @@ initApp();
 </script>
 </body>
 </html>
+
 
