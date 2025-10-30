@@ -683,21 +683,20 @@ chartInstance = new Chart(ctx, {
         const endDate = (document.getElementById("endDate").value || "unknown").replace(/-/g, "/");
         const dateRange = `📅 日期區間：${startDate} ~ ${endDate}`;
     
-        // ✅ 改成 let
+        // ✅ Excel 內容用原始標題（保留 emoji）
         let rawTitle = table.previousElementSibling && table.previousElementSibling.tagName === "H5"
           ? table.previousElementSibling.textContent
           : `工作表${idx + 1}`;
-        let titleElement = rawTitle.split(";")[0].trim();
+        const contentTitle = rawTitle.split(";")[0].trim();
     
-        // 🔹 清理多餘字元與 emoji
-        titleElement = titleElement
+        // 🔹 檔名用的標題（清理 emoji、空白等）
+        let cleanTitle = contentTitle
           .replace(/^選擇/, "")
           .replace(/查詢$/, "")
           .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, "")
           .replace(/\s+/g, "")
           .trim();
-    
-        lastTitle = titleElement || lastTitle;
+        lastTitle = cleanTitle || lastTitle;
     
         const totalElement = table.nextElementSibling && table.nextElementSibling.classList.contains("total")
           ? table.nextElementSibling.textContent
@@ -705,7 +704,7 @@ chartInstance = new Chart(ctx, {
     
         const wsData = [];
         wsData.push([dateRange]);
-        wsData.push([titleElement]);
+        wsData.push([titleElement]);  // ← Excel 內容保留 emoji
         wsData.push([totalElement]);
     
         const headers = Array.from(table.querySelectorAll("th")).map(th => th.innerText.trim());
@@ -736,9 +735,8 @@ chartInstance = new Chart(ctx, {
       const min = String(now.getMinutes()).padStart(2, "0");
       const ss = String(now.getSeconds()).padStart(2, "0");
     
-      const startDate = document.getElementById("startDate").value || "unknown";
-      const timestamp = `${startDate}-${hh}-${min}-${ss}`;
-      const filename = `非匯不可EXCEL_${lastTitle}_${timestamp}.xlsx`;
+      const startDateVal = document.getElementById("startDate").value || "unknown";
+      const filename = `非匯不可EXCEL_${lastTitle}_${startDateVal}-${hh}-${min}-${ss}.xlsx`;
     
       try {
         if (liff.isInClient()) {
@@ -911,6 +909,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
