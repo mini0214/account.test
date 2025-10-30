@@ -637,6 +637,7 @@ chartInstance = new Chart(ctx, {
 
       // 🔹 以下為一般瀏覽器下載 Excel 流程
       const wb = XLSX.utils.book_new();
+      let lastTitle = "報表"; // 預設標題，防止未定義
     
       tables.forEach((table, idx) => {
         // 取日期區間，與資料日期一樣所以統一格式為 YYYY/MM/DD
@@ -883,6 +884,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
