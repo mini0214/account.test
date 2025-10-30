@@ -696,6 +696,8 @@ chartInstance = new Chart(ctx, {
         .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, "") // 移除所有 emoji
         .replace(/\s+/g, "")             // 移除多餘空白
         .trim();
+
+      lastTitle = titleElement || lastTitle; // 保存最後一個標題供檔名用
     
       // 檔名
       const now = new Date();  // 本地時間（瀏覽器時間）
@@ -705,7 +707,7 @@ chartInstance = new Chart(ctx, {
       
       const startDate = document.getElementById("startDate").value || "unknown"; // YYYY-MM-DD
       const timestamp = `${startDate}-${hh}-${min}-${ss}`;
-      const filename = `非匯不可EXCEL_${titleElement}_${timestamp}.xlsx`;
+      const filename = `非匯不可EXCEL_${lastTitle}_${timestamp}.xlsx`;
     
       try {
           if (liff.isInClient()) {
@@ -881,4 +883,5 @@ initApp();
 </script>
 </body>
 </html>
+
 
