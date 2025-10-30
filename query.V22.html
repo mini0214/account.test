@@ -683,21 +683,25 @@ chartInstance = new Chart(ctx, {
         const endDate = (document.getElementById("endDate").value || "unknown").replace(/-/g, "/");
         const dateRange = `📅 日期區間：${startDate} ~ ${endDate}`;
     
-        // ✅ 改成 let
+        // 取得原始標題
         let rawTitle = table.previousElementSibling && table.previousElementSibling.tagName === "H5"
           ? table.previousElementSibling.textContent
           : `工作表${idx + 1}`;
         let titleElement = rawTitle.split(";")[0].trim();
     
-        // 🔹 清理多餘字元與 emoji
-        titleElement = titleElement
+        // ❶ Excel 內容保留符號
+        const titleForExcel = titleElement
           .replace(/^選擇/, "")
           .replace(/查詢$/, "")
-          .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, "")
-          .replace(/\s+/g, "")
           .trim();
     
-        lastTitle = titleElement || lastTitle;
+        // ❷ 檔名與工作表名稱移除符號與 emoji
+        const titleForFile = titleForExcel
+          .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, "")
+          .replace(/\s+/g, "")
+          .trim() || `工作表${idx + 1}`;
+    
+        lastTitle = titleForFile || lastTitle;
     
         const totalElement = table.nextElementSibling && table.nextElementSibling.classList.contains("total")
           ? table.nextElementSibling.textContent
@@ -705,7 +709,7 @@ chartInstance = new Chart(ctx, {
     
         const wsData = [];
         wsData.push([dateRange]);
-        wsData.push([titleElement]);
+        wsData.push([titleForExcel]);  // 第二行保留符號
         wsData.push([totalElement]);
     
         const headers = Array.from(table.querySelectorAll("th")).map(th => th.innerText.trim());
@@ -727,7 +731,7 @@ chartInstance = new Chart(ctx, {
         });
     
         const ws = XLSX.utils.aoa_to_sheet(wsData);
-        XLSX.utils.book_append_sheet(wb, ws, titleElement.substring(0, 20));
+        XLSX.utils.book_append_sheet(wb, ws, titleForFile.substring(0, 20));
       });
     
       // 🔹 檔名
@@ -911,3 +915,4 @@ initApp();
 </script>
 </body>
 </html>
+
