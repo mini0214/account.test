@@ -736,12 +736,14 @@ chartInstance = new Chart(ctx, {
         // === 取得日期區間 ===
         const startDateInput = document.getElementById("startDate")?.value || "";
         const endDateInput = document.getElementById("endDate")?.value || "";
+
+        // 用於 PDF 內文顯示（用 /）
+        const displayStartDate = startDateInput ? startDateInput.replaceAll("-", "/") : "";
+        const displayEndDate = endDateInput ? endDateInput.replaceAll("-", "/") : "";
     
-        // yyyy-mm-dd → yyyy/mm/dd
-        const formatDate = (d) => d ? d.replaceAll("-", "/") : "";
-        const startDate = formatDate(startDateInput);
-        const endDate = formatDate(endDateInput);
-    
+        // 用於檔名（用 -）
+        const fileDate = startDateInput || "unknown";
+          
         // === 取得表格標題 ===
         const firstTable = queryDiv.querySelector("table");
         let titleText = "報表";
@@ -771,8 +773,8 @@ chartInstance = new Chart(ctx, {
         dateDiv.style.fontWeight = "bold";
         dateDiv.style.marginBottom = "5px";
         dateDiv.textContent =
-          startDate && endDate
-            ? `📅 日期區間: ${startDate} ~ ${endDate}`
+          displayStartDate && displayEndDate
+            ? `📅 日期區間: ${displayStartDate} ~ ${displayEndDate}`
             : "📅 日期區間: 未指定";
     
         // --- 3️⃣ 標題（第二行） ---
@@ -842,7 +844,7 @@ chartInstance = new Chart(ctx, {
         const hh = String(now.getHours()).padStart(2, "0");
         const mm = String(now.getMinutes()).padStart(2, "0");
         const ss = String(now.getSeconds()).padStart(2, "0");
-        const filename = `非匯不可PDF_${startDate || "unknown"}-${hh}-${mm}-${ss}.pdf`;
+        const filename = `非匯不可PDF${titleDiv}_${fileDate}-${hh}-${mm}-${ss}.pdf`;
     
         if (liff.isInClient()) {
           // LINE 內建瀏覽器：只提示訊息
@@ -863,4 +865,3 @@ initApp();
 </script>
 </body>
 </html>
-
