@@ -756,7 +756,7 @@ chartInstance = new Chart(ctx, {
               text: `${htmlUrl}`
             }
           ]);
-          alert("LINE 內建瀏覽器無法下載，網址已在訊息內，請自行將網址COPY貼在流覽器上使用此功能`)
+          alert(`LINE 內建瀏覽器無法下載，網址已在訊息內，請自行將網址COPY貼在流覽器上使用此功能`)
         } else {
           // 🔹 一般瀏覽器：直接下載
           XLSX.writeFile(wb, filename);
@@ -933,5 +933,6 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
