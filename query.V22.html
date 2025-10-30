@@ -86,7 +86,7 @@ let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbz3mlLl
 let API_URL = "";    // ✅ 從設定檔 D6
 let VERSION = "V";   // ✅ 從設定檔 D10
 let LIFF_IDq = "";   // ✅ 從設定檔 D12
-let htmlUrl = "";    // ✅ 從設定檔 D14
+let html_Url = "";    // ✅ 從設定檔 D14
 
 let currentUser = null; // ✅ 先定義變數，不要一開始就用 json 登入者的資料
 let chartInstance = null;
@@ -130,10 +130,10 @@ async function initApp(){
     API_URL = (settings.API_URL || "").trim();
     VERSION = (settings.D10 || "V").trim();
     LIFF_IDq = (settings.D12 || "").trim();
-    htmlUrl = (settings.D14 || "").trim();
+    html_Url = (settings.D14 || "").trim();
     
     document.getElementById("version").textContent = VERSION;
-    console.log("✅ 設定成功:", { FALLBACK_GAS_SETTINGS_URL, API_URL, LIFF_IDq, VERSION, htmlUrl });
+    console.log("✅ 設定成功:", { FALLBACK_GAS_SETTINGS_URL, API_URL, LIFF_IDq, VERSION, html_Url });
     
     if (!LIFF_IDq) throw new Error("❌ LIFF ID 尚未設定，請確認設定表 D12");
     
@@ -751,7 +751,7 @@ chartInstance = new Chart(ctx, {
         if (liff.isInClient()) {
             await liff.sendMessages([{
             type: "text",
-            text: `${htmlUrl}`
+            text: `${html_Url}`
           }]);
           // LINE 內建瀏覽器：只提示訊息          
           alert(`LINE 內建瀏覽器無法下載，網址已在訊息內，請自行將網址COPY貼在流覽器上使用此功能`);  
@@ -908,7 +908,7 @@ chartInstance = new Chart(ctx, {
           // LINE 內建瀏覽器：透過 LIFF 傳訊息給自己，訊息中帶 URL
           await liff.sendMessages([{
             type: "text",
-            text: `${htmlUrl}`
+            text: `${html_Url}`
           }]);
           // LINE 內建瀏覽器：只提示訊息          
           alert(`LINE 內建瀏覽器無法下載，網址已在訊息內，請自行將網址COPY貼在流覽器上使用此功能`);                 
