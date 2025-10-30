@@ -688,6 +688,14 @@ chartInstance = new Chart(ctx, {
         const ws = XLSX.utils.aoa_to_sheet(wsData);
         XLSX.utils.book_append_sheet(wb, ws, titleElement.substring(0, 20)); // 名稱最多 31 字
       });
+
+      // 🔹 清理掉多餘字眼與 emoji（只留下主題關鍵詞）
+      titleElement = titleElement
+        .replace(/^選擇/, "")            // 移除開頭「選擇」
+        .replace(/查詢$/, "")            // 移除結尾「查詢」
+        .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, "") // 移除所有 emoji
+        .replace(/\s+/g, "")             // 移除多餘空白
+        .trim();
     
       // 檔名
       const now = new Date();  // 本地時間（瀏覽器時間）
@@ -697,7 +705,7 @@ chartInstance = new Chart(ctx, {
       
       const startDate = document.getElementById("startDate").value || "unknown"; // YYYY-MM-DD
       const timestamp = `${startDate}-${hh}-${min}-${ss}`;
-      const filename = `非匯不可EXCEL_${timestamp}.xlsx`;
+      const filename = `非匯不可EXCEL_${titleElement}_${timestamp}.xlsx`;
     
       try {
           if (liff.isInClient()) {
@@ -842,7 +850,6 @@ chartInstance = new Chart(ctx, {
         // 🔹 清理掉多餘字眼與 emoji（只留下主題關鍵詞）
         titleText = titleText
           .replace(/^選擇/, "")            // 移除開頭「選擇」
-          .replace(/統計$/, "")            // 移除結尾「統計」
           .replace(/查詢$/, "")            // 移除結尾「查詢」
           .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, "") // 移除所有 emoji
           .replace(/\s+/g, "")             // 移除多餘空白
@@ -874,3 +881,4 @@ initApp();
 </script>
 </body>
 </html>
+
