@@ -124,6 +124,15 @@ async function initApp(){
   try {
     const settings = await loadSettings();
     if (!settings) throw new Error("設定格式錯誤");
+
+         if (!API_URL) {
+          alert("無法取得網頁版 URL，請確認 API_URL 有值000");
+          return;
+        }
+        if (!D14) {
+          alert("無法取得網頁版 URL，請確認 D14 有值000");
+          return;
+        }
        
     // 🔹 從設定帶入
     FALLBACK_GAS_SETTINGS_URL = (settings.SETTINGS_URL || FALLBACK_GAS_SETTINGS_URL).trim();// 自動轉換成設定檔內的固定 D5
@@ -938,6 +947,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
