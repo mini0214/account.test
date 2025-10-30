@@ -844,7 +844,7 @@ chartInstance = new Chart(ctx, {
         const hh = String(now.getHours()).padStart(2, "0");
         const mm = String(now.getMinutes()).padStart(2, "0");
         const ss = String(now.getSeconds()).padStart(2, "0");
-        const filename = `非匯不可PDF${titleText}_${fileDate}-${hh}-${mm}-${ss}.pdf`;
+        const filename = `非匯不可PDF_${titleText || "報表"}_${fileDate}-${hh}-${mm}-${ss}.pdf`;
     
         if (liff.isInClient()) {
           // LINE 內建瀏覽器：只提示訊息
@@ -865,4 +865,5 @@ initApp();
 </script>
 </body>
 </html>
+
 
