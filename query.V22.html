@@ -899,7 +899,7 @@ chartInstance = new Chart(ctx, {
         const ss = String(now.getSeconds()).padStart(2, "0");
         const filename = `非匯不可PDF_${titleText || "報表"}_${fileDate}-${hh}-${mm}-${ss}.pdf`;
 
-        const htmlUrl = "https://mini0214.github.io/account.test/query.V22.html"; // 網頁版 URL
+        //const htmlUrl = "https://mini0214.github.io/account.test/query.V22.html"; // 網頁版 URL
     
         if (liff.isInClient()) {
           // LINE 內建瀏覽器：透過 LIFF 傳訊息給自己，訊息中帶 URL
@@ -925,3 +925,4 @@ initApp();
 </script>
 </body>
 </html>
+
