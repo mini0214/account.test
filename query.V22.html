@@ -136,6 +136,11 @@ async function initApp(){
     console.log("✅ 設定成功:", { FALLBACK_GAS_SETTINGS_URL, API_URL, LIFF_IDq, VERSION, htmlUrl });
     
     if (!LIFF_IDq) throw new Error("❌ LIFF ID 尚未設定，請確認設定表 D12");
+
+            if (!htmlUrl) {
+          alert("無法取得網頁版 URL，請確認 D14 有值log");
+          return;
+        }
     
     await liff.init({ liffId: LIFF_IDq });
     if (!liff.isLoggedIn()) liff.login();
@@ -929,3 +934,4 @@ initApp();
 </script>
 </body>
 </html>
+
