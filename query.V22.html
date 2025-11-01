@@ -418,7 +418,7 @@ function renderResult(command, json) {
       }
 
       // 排序後重建 values
-      const values = labels.map(l => counts[l]);
+      values = labels.map(l => counts[l]); // 沒有 const！
 
       html += `<h5>${sec.title}</h5>`;
       html += `<table id="dataTable">
@@ -1004,6 +1004,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
