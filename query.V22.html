@@ -400,8 +400,10 @@ function renderResult(command, json) {
         const value = r[sec.key] || "未知";
         counts[value] = (counts[value] || 0) + Number(r[5] || 0); // 金額在 r[5]
       });
-  
-      const labels = Object.keys(counts);
+
+      
+      // ✅ 改成 let，因為後面會重新指定
+      let labels = Object.keys(counts);
       let values = Object.values(counts);
       const total = values.reduce((a,b)=>a+b,0);
 
@@ -1009,6 +1011,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
