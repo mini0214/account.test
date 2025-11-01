@@ -400,7 +400,6 @@ function renderResult(command, json) {
         const value = r[sec.key] || "未知";
         counts[value] = (counts[value] || 0) + Number(r[5] || 0); // 金額在 r[5]
       });
-
       
       // ✅ 改成 let，因為後面會重新指定
       let labels;
@@ -408,24 +407,28 @@ function renderResult(command, json) {
 
       // ✅ 初次依 json.payments 排序（付款統計時）
       if (sec.cmd === "付款" && json.payments && Array.isArray(json.payments)) {
-        const order = json.payments;
-        // 建立 counts 的排序 array
-        const sortedCounts = order.map(p => ({ label: p, value: counts[p] || 0 }));
-        // 把沒有在 order 裡的也加上
-        Object.keys(counts).forEach(k => {
-          if (!order.includes(k)) sortedCounts.push({ label: k, value: counts[k] });
-        });
-      
-        // 重新 labels & values
-        labels = sortedCounts.map(item => item.label);
-        values = sortedCounts.map(item => item.value);
-      } else {
-        // 其他情況照舊
-        labels = Object.keys(counts);
-        values = Object.values(counts);
-      }
-      
-      const total = values.reduce((a,b)=>a+b,0);
+          const order = json.payments.map(p => p.trim()); // 確保去除空白
+    
+          // 先依 json.payments 建立有序陣列
+          const sortedCounts = order.map(p => ({
+            label: p,
+            value: counts[p] || 0
+          }));
+    
+          // 再補上沒有在 order 裡的（例如新出現的付款方式）
+          Object.keys(counts).forEach(k => {
+            if (!order.includes(k)) sortedCounts.push({ label: k, value: counts[k] });
+          });
+    
+          labels = sortedCounts.map(item => item.label);
+          values = sortedCounts.map(item => item.value);
+        } else {
+          // 其他統計（分類、店家、記帳者）維持原順序
+          labels = Object.keys(counts);
+          values = Object.values(counts);
+        }
+    
+        const total = values.reduce((a, b) => a + b, 0);
       
       // ✅ 繪表
       html += `<h5>${sec.title}</h5>`;
@@ -1012,17 +1015,3 @@ initApp();
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
