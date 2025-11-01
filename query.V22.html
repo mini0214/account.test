@@ -405,6 +405,21 @@ function renderResult(command, json) {
       const values = Object.values(counts);
       const total = values.reduce((a,b)=>a+b,0);
 
+      // ✅ 如果是付款統計，就依 json.payments 順序排序
+      if (sec.cmd === "付款" && json.payments && Array.isArray(json.payments)) {
+        labels.sort((a, b) => {
+          const order = json.payments;
+          const indexA = order.indexOf(a);
+          const indexB = order.indexOf(b);
+          const posA = indexA === -1 ? 9999 : indexA;
+          const posB = indexB === -1 ? 9999 : indexB;
+          return posA - posB;
+        });
+      }
+
+      // 排序後重建 values
+      const values = labels.map(l => counts[l]);
+
       html += `<h5>${sec.title}</h5>`;
       html += `<table id="dataTable">
                  <tr>
@@ -989,6 +1004,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
