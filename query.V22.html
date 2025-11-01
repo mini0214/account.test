@@ -403,9 +403,8 @@ function renderResult(command, json) {
 
       
       // ✅ 改成 let，因為後面會重新指定
-      let labels = Object.keys(counts);
-      let values = Object.values(counts);
-      const total = values.reduce((a,b)=>a+b,0);
+      let labels;
+      let values;
 
       // ✅ 初次依 json.payments 排序（付款統計時）
       if (sec.cmd === "付款" && json.payments && Array.isArray(json.payments)) {
@@ -422,9 +421,11 @@ function renderResult(command, json) {
         values = sortedCounts.map(item => item.value);
       } else {
         // 其他情況照舊
-        labels = sortedCounts.map(item => item.label);
-        values = sortedCounts.map(item => item.value);
+        labels = Object.keys(counts);
+        values = Object.values(counts);
       }
+      
+      const total = values.reduce((a,b)=>a+b,0);
       
       // ✅ 繪表
       html += `<h5>${sec.title}</h5>`;
@@ -1011,6 +1012,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
