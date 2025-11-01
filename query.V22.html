@@ -38,8 +38,14 @@
 <h3>🔍非<span style="color: blue;">看</span><span>/</span><span style="color: green;">匯</span>不可.[<span id="version"></span>]</h3>
 
 <div class="date-inputs">
-  開始日期：<input type="date" id="startDate"><br>
+  開始日期：<input type="date" id="startDate">
+  <button id="prevMonthBtn">上月</button>
+  <button id="lastYearBtn">去年</button>
+  <br>
   結束日期：<input type="date" id="endDate">
+  <br><br>
+  <button id="nextMonthBtn">下月</button>
+  <button id="thisYearBtn">今年</button>
 </div>
 
 <h4>選擇您想要看的(直球對決)</h4>
@@ -179,7 +185,50 @@ function toInputDate(d) {
   const day = d.getDate().toString().padStart(2, "0");
   return `${d.getFullYear()}-${m}-${day}`;
 }
+  
+// 📅 上月
+  document.getElementById("prevMonthBtn").addEventListener("click", () => {
+    const base = startInput.value ? new Date(startInput.value) : new Date();
+    const year = base.getFullYear();
+    const month = base.getMonth(); // 0~11
 
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 0);
+    setDateRange(start, end);
+  });
+
+  // 📅 下月
+  document.getElementById("nextMonthBtn").addEventListener("click", () => {
+    const base = startInput.value ? new Date(startInput.value) : new Date();
+    const year = base.getFullYear();
+    const month = base.getMonth();
+
+    const start = new Date(year, month + 1, 1);
+    const end = new Date(year, month + 2, 0);
+    setDateRange(start, end);
+  });
+
+  // 📅 去年
+  document.getElementById("lastYearBtn").addEventListener("click", () => {
+    const base = startInput.value ? new Date(startInput.value) : new Date();
+    const year = base.getFullYear() - 1;
+
+    const start = new Date(year, 0, 1);
+    const end = new Date(year, 11, 31);
+    setDateRange(start, end);
+  });
+
+  // 📅 今年
+  document.getElementById("thisYearBtn").addEventListener("click", () => {
+    const base = startInput.value ? new Date(startInput.value) : new Date();
+    const year = base.getFullYear();
+
+    const start = new Date(year, 0, 1);
+    const end = new Date(year, 11, 31);
+    setDateRange(start, end);
+  });
+  
+  
 // 按鈕事件
 document.getElementById("queryMonthBtn").addEventListener("click", () => sendQuery("明細"));
 document.getElementById("queryMonthTypeBtn").addEventListener("click", () => sendQuery("分類"));
@@ -932,3 +981,4 @@ initApp();
 </script>
 </body>
 </html>
+
