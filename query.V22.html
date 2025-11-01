@@ -420,8 +420,8 @@ function renderResult(command, json) {
         values = sortedCounts.map(item => item.value);
       } else {
         // 其他情況照舊
-        let labels = Object.keys(counts);
-        let values = Object.values(counts);
+        labels = Object.keys(counts);
+        values = Object.values(counts);
       }
       
       // ✅ 繪表
@@ -1009,6 +1009,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
