@@ -20,11 +20,11 @@
     .date-inputs { font-size: 50px; text-align: center; margin-bottom: 20px;  }
     .date-inputs input { font-size: 50px; margin: 0 10px;  padding: 5px; }
     h4 { font-size: 36px; text-align: center; margin-bottom: 20px; }
-    button { font-size: 40px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background-color: #0056b3; color: white; }
-    .date-btn { font-size: 40px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background-color: #888; color: white; }
-    .date-btn:hover { background-color: #0056b3; }
-    .green-btn { font-size: 40px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background-color: #28a745; color: white; }
-    .green-btn:hover { background-color: #0056b3; }
+    button { font-size: 40px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background-color: #0056b3; color: white; }/* 藍色 */
+    .date-btn { font-size: 40px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background-color: #888; color: white; }/* 灰色 */
+    .date-btn:hover { background-color: #555; } /* 按下更深灰 */
+    .green-btn { font-size: 40px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background-color: #28a745; color: white; }/* 綠色 */
+    .green-btn:hover { background-color: #0056b3; } /* 按下藍色 */
     #queryResult { margin-top: 1px; }
     h5 { font-size: 28px; margin: 0; padding: 0; }
     table { font-size: 28px; border-collapse: collapse; width: 100%; margin-top: 15px; }
@@ -40,13 +40,11 @@
 <h3>🔍非<span style="color: blue;">看</span><span>/</span><span style="color: green;">匯</span>不可.[<span id="version"></span>]</h3>
 
 <div class="date-inputs">
-  開始日期：<input type="date" id="startDate">
+  開始日期：<input type="date" id="startDate"><br>
+  結束日期：<input type="date" id="endDate"><br>
   <button id="prevMonthBtn" class="date-btn">上月</button>
-  <button id="thisYearBtn" class="date-btn">整年</button>
-  <br>
-  結束日期：<input type="date" id="endDate">
-  <br>
   <button id="nextMonthBtn" class="date-btn">下月</button>
+  <button id="thisYearBtn" class="date-btn">整年</button>
   <button id="lastYearBtn" class="date-btn">去年</button>
 </div>
 
@@ -991,6 +989,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
