@@ -402,7 +402,7 @@ function renderResult(command, json) {
       });
   
       const labels = Object.keys(counts);
-      const values = Object.values(counts);
+      let values = Object.values(counts);
       const total = values.reduce((a,b)=>a+b,0);
 
       // ✅ 如果是付款統計，就依 json.payments 順序排序
@@ -1004,6 +1004,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
