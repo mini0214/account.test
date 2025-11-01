@@ -405,21 +405,26 @@ function renderResult(command, json) {
       let values = Object.values(counts);
       const total = values.reduce((a,b)=>a+b,0);
 
-      // ✅ 如果是付款統計，就依 json.payments 順序排序
+      // ✅ 初次依 json.payments 排序（付款統計時）
       if (sec.cmd === "付款" && json.payments && Array.isArray(json.payments)) {
-        labels.sort((a, b) => {
-          const order = json.payments;
-          const indexA = order.indexOf(a);
-          const indexB = order.indexOf(b);
-          const posA = indexA === -1 ? 9999 : indexA;
-          const posB = indexB === -1 ? 9999 : indexB;
-          return posA - posB;
+        const order = json.payments;
+        // 建立 counts 的排序 array
+        const sortedCounts = order.map(p => ({ label: p, value: counts[p] || 0 }));
+        // 把沒有在 order 裡的也加上
+        Object.keys(counts).forEach(k => {
+          if (!order.includes(k)) sortedCounts.push({ label: k, value: counts[k] });
         });
+      
+        // 重新 labels & values
+        labels = sortedCounts.map(item => item.label);
+        values = sortedCounts.map(item => item.value);
+      } else {
+        // 其他情況照舊
+        labels = Object.keys(counts);
+        values = Object.values(counts);
       }
-
-      // 排序後重建 values
-      values = labels.map(l => counts[l]); // 沒有 const！
-
+      
+      // ✅ 繪表
       html += `<h5>${sec.title}</h5>`;
       html += `<table id="dataTable">
                  <tr>
@@ -1004,6 +1009,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
