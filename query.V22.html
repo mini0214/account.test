@@ -21,6 +21,8 @@
     .date-inputs input { font-size: 50px; margin: 0 10px;  padding: 5px; }
     h4 { font-size: 36px; text-align: center; margin-bottom: 20px; }
     button { font-size: 40px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background-color: #0056b3; color: white; }
+    .date-btn { font-size: 40px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background-color: #888; color: white; }
+    .date-btn:hover { background-color: #0056b3; }
     .green-btn { font-size: 40px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background-color: #28a745; color: white; }
     .green-btn:hover { background-color: #0056b3; }
     #queryResult { margin-top: 1px; }
@@ -39,13 +41,13 @@
 
 <div class="date-inputs">
   開始日期：<input type="date" id="startDate">
-  <button id="prevMonthBtn">上月</button>
-  <button id="lastYearBtn">去年</button>
+  <button id="prevMonthBtn" class="date-btn">上月</button>
+  <button id="thisYearBtn" class="date-btn">整年</button>
   <br>
   結束日期：<input type="date" id="endDate">
   <br>
-  <button id="nextMonthBtn">下月</button>
-  <button id="thisYearBtn">今年</button>
+  <button id="nextMonthBtn" class="date-btn">下月</button>
+  <button id="lastYearBtn" class="date-btn">去年</button>
 </div>
 
 <h4>選擇您想要看的(直球對決)</h4>
@@ -989,5 +991,6 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
