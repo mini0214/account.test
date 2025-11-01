@@ -43,7 +43,7 @@
   <button id="lastYearBtn">去年</button>
   <br>
   結束日期：<input type="date" id="endDate">
-  <br><br>
+  <br>
   <button id="nextMonthBtn">下月</button>
   <button id="thisYearBtn">今年</button>
 </div>
@@ -186,48 +186,56 @@ function toInputDate(d) {
   return `${d.getFullYear()}-${m}-${day}`;
 }
   
+// 📅 日期切換功能
+const startInput = document.getElementById("startDate");
+const endInput = document.getElementById("endDate");
+
+function setDateRange(start, end) {
+  startInput.value = toInputDate(start);
+  endInput.value = toInputDate(end);
+}
+
 // 📅 上月
-  document.getElementById("prevMonthBtn").addEventListener("click", () => {
-    const base = startInput.value ? new Date(startInput.value) : new Date();
-    const year = base.getFullYear();
-    const month = base.getMonth(); // 0~11
+document.getElementById("prevMonthBtn").addEventListener("click", () => {
+  const base = startInput.value ? new Date(startInput.value) : new Date();
+  const year = base.getFullYear();
+  const month = base.getMonth(); // 0~11
 
-    const start = new Date(year, month - 1, 1);
-    const end = new Date(year, month, 0);
-    setDateRange(start, end);
-  });
+  const start = new Date(year, month - 1, 1);
+  const end = new Date(year, month, 0);
+  setDateRange(start, end);
+});
 
-  // 📅 下月
-  document.getElementById("nextMonthBtn").addEventListener("click", () => {
-    const base = startInput.value ? new Date(startInput.value) : new Date();
-    const year = base.getFullYear();
-    const month = base.getMonth();
+// 📅 下月
+document.getElementById("nextMonthBtn").addEventListener("click", () => {
+  const base = startInput.value ? new Date(startInput.value) : new Date();
+  const year = base.getFullYear();
+  const month = base.getMonth();
 
-    const start = new Date(year, month + 1, 1);
-    const end = new Date(year, month + 2, 0);
-    setDateRange(start, end);
-  });
+  const start = new Date(year, month + 1, 1);
+  const end = new Date(year, month + 2, 0);
+  setDateRange(start, end);
+});
 
-  // 📅 去年
-  document.getElementById("lastYearBtn").addEventListener("click", () => {
-    const base = startInput.value ? new Date(startInput.value) : new Date();
-    const year = base.getFullYear() - 1;
+// 📅 去年
+document.getElementById("lastYearBtn").addEventListener("click", () => {
+  const base = startInput.value ? new Date(startInput.value) : new Date();
+  const year = base.getFullYear() - 1;
 
-    const start = new Date(year, 0, 1);
-    const end = new Date(year, 11, 31);
-    setDateRange(start, end);
-  });
+  const start = new Date(year, 0, 1);
+  const end = new Date(year, 11, 31);
+  setDateRange(start, end);
+});
 
-  // 📅 今年
-  document.getElementById("thisYearBtn").addEventListener("click", () => {
-    const base = startInput.value ? new Date(startInput.value) : new Date();
-    const year = base.getFullYear();
+// 📅 今年
+document.getElementById("thisYearBtn").addEventListener("click", () => {
+  const base = startInput.value ? new Date(startInput.value) : new Date();
+  const year = base.getFullYear();
 
-    const start = new Date(year, 0, 1);
-    const end = new Date(year, 11, 31);
-    setDateRange(start, end);
-  });
-  
+  const start = new Date(year, 0, 1);
+  const end = new Date(year, 11, 31);
+  setDateRange(start, end);
+});
   
 // 按鈕事件
 document.getElementById("queryMonthBtn").addEventListener("click", () => sendQuery("明細"));
@@ -981,4 +989,5 @@ initApp();
 </script>
 </body>
 </html>
+
 
