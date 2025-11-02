@@ -513,18 +513,16 @@
                     }
                     
                     // 🟩 發送到 LINE
-                    await liff.sendMessages([
-                      { type: "text", text: msg }
-                    ]);
-                    alert("✅ 記帳成功並已發送至 LINE！");
-
                     if (liff.isInClient()) {
                       await liff.sendMessages([{ type: "text", text: msg }]);
+                      alert("✅ 記帳成功並已發送至 LINE！");
+                      liff.closeWindow();
+                    } else {
+                      alert("✅ 記帳成功（非 LINE 內開啟）");
                     }
-                  
-                    await liff.sendMessages([{ type: "text", text: msg }]);
                   } catch (err) {
                     console.warn("sendMessages 錯誤：", err.message);
+                    alert("⚠️ 記帳成功，但發送 LINE 訊息失敗");
                   }
                 }
         
@@ -600,3 +598,4 @@
   </script>
 </body>
 </html>
+
