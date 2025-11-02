@@ -481,52 +481,45 @@
                     }
                   
                     // 🔹 分類本期總額顯示（依 otherList.type.number 排序）
-                    if (payments && payments.length && window.otherList && window.otherList.payment) {
-                      msg += `\n\n💳 付款本期總額:\n`;
-                    
-                      // 依 number 排序（支援數字與文字）
-                      const sortedPayments = [...window.otherList.payment].sort((a, b) => {
-                        const aNum = Number(a.number);
-                        const bNum = Number(b.number);
-                        if (!isNaN(aNum) && !isNaN(bNum)) {
-                          return aNum - bNum; // 數字照順序排
-                        }
-                        return String(a.number).localeCompare(String(b.number)); // 文字排序
-                      });
-                    
-                      // 找對應的金額資料
-                      sortedPayments.forEach(p => {
-                        const found = payments.find(x => x.name === p.name);
-                        if (found) {
-                          msg += `　${p.name.padEnd(6, " ")}：${found.total}\n`;
-                        }
-                      });
-                    }
-                    
-                    // 🔹 分類本期總額顯示（依金額排序）
-                    if (types && types.length) {
+                    if (types && types.length && window.otherList && window.otherList.type) {
                       msg += `\n📂 分類本期總額:\n`;
-                      const sortedTypes = [...types].sort((a, b) => b.total - a.total);
-                      sortedTypes.forEach(t => {
-                        msg += `　${t.name.padEnd(6, " ")}：${t.total}\n`;
+                
+                      // 依 number 排序（同時支援數字與文字）
+                      const sortedTypes = [...window.otherList.type].sort((a, b) => {
+                        const aVal = a.number;
+                        const bVal = b.number;
+                    
+                        const aNum = Number(aVal);
+                        const bNum = Number(bVal);
+                    
+                        // 兩者都是有效數字 → 用數值排序
+                        if (!isNaN(aNum) && !isNaN(bNum)) {
+                          return aNum - bNum;
+                        }
+                        // 否則 → 用字母排序
+                        return String(aVal).localeCompare(String(bVal));
+                      });
+                      
+                      sortedTypes.forEach(ref => {
+                        const found = types.find(t => t.type === ref.name);
+                        if (found) {
+                          msg += `▶︎ ${ref.name}：💰${found.thisTotal}\n`;
+                        }
                       });
                     }
-                    
-                    // 🟩 發送到 LINE
+                  
+                    // ✅ 最後顯示於 alert（或 LINE 傳送）
+                    alert(msg);
+
                     if (liff.isInClient()) {
-                      try {
-                        console.log("🔹 開始發送 LINE 訊息:", msg);
-                        await liff.sendMessages([{ type: "text", text: msg }]);
-                        alert("✅ 記帳成功並已發送至 LINE！");
-                        liff.closeWindow();
-                      } catch (err) {
-                        console.error("❌ 發送 LINE 訊息失敗：", err);
-                        alert("⚠️ 記帳成功，但發送 LINE 訊息失敗。\n錯誤訊息：" + err.message);
-                      }
-                    } else {
-                      console.warn("⚠️ 非 LINE 內開啟，無法發送訊息。");
-                      alert("✅ 記帳成功（非 LINE 內開啟）");
+                      await liff.sendMessages([{ type: "text", text: msg }]);
                     }
+                  
+                    await liff.sendMessages([{ type: "text", text: msg }]);
+                  } catch (err) {
+                    console.warn("sendMessages 錯誤：", err.message);
+                  }
+                }
         
               // ✅ alert 顯示
               let alertMsg =
