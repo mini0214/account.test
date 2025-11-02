@@ -355,9 +355,6 @@
 
     document.getElementById("expenseForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-
-      if (isSubmitting) return; // 🚫 防止重複送出
-      isSubmitting = true;
       
       const submitBtn = document.getElementById("submitBtn");
       const loadingMsg = document.getElementById("loadingMsg");
