@@ -481,35 +481,42 @@
                     }
                   
                     // 🔹 分類本期總額顯示（依 otherList.type.number 排序）
-                    if (types && types.length && window.otherList && window.otherList.type) {
-                      msg += `\n📂 分類本期總額:\n`;
-                
-                      // 依 number 排序（同時支援數字與文字）
-                      const sortedTypes = [...window.otherList.type].sort((a, b) => {
-                        const aVal = a.number;
-                        const bVal = b.number;
+                    if (payments && payments.length && window.otherList && window.otherList.payment) {
+                      msg += `\n\n💳 付款本期總額:\n`;
                     
-                        const aNum = Number(aVal);
-                        const bNum = Number(bVal);
-                    
-                        // 兩者都是有效數字 → 用數值排序
+                      // 依 number 排序（支援數字與文字）
+                      const sortedPayments = [...window.otherList.payment].sort((a, b) => {
+                        const aNum = Number(a.number);
+                        const bNum = Number(b.number);
                         if (!isNaN(aNum) && !isNaN(bNum)) {
-                          return aNum - bNum;
+                          return aNum - bNum; // 數字照順序排
                         }
-                        // 否則 → 用字母排序
-                        return String(aVal).localeCompare(String(bVal));
+                        return String(a.number).localeCompare(String(b.number)); // 文字排序
                       });
-                      
-                      sortedTypes.forEach(ref => {
-                        const found = types.find(t => t.type === ref.name);
+                    
+                      // 找對應的金額資料
+                      sortedPayments.forEach(p => {
+                        const found = payments.find(x => x.name === p.name);
                         if (found) {
-                          msg += `▶︎ ${ref.name}：💰${found.thisTotal}\n`;
+                          msg += `　${p.name.padEnd(6, " ")}：${found.total}\n`;
                         }
                       });
                     }
-                  
-                    // ✅ 最後顯示於 alert（或 LINE 傳送）
-                    alert(msg);
+                    
+                    // 🔹 分類本期總額顯示（依金額排序）
+                    if (types && types.length) {
+                      msg += `\n📂 分類本期總額:\n`;
+                      const sortedTypes = [...types].sort((a, b) => b.total - a.total);
+                      sortedTypes.forEach(t => {
+                        msg += `　${t.name.padEnd(6, " ")}：${t.total}\n`;
+                      });
+                    }
+                    
+                    // 🟩 發送到 LINE
+                    await liff.sendMessages([
+                      { type: "text", text: msg }
+                    ]);
+                    alert("✅ 記帳成功並已發送至 LINE！");
 
                     if (liff.isInClient()) {
                       await liff.sendMessages([{ type: "text", text: msg }]);
