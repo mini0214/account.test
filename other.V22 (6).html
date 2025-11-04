@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>零用金支出帳簿</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  
+  <style>
+    body { font-family: Arial, sans-serif; padding: 50px; }
+    h3 { font-size: 50px; text-align: center; margin-bottom: 50px; }
+    label, select, input { font-size: 50px; text-align: left; margin-bottom: 20px;  }
+    button { font-size: 32px; text-align: center; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background-color: #4CAF50; color: white; }
+    button:hover { background-color: #0056b3; }
+    table { font-size: 32px; border-collapse: collapse; width: 100%; margin-top: 15px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    th { background-color: #f2f2f2; }
+    .action-btn { background: #dc3545; margin: 0 2px; }
+    .edit-btn { background: #28a745; }
+    .action-btn:hover, .edit-btn:hover { opacity: 0.8; }
+  </style>
+</head>
+<body>
+  
+    <h3>⚙️非<span style="color: gray;">設</span>不可.[<span id="version">V</span>]</h3>
+    
+    <label>類別：</label>
+    <select id="classify">
+      <option value="type">分類 type</option>
+      <option value="payment">付款 payment</option>
+    </select><br>
+
+    <label>編號：</label>
+    <input type="text" id="number" placeholder="請輸入編號,排序用t08.p06" required><br>
+
+    <label>名稱：</label>
+    <input type="text" id="name" placeholder="請輸入名稱" required><br>
+
+    <label>備註：</label>
+    <input type="text" id="note" placeholder="選填"><br>
+
+    <!-- 儲存/查詢按鈕放入容器置中 -->
+    <div style="text-align: center; margin-bottom: 20px;">
+      <button onclick="saveOther()">📤 儲存</button>
+      <button onclick="loadOther()">📖 查詢</button>
+    </div>
+
+    <table id="otherTable">
+      <thead>
+        <tr><th>類別</th><th>編號</th><th>名稱</th><th>備註</th><th>功能</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <!-- ✅ 筆數統計要放在 body 裡 -->
+    <div id="summary" class="total"></div>
+    
+<script>
+let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbxllPV_s_TpLyE5hhUzgxJWkL9bdAa6MtS0ee95oO2n1uNs94H9Da8-H5nLos5kosh-/exec";
+let API_URL = "";
+let VERSION = "V";
+let LIFF_IDo = "";
+let editIndex = -1; // 修改用
+
+// ----------------------------------------------------
+// ✅ 設定讀取
+// ----------------------------------------------------
+async function tryFetchText(url){
+  const r = await fetch(url, { cache: 'no-store' });
+  const text = await r.text();
+  try { const j = JSON.parse(text); return { ok: true, json: j }; }
+  catch(e){ return { ok: false, text }; }
+}
+
+async function loadSettings(){
+  const res = await tryFetchText(FALLBACK_GAS_SETTINGS_URL + "?type=query&command=設定");
+  if (!res.ok) throw new Error("設定 GAS 讀取失敗：" + res.text);
+  const data = res.json;
+  if (!data.ok || !data.data) throw new Error("設定格式錯誤");
+  return data.data;
+}
+// ----------------------------------------------------
+// ✅ 初始化
+// ----------------------------------------------------
+async function initApp(){
+  try {
+    const settings = await loadSettings();
+    FALLBACK_GAS_SETTINGS_URL = (settings.SETTINGS_URL || FALLBACK_GAS_SETTINGS_URL).trim();
+    API_URL = (settings.API_URL || "").trim();
+    VERSION = (settings.D10 || "V").trim();
+    LIFF_IDo = (settings.D13 || "").trim();
+    
+    document.getElementById("version").textContent = VERSION;
+    console.log("✅ 設定成功:", { FALLBACK_GAS_SETTINGS_URL, API_URL, LIFF_IDo, VERSION });
+    
+    if (!LIFF_IDo) throw new Error("❌ LIFF ID 尚未設定，請確認設定表 D13");
+    
+    await liff.init({ liffId: LIFF_IDo });
+    if (!liff.isLoggedIn()) liff.login();
+
+    loadOther();
+  } catch (err) {
+    alert("❌ 初始化失敗：" + err.message);
+    console.error(err);
+  }
+}
+// ----------------------------------------------------
+// 1️⃣ 儲存/修改（加上type/payment綁定檢查）
+// ----------------------------------------------------
+async function saveOther() {
+  const payload = {
+    type: "other",
+    command: editIndex === -1 ? "add" : "update",
+    classify: document.getElementById("classify").value,
+    number: document.getElementById("number").value.trim(),
+    name: document.getElementById("name").value.trim(),
+    note: (document.getElementById("note")?.value || "").trim(),
+    oldNumber: window.oldNumber || undefined // ✅ 修改時要帶上舊的編號
+  };
+
+  if (!payload.classify || !payload.number || !payload.name) {
+    alert("❗分類、編號與名稱不得為空");
+    return;
+  }
+
+  try {
+    // 取得分類與付款方式列表
+    const [typeRes, paymentRes] = await Promise.all([
+      fetch(API_URL + "?type=query&command=cashdate.type"),
+      fetch(API_URL + "?type=query&command=cashdate.payment")
+    ]);
+
+    const typeData = await typeRes.json();
+    const paymentData = await paymentRes.json();
+
+    const allNames = [
+      ...(typeData.types || []),
+      ...(paymentData.payments || [])
+    ];
+
+    if (allNames.includes(payload.name)) {
+      alert(`⚠️「${payload.name}」已存在於系統分類或付款方式中，無法新增/修改`);
+      return;
+    }
+
+    // ✅ 送出新增/修改請求
+    const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
+    const result = await res.json();
+
+    if (result.ok) {
+      alert(editIndex === -1 
+        ? `✅ 已新增資料：${payload.name}` 
+        : `✅ 已修改資料：${payload.name}`);
+      clearForm();
+      loadOther();
+    } else {
+      alert(`❌ 失敗：${result.msg || result.error || JSON.stringify(result) || "未知錯誤"} (${payload.name})`);
+    }
+
+  } catch (err) {
+    alert(`⚠️ 發生錯誤：${err} (${payload.name})`);
+  }
+}
+// ----------------------------------------------------
+// 2️⃣ 查詢 (排序：classify → number)
+// ----------------------------------------------------
+async function loadOther() {
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({ type: "other", command: "query" })
+    });
+    const result = await res.json();
+    
+    const tbody = document.querySelector("#otherTable tbody");
+    tbody.innerHTML = "";
+
+    if (result.ok && Array.isArray(result.list)) {
+      // ✅ 排序：先依 classify 排，再依 number 排
+      result.list.sort((a, b) => {
+        // classify 排序
+        if (a.classify < b.classify) return -1;
+        if (a.classify > b.classify) return 1;
+
+        // classify 相同時依 number 排（數字部分比較）
+        const numA = parseInt(a.number.replace(/[^\d]/g, ""), 10);
+        const numB = parseInt(b.number.replace(/[^\d]/g, ""), 10);
+        return numA - numB;
+      });
+
+      // ✅ 渲染表格
+      result.list.forEach((row, idx) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.classify}</td>
+          <td>${row.number}</td>
+          <td>${row.name}</td>
+          <td>${row.note || ""}</td>
+          <td>
+            <button class="edit-btn" onclick="editOther(${idx})">📝 修改</button>
+            <button class="action-btn" onclick="deleteOther(${idx})">🗑️ 刪除</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // ✅ 存最新資料
+      window.otherDataCache = result.list;
+      
+      // ✅ 統計筆數
+      const typeRows = result.list.filter(r => r.classify === "type");
+      const paymentRows = result.list.filter(r => r.classify === "payment");
+      document.getElementById("summary").innerHTML = `
+      <table>
+        <tr>
+          <td>📂 分類：${typeRows.length} 筆　</td>
+          <td>💳 付款：${paymentRows.length} 筆　</td>
+          <td>📌 總計：${result.list.length} 筆  </td>
+        </tr>
+      </table>
+      `;
+    } else {
+      document.getElementById("summary").innerHTML = "⚠️ 沒有資料";
+    }
+  } catch (err) {
+    alert("⚠️ 查詢失敗：" + err.message);
+    console.error(err);
+  }
+}
+// ----------------------------------------------------
+// 3️⃣ 修改
+// ----------------------------------------------------
+function editOther(idx) {
+  const row = window.otherDataCache[idx];
+  if (!row) return;
+  document.getElementById("classify").value = row.classify;
+  document.getElementById("number").value = row.number;
+  document.getElementById("name").value = row.name;
+  document.getElementById("note").value = row.note || "";
+  editIndex = idx;
+  window.oldNumber = row.number; // ✅ 記錄原始編號
+}
+// ----------------------------------------------------
+// 4️⃣ 刪除（加上type/payment綁定檢查）
+// ----------------------------------------------------
+async function deleteOther(idx) {
+  if (!confirm("❗確定要刪除這筆資料嗎？")) return;
+  
+  const row = window.otherDataCache[idx];
+  if (!row) return;
+
+  try {
+    // 🔹 同時查詢「分類(type)」與「付款(payment)」清單
+    const [typeRes, paymentRes] = await Promise.all([
+      fetch(API_URL + "?type=query&command=cashdate.type"),
+      fetch(API_URL + "?type=query&command=cashdate.payment")
+    ]);
+
+    const typeData = await typeRes.json();
+    const paymentData = await paymentRes.json();
+
+    const allNames = [
+      ...(typeData.types || []),
+      ...(paymentData.payments || [])
+    ];
+
+    // ✅ 如果這筆名稱已存在於分類或付款方式，就禁止刪除
+    if (allNames.includes(row.name)) {
+      alert(`⚠️「${row.name}」已被使用於分類或付款清單中，無法刪除！`);
+      return;
+    }
+
+    // 🔹 執行刪除
+    const res = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({ type: "other", command: "delete", number: row.number })
+    });
+
+    const resDel = await res.json();
+    if (resDel.ok) {
+      alert(`✅ 已刪除資料：${row.name}`);
+      clearForm();
+      loadOther();
+    } else {
+      alert(`❌ 刪除失敗：${resDel.msg || "未知錯誤"} (${row.name})`);
+    }
+
+  } catch (err) {
+    alert(`⚠️ 刪除過程發生錯誤：${err.message} (${row.name})`);
+    console.error(err);
+  }
+}
+// ----------------------------------------------------
+// 🧹 清空表單
+// ----------------------------------------------------
+function clearForm() {
+  document.getElementById("number").value = "";
+  document.getElementById("name").value = "";
+  document.getElementById("note").value = "";
+  editIndex = -1;
+  window.oldNumber = undefined;
+}
+
+initApp(); // 🚀 啟動應用
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
