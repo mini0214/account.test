@@ -435,145 +435,88 @@
           }
           
          // ✅ 發送 LINE
-              if (liff.isInClient()) {
-                try {
-                  let msg =
-                    `非記不可.記帳成功！\n` +
-                    `👤 記帳者：${payload.displayName}\n` +
-                    `📆 日期：${payload.inputDate}\n` +
-                    `📋 店家：${payload.store || " "}\n` +
-                    `💰 收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
-                    `💰 幣別：${payload.currency}\n` +
-                    `💰 金額：${payload.amount}\n` +
-                    `💳 付款：${payload.payment}\n` +
-                    `📂 分類：${payload.type}\n` +
-                    `📝 附註：${payload.note || " "}\n\n` +
-                    `📆 本期總額：💰${thisTotal}\n`;
-        
-                    if (lastTotal !== 0) {
-                      msg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}\n📢 ${changetxt}`;
-                    }
+// ✅ 發送 LINE
+if (liff.isInClient()) {
+  try {
+    let msg =
+      `非記不可.記帳成功！\n` +
+      `👤 記帳者：${payload.displayName}\n` +
+      `📆 日期：${payload.inputDate}\n` +
+      `📋 店家：${payload.store || " "}\n` +
+      `💰 收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
+      `💰 幣別：${payload.currency}\n` +
+      `💰 金額：${payload.amount}\n` +
+      `💳 付款：${payload.payment}\n` +
+      `📂 分類：${payload.type}\n` +
+      `📝 附註：${payload.note || " "}\n\n` +
+      `📆 本期總額：💰${thisTotal}\n`;
 
-                    // 🔹 付款本期總額顯示（依 otherList.payment.number 排序）
-                    if (payments && payments.length && window.otherList && window.otherList.payment) {
-                      msg += `\n\n💳 付款本期總額:\n`;
-                
-                      // 依 number 排序（同時支援數字與文字）
-                      const sortedPayments = [...window.otherList.payment].sort((a, b) => {
-                        const aVal = a.number;
-                        const bVal = b.number;
-                    
-                        const aNum = Number(aVal);
-                        const bNum = Number(bVal);
-                    
-                        if (!isNaN(aNum) && !isNaN(bNum)) {
-                          return aNum - bNum;
-                        }
-                        return String(aVal).localeCompare(String(bVal));
-                      });
-                
-                      sortedPayments.forEach(ref => {
-                        const found = payments.find(p => p.payment === ref.name);
-                        if (found) {
-                          msg += `▶︎ ${ref.name}：💰${found.thisTotal}\n`;
-                        }
-                      });
-                    }
-                  
-                    // 🔹 分類本期總額顯示（依 otherList.type.number 排序）
-                    if (types && types.length && window.otherList && window.otherList.type) {
-                      msg += `\n📂 分類本期總額:\n`;
-                
-                      // 依 number 排序（同時支援數字與文字）
-                      const sortedTypes = [...window.otherList.type].sort((a, b) => {
-                        const aVal = a.number;
-                        const bVal = b.number;
-                    
-                        const aNum = Number(aVal);
-                        const bNum = Number(bVal);
-                    
-                        // 兩者都是有效數字 → 用數值排序
-                        if (!isNaN(aNum) && !isNaN(bNum)) {
-                          return aNum - bNum;
-                        }
-                        // 否則 → 用字母排序
-                        return String(aVal).localeCompare(String(bVal));
-                      });
-                      
-                      sortedTypes.forEach(ref => {
-                        const found = types.find(t => t.type === ref.name);
-                        if (found) {
-                          msg += `▶︎ ${ref.name}：💰${found.thisTotal}\n`;
-                        }
-                      });
-                    }
-                  
-                    // ✅ 最後顯示於 alert（或 LINE 傳送）
-                    alert(msg);
+    if (lastTotal !== 0) {
+      msg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}\n📢 ${changetxt}`;
+    }
 
-                    if (liff.isInClient()) {
-                      await liff.sendMessages([{ type: "text", text: msg }]);
-                    }
-                  
-                    await liff.sendMessages([{ type: "text", text: msg }]);
-                  } catch (err) {
-                    console.warn("sendMessages 錯誤：", err.message);
-                  }
-                }
-        
-              // ✅ alert 顯示
-              let alertMsg =
-                `非記不可.記帳成功！\n` +
-                `👤 記帳者：${payload.displayName}\n` +
-                `📆 日期：${payload.inputDate}\n` +
-                `📋 店家：${payload.store || " "}\n` +
-                `💰 收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
-                `💰 幣別：${payload.currency}\n` +
-                `💰 金額：${payload.amount}\n` +
-                `💳 付款：${payload.payment}\n` +
-                `📂 分類：${payload.type}\n` +
-                `📝 附註：${payload.note || " "}\n\n` +
-                `📆 本期總額：💰${thisTotal}\n`;
-        
-                if (lastTotal !== 0) {
-                  alertMsg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}\n📢 ${changetxt}`;
-                }
+    // 🔹 付款本期總額顯示
+    if (payments?.length && window.otherList?.payment) {
+      msg += `\n\n💳 付款本期總額:\n`;
+      const sortedPayments = [...window.otherList.payment].sort((a, b) => {
+        const aNum = Number(a.number);
+        const bNum = Number(b.number);
+        return !isNaN(aNum) && !isNaN(bNum)
+          ? aNum - bNum
+          : String(a.number).localeCompare(String(b.number));
+      });
+      sortedPayments.forEach(ref => {
+        const found = payments.find(p => p.payment === ref.name);
+        if (found) msg += `▶︎ ${ref.name}：💰${found.thisTotal}\n`;
+      });
+    }
 
-                // 🔹 付款本期總額顯示（依 otherList.payment.number 排序）
-                if (payments && payments.length && window.otherList && window.otherList.payment) {
-                  alertMsg += `\n\n💳 付款本期總額:\n`;
-                
-                  // 依 number 排序
-                  const sortedPayments = [...window.otherList.payment].sort(
-                    (a, b) => String(a.number ?? "").localeCompare(String(b.number ?? ""))
-                  );
-                
-                  sortedPayments.forEach(ref => {
-                    const found = payments.find(p => p.payment === ref.name);
-                    if (found) {
-                      alertMsg += `▶︎ ${ref.name}：💰${found.thisTotal}\n`;
-                    }
-                  });
-                }
-          
-                // 🔹 分類本期總額顯示（依 otherList.type.number 排序）
-                if (types && types.length && window.otherList && window.otherList.type) {
-                  alertMsg += `\n📂 分類本期總額:\n`;
-                
-                  // 依 number 排序
-                  const sortedTypes = [...window.otherList.type].sort(
-                    (a, b) => String(a.number ?? "").localeCompare(String(b.number ?? ""))
-                  );
-                
-                  sortedTypes.forEach(ref => {
-                    const found = types.find(t => t.type === ref.name);
-                    if (found) {
-                      alertMsg += `▶︎ ${ref.name}：💰${found.thisTotal}\n`;
-                    }
-                  });
-                }
-                          
-                alert(alertMsg);
+    // 🔹 分類本期總額顯示
+    if (types?.length && window.otherList?.type) {
+      msg += `\n📂 分類本期總額:\n`;
+      const sortedTypes = [...window.otherList.type].sort((a, b) => {
+        const aNum = Number(a.number);
+        const bNum = Number(b.number);
+        return !isNaN(aNum) && !isNaN(bNum)
+          ? aNum - bNum
+          : String(a.number).localeCompare(String(b.number));
+      });
+      sortedTypes.forEach(ref => {
+        const found = types.find(t => t.type === ref.name);
+        if (found) msg += `▶︎ ${ref.name}：💰${found.thisTotal}\n`;
+      });
+    }
+
+    // ✅ 僅顯示一次 alert
+    alert(msg);
+
+    // ✅ 僅在 LINE 內傳送一次訊息
+    await liff.sendMessages([{ type: "text", text: msg }]);
+
+  } catch (err) {
+    console.warn("sendMessages 錯誤：", err.message);
+  }
+} else {
+  // ✅ LINE 外部只顯示一次 alert
+  let alertMsg =
+    `非記不可.記帳成功！\n` +
+    `👤 記帳者：${payload.displayName}\n` +
+    `📆 日期：${payload.inputDate}\n` +
+    `📋 店家：${payload.store || " "}\n` +
+    `💰 收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
+    `💰 幣別：${payload.currency}\n` +
+    `💰 金額：${payload.amount}\n` +
+    `💳 付款：${payload.payment}\n` +
+    `📂 分類：${payload.type}\n` +
+    `📝 附註：${payload.note || " "}\n\n` +
+    `📆 本期總額：💰${thisTotal}\n`;
+
+  if (lastTotal !== 0) {
+    alertMsg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}\n📢 ${changetxt}`;
+  }
+
+  alert(alertMsg);
+}
         
               // ✅ 重設表單
               document.getElementById("expenseForm").reset();
@@ -593,3 +536,4 @@
   </script>
 </body>
 </html>
+
