@@ -17,6 +17,7 @@
     .action-btn { background: #dc3545; margin: 0 2px; }
     .edit-btn { background: #28a745; }
     .action-btn:hover, .edit-btn:hover { opacity: 0.8; }
+    .total { font-size: 28px; font-weight: bold; color: #d9534f; margin-top: 10px; }
   </style>
 </head>
 <body>
@@ -211,9 +212,9 @@ async function loadOther() {
       const paymentRows = result.list.filter(r => r.classify === "payment");
       document.getElementById("summary").innerHTML = `
       <table>
-        <tr>
-          <td>📂 分類：${typeRows.length} 筆　</td>
-          <td>💳 付款：${paymentRows.length} 筆　</td>
+        <tr class=".total">
+          <td>💳 付款payment：${paymentRows.length} 筆　</td>
+          <td>📂 分類type：${typeRows.length} 筆　</td>
           <td>📌 總計：${result.list.length} 筆  </td>
         </tr>
       </table>
@@ -304,6 +305,7 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
 
 
