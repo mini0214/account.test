@@ -431,7 +431,7 @@ function renderResult(command, json) {
   document.getElementById("queryResult").innerHTML = html;
 
   // ✅ 若是明細.分類查詢，依清單順序排序付款與分類
-  if (command === "明細" || command === "分類") {
+  if (command === "明細" || command === "付款" || command === "分類") {
     fetch(API_URL + "?type=query&command=清單")
       .then(r => r.json())
       .then(res => {
@@ -1044,3 +1044,4 @@ initApp();
 </script>
 </body>
 </html>
+
