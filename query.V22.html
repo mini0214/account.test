@@ -433,9 +433,9 @@ function renderResult(command, json) {
   // 表格排序
   //const dataTable = document.getElementById("dataTable");
   //if (dataTable) makeTableSortable(dataTable);
-  // ✅ 若是「明細」查詢，載入付款與分類排序對照表
- // ✅ 若是明細查詢，依清單順序排序付款與分類
-  if (command === "明細") {
+
+  // ✅ 若是明細.分類查詢，依清單順序排序付款與分類
+  if (command === "明細" || command === "分類") {
     fetch(API_URL + "?type=query&command=清單")
       .then(r => r.json())
       .then(res => {
@@ -1048,6 +1048,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
