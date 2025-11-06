@@ -470,7 +470,7 @@ function makeTableSortable(table, orderMaps = {}) {
     if (text.includes("分類")) typeCol = i;
     if (text.includes("日期")) dateCol = i;
   });
-  
+
   headers.forEach((th, colIndex) => {
     th.style.cursor = "pointer";
     th.addEventListener("click", () => {
@@ -537,19 +537,7 @@ function parseCellValue(txt, colIndex, map) {
   const v = txt.replace(/,/g, "").replace("%", "");
   return isNaN(v) ? txt : parseFloat(v);
 }
-
-// 將欄位文字轉為可比較值
-function parseCellValue(txt, colIndex) {
-  // ✅ 如果是日期欄（第 2 欄，index=1），轉 Date
-  if (colIndex === 1) {
-    const d = new Date(txt.replace(/\//g, "-")); // "2025/9/2" → Date
-    return d.getTime() || 0;
-  }
-  // 其他照舊：數字/百分比
-  let v = txt.replace(/,/g, "").replace("%", "");
-  return isNaN(v) ? txt : parseFloat(v);
-}
-
+  
 // 畫圖
 function renderChart(type, labels, values) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
@@ -1060,6 +1048,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
