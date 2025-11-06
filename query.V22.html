@@ -434,19 +434,21 @@ function renderResult(command, json) {
   //const dataTable = document.getElementById("dataTable");
   //if (dataTable) makeTableSortable(dataTable);
   // ✅ 若是「明細」查詢，載入付款與分類排序對照表
+ // ✅ 若是明細查詢，依清單順序排序付款與分類
   if (command === "明細") {
-    Promise.all([
-      fetch(API_URL + "?type=query&command=cashdate.type").then(r => r.json()),
-      fetch(API_URL + "?type=query&command=cashdate.payment").then(r => r.json())
-    ]).then(([typeRes, paymentRes]) => {
-      const dataTable = document.getElementById("dataTable");
-      if (dataTable) {
-        makeTableSortable(dataTable, {
-          paymentOrder: paymentRes.payments || [],
-          typeOrder: typeRes.types || []
-        });
-      }
-    });
+    fetch(API_URL + "?type=query&command=清單")
+      .then(r => r.json())
+      .then(res => {
+        const list = res.list || {};
+        const paymentOrder = (list.payment || []).map(p => p.name);
+        const typeOrder = (list.type || []).map(t => t.name);
+  
+        const dataTable = document.getElementById("dataTable");
+        if (dataTable) {
+          makeTableSortable(dataTable, { paymentOrder, typeOrder });
+        }
+      })
+      .catch(err => console.error("清單排序載入失敗:", err));
   } else {
     const dataTable = document.getElementById("dataTable");
     if (dataTable) makeTableSortable(dataTable);
@@ -1036,6 +1038,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
