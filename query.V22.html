@@ -551,7 +551,7 @@ function renderChart(type, labels, values) {
       label,
       value: values[i]
     }));
-    dataPairs.sort((a, b) => a.value - b.value);
+    dataPairs.sort((a, b) => a.value - b.value); // <-- 重點：負數小的排前面
     labels = dataPairs.map(d => d.label);
     values = dataPairs.map(d => d.value);
     
@@ -1053,5 +1053,6 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
