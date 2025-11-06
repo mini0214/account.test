@@ -330,9 +330,10 @@ function renderResult(command, json) {
                 <th>分類</th>
                 <th>附註</th>
                 <th>備註</th>
+                <th>功能</th>  <!-- ✅ 新增操作欄 -->
               </tr>`;
 
-    // ✅ 表格資料只輸出 rowsForDisplay
+    // ✅ 表格資料只輸出 rowsForDisplay ; 每筆資料加上「修改」「刪除」
     rowsForDisplay.forEach(r => {
       const dateStr = r[4] ? new Date(r[4]).toLocaleDateString("zh-TW") : "";
       html += `<tr>
@@ -349,6 +350,10 @@ function renderResult(command, json) {
                 <td>${r[6]}</td>
                 <td>${r[9]}</td>
                 <td>${r[10]}</td>
+                <td>
+                  <button class="edit-btn" data-index="${i}">✏️ 修改</button>
+                  <button class="delete-btn" data-index="${i}">🗑️ 刪除</button>
+                </td>
       </tr>`;
     });
     html += `</table>`;
@@ -356,6 +361,26 @@ function renderResult(command, json) {
     // ✅ 總額 & 筆數同樣用 rowsForDisplay
     const totalAmount = rowsForDisplay.reduce((sum, r) => sum + Number(r[5] || 0), 0);
     html += `<div class="total">📌 總額：${totalAmount.toLocaleString()} 元（共 ${rowsForDisplay.length} 筆）</div>`;
+
+    // ✅ 綁定按鈕事件（建議放在 render 完後呼叫）
+    setTimeout(() => {
+      document.querySelectorAll(".edit-btn").forEach(btn => {
+        btn.addEventListener("click", e => {
+          const index = e.target.dataset.index;
+          const rowData = rowsForDisplay[index];
+          editRecord(rowData); // 🔹 呼叫自訂的修改函式
+        });
+      });
+      
+      document.querySelectorAll(".delete-btn").forEach(btn => {
+        btn.addEventListener("click", e => {
+          const index = e.target.dataset.index;
+          const rowData = rowsForDisplay[index];
+          deleteRecord(rowData); // 🔹 呼叫自訂的刪除函式
+        });
+      });
+    }, 0);
+  }
 
     // 長條圖資料：金額總和 + 幣別最大值
     const dateSum = {};
@@ -1053,6 +1078,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
