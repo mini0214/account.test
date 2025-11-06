@@ -461,6 +461,16 @@ function renderResult(command, json) {
 // ✅ 通用表格排序（支援外部順序、數字、百分比、日期）
 function makeTableSortable(table, orderMaps = {}) {
   const headers = table.querySelectorAll("th");
+
+  // 🔹 自動找出欄位索引（避免硬編 colIndex）
+  let paymentCol = -1, typeCol = -1, dateCol = -1;
+  headers.forEach((th, i) => {
+    const text = th.innerText.trim();
+    if (text.includes("付款")) paymentCol = i;
+    if (text.includes("分類")) typeCol = i;
+    if (text.includes("日期")) dateCol = i;
+  });
+  
   headers.forEach((th, colIndex) => {
     th.style.cursor = "pointer";
     th.addEventListener("click", () => {
@@ -477,9 +487,22 @@ function makeTableSortable(table, orderMaps = {}) {
       th.classList.add(newOrder === "asc" ? "sort-asc" : "sort-desc");
       th.innerHTML += newOrder === "asc" ? " ▲" : " ▼";
 
+      // 排序邏輯
       rows.sort((a, b) => {
-        const aVal = parseCellValue(a.cells[colIndex].innerText, colIndex, orderMaps);
-        const bVal = parseCellValue(b.cells[colIndex].innerText, colIndex, orderMaps);
+        const aVal = parseCellValue(a.cells[colIndex]?.innerText || "", colIndex, {
+          paymentCol,
+          typeCol,
+          dateCol,
+          ...orderMaps
+        });
+        const bVal = parseCellValue(b.cells[colIndex]?.innerText || "", colIndex, {
+          paymentCol,
+          typeCol,
+          dateCol,
+          ...orderMaps
+        });
+
+        if (aVal === bVal) return 0;
         if (newOrder === "asc") return aVal > bVal ? 1 : -1;
         else return aVal < bVal ? 1 : -1;
       });
@@ -488,33 +511,32 @@ function makeTableSortable(table, orderMaps = {}) {
   });
 }
 
-// ✅ 將欄位文字轉為可比較值
-function parseCellValue(txt, colIndex, orderMaps = {}) {
+// ✅ 將欄位文字轉為可比較值（含付款 / 分類的順序表）
+function parseCellValue(txt, colIndex, map) {
   txt = txt.trim();
 
-  // 日期（第 2 欄）
-  if (colIndex === 1) {
+  // 🔹 日期欄位
+  if (colIndex === map.dateCol) {
     const d = new Date(txt.replace(/\//g, "-"));
     return d.getTime() || 0;
   }
 
-  // 付款欄（第 7 欄）
-  if (colIndex === 7 && orderMaps.paymentOrder?.length) {
-    const idx = orderMaps.paymentOrder.indexOf(txt);
-    if (idx !== -1) return idx;
+  // 🔹 付款欄位（依清單順序）
+  if (colIndex === map.paymentCol && map.paymentOrder?.length) {
+    const idx = map.paymentOrder.indexOf(txt);
+    return idx !== -1 ? idx : 999;
   }
 
-  // 分類欄（第 8 欄）
-  if (colIndex === 8 && orderMaps.typeOrder?.length) {
-    const idx = orderMaps.typeOrder.indexOf(txt);
-    if (idx !== -1) return idx;
+  // 🔹 分類欄位（依清單順序）
+  if (colIndex === map.typeCol && map.typeOrder?.length) {
+    const idx = map.typeOrder.indexOf(txt);
+    return idx !== -1 ? idx : 999;
   }
 
-  // 其他照舊：數字/百分比
+  // 🔹 其他欄位：若為數字/百分比則轉數值
   const v = txt.replace(/,/g, "").replace("%", "");
   return isNaN(v) ? txt : parseFloat(v);
 }
-
 
 // 將欄位文字轉為可比較值
 function parseCellValue(txt, colIndex) {
@@ -1038,6 +1060,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
