@@ -546,6 +546,15 @@ function renderChart(type, labels, values) {
   
   if (type === "pie") {
     // --- PIE ---
+    // ✅ 依金額由大到小排序（會影響扇形與圖例顯示順序）
+    const dataPairs = labels.map((label, i) => ({
+      label,
+      value: values[i]
+    }));
+    dataPairs.sort((a, b) => b.value - a.value);
+    labels = dataPairs.map(d => d.label);
+    values = dataPairs.map(d => d.value);
+    
     const backgroundColors = labels.map((_, i) =>
       `hsl(${i * 360 / labels.length}, 70%, 60%)`
     );
@@ -1044,3 +1053,4 @@ initApp();
 </script>
 </body>
 </html>
+
