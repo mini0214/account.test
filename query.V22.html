@@ -362,26 +362,6 @@ function renderResult(command, json) {
     const totalAmount = rowsForDisplay.reduce((sum, r) => sum + Number(r[5] || 0), 0);
     html += `<div class="total">📌 總額：${totalAmount.toLocaleString()} 元（共 ${rowsForDisplay.length} 筆）</div>`;
 
-    // ✅ 綁定按鈕事件（建議放在 render 完後呼叫）
-    setTimeout(() => {
-      document.querySelectorAll(".edit-btn").forEach(btn => {
-        btn.addEventListener("click", e => {
-          const index = e.target.dataset.index;
-          const rowData = rowsForDisplay[index];
-          editRecord(rowData); // 🔹 呼叫自訂的修改函式
-        });
-      });
-      
-      document.querySelectorAll(".delete-btn").forEach(btn => {
-        btn.addEventListener("click", e => {
-          const index = e.target.dataset.index;
-          const rowData = rowsForDisplay[index];
-          deleteRecord(rowData); // 🔹 呼叫自訂的刪除函式
-        });
-      });
-    }, 0);
-  }
-
      // 長條圖資料：金額總和 + 幣別最大值
     const dateSum = {};
     const maxCurrencyByDate = {};
@@ -714,20 +694,7 @@ chartInstance = new Chart(ctx, {
   }
 }
   
-  // ✅ 這兩個函式放在 if 區塊外面：
-  function editRecord(rowData) {
-    alert(`準備修改：${rowData[8]} / 金額：${rowData[5]}`);
-    // TODO: 可改成開啟修改視窗或帶入表單
-  }
-  
-  function deleteRecord(rowData) {
-    if (!confirm(`確定要刪除此筆資料嗎？\n店家：${rowData[8]} / 金額：${rowData[5]}`)) return;
-  
-    // TODO: 呼叫後端 API 或更新前端資料
-    alert("已刪除（示意）");
-  }
-
-    // ✅ 匯出 CSV 功能
+     // ✅ 匯出 CSV 功能
     document.getElementById("exportCsvBtn").addEventListener("click", async () => {
     const queryDiv = document.getElementById("queryResult");
     if (!queryDiv || queryDiv.innerHTML.trim() === "") {
@@ -1091,6 +1058,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
