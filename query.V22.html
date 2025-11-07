@@ -363,7 +363,7 @@ function renderResult(command, json) {
 
     // ✅ 顯示在頁面上
     document.getElementById("queryResult").innerHTML = html;
-
+  
     // 綁定事件
     setTimeout(() => {
       document.querySelectorAll(".edit-btn").forEach(btn => {
@@ -372,7 +372,7 @@ function renderResult(command, json) {
           editRecord(rowData);
         });
       });
-
+  
       document.querySelectorAll(".delete-btn").forEach(btn => {
         btn.addEventListener("click", e => {
           const rowData = rowsForDisplay[e.target.dataset.index];
@@ -380,29 +380,29 @@ function renderResult(command, json) {
         });
       });
     }, 0);
-  }
-}
-
-     // 長條圖資料：金額總和 + 幣別最大值
+  
+    // ✅ ← 把這段移進來這裡！！
+    // 長條圖資料：金額總和 + 幣別最大值
     const dateSum = {};
     const maxCurrencyByDate = {};
+  
     rowsForDisplay.forEach(r => {
       const d = new Date(r[4]).toLocaleDateString("zh-TW");
       const amount = Number(r[5]);
       const currency = Number(r[13]);
-
+  
       dateSum[d] = (dateSum[d] || 0) + amount;
       if (!maxCurrencyByDate[d] || currency > maxCurrencyByDate[d]) {
         maxCurrencyByDate[d] = currency;
       }
     });
-
-    const sortedDates = Object.keys(dateSum).sort((a,b)=> new Date(a)-new Date(b));
-    const sumValues = sortedDates.map(d=> dateSum[d]);
-    const currencyValues = sortedDates.map(d=> maxCurrencyByDate[d] || 0);
-
+  
+    const sortedDates = Object.keys(dateSum).sort((a, b) => new Date(a) - new Date(b));
+    const sumValues = sortedDates.map(d => dateSum[d]);
+    const currencyValues = sortedDates.map(d => maxCurrencyByDate[d] || 0);
+  
     renderChart("bar", sortedDates, [sumValues, currencyValues]);
-  }
+  } // ✅ 結尾要在這裡
 
   // 分類、付款、店家、記帳者
   const sections = [
@@ -1079,6 +1079,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
