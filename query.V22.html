@@ -236,7 +236,7 @@ document.getElementById("thisYearBtn").addEventListener("click", () => {
   const end = new Date(year, 11, 31);
   setDateRange(start, end);
 });
-
+  
 // 按鈕事件
 document.getElementById("queryMonthBtn").addEventListener("click", () => sendQuery("明細"));
 document.getElementById("queryMonthTypeBtn").addEventListener("click", () => sendQuery("分類"));
@@ -299,131 +299,89 @@ async function sendQuery(command) {
 function renderResult(command, json) {
   let html = "";
 
-  const adminUser = "Betty Yi";
-  if (!currentUser && json.rows?.length > 0) currentUser = json.rows[0][3];
+  const adminUser = "Betty Yi"; // ✅ 管理者帳號
+  
+  // ✅ 如果 currentUser 還沒定義，就用資料表第一筆 登入者的資料
+  if (!currentUser && json.rows && json.rows.length > 0) {
+    currentUser = json.rows[0][3];  // 第 4 欄是 display_name
+  }
 
+  // ✅ 統一過濾：管理者看到全部，其它人只看自己
   let filteredRows = json.rows || [];
-  if (currentUser && currentUser !== adminUser)
+  if (currentUser && currentUser !== adminUser) {
     filteredRows = filteredRows.filter(r => r[3] === currentUser);
-
-  // 🔹 修改資料
-  function editRecord(rowData) {
-    // 先把目前資料放入輸入欄位
-    document.getElementById("classify").value = rowData[2]; // 假設分類在第 2 欄
-    document.getElementById("number").value = rowData[3];   // 假設編號在第 3 欄
-    document.getElementById("name").value = rowData[8];     // 店家名稱
-    if (document.getElementById("note")) {
-      document.getElementById("note").value = rowData[9] || ""; // 備註
-    }
-  
-    // ✅ 標記目前是編輯模式
-    window.editIndex = rowData[0]; // 或者用某個唯一 ID
-    window.oldNumber = rowData[3]; // 保存舊的 number (依你 saveOther 的邏輯)
-  
-    alert(`🔧 進入修改模式：${rowData[8]} / 金額 ${rowData[5]}`);
   }
   
-  
-  // 🔹 刪除資料
-  function deleteRecord(rowData) {
-    if (!confirm(`確定要刪除此筆資料嗎？\n店家：${rowData[8]} / 金額：${rowData[5]}`)) return;
-  
-    const payload = {
-      type: "other",
-      command: "delete",
-      number: rowData[3], // 用 number 當識別碼
-    };
-  
-    saveOther(payload); // ✅ 直接呼叫共用處理函式
-  }
-
   if (command === "明細" && json.rows) {
+    // ✅ 這裡不要重新定義 filteredRows，直接用前面已經處理好的
     const rowsForDisplay = (currentUser === adminUser) ? json.rows : filteredRows;
-
+    
     html += `<h5>📊 選擇查詢明細;標題按下即可排序</h5>`;
     html += `<table id="dataTable">
-      <tr>
-        <th>記帳者</th>
-        <th>日期</th>
-        <th>店家</th>
-        <th class="numeric">收入</th>
-        <th class="numeric">支出</th>
-        <th>匯率</th>
-        <th class="numeric">金額</th>
-        <th>付款</th>
-        <th>分類</th>
-        <th>附註</th>
-        <th>備註</th>
-        <th>功能</th>
-      </tr>`;
+              <tr>
+                <th>記帳者</th>
+                <th>日期</th>
+                <th>店家</th>
+                <th class="numeric">收入</th>
+                <th class="numeric">支出</th>
+                <th>匯率</th>
+                <th class="numeric">金額</th>
+                <th>付款</th>
+                <th>分類</th>
+                <th>附註</th>
+                <th>備註</th>
+                <th>功能</th>
+              </tr>`;
 
-    rowsForDisplay.forEach((r, i) => {
+    // ✅ 表格資料只輸出 rowsForDisplay
+    rowsForDisplay.forEach(r => {
       const dateStr = r[4] ? new Date(r[4]).toLocaleDateString("zh-TW") : "";
-      html += `<tr data-index="${i}">
-        <td>${r[3]}</td>
-        <td>${dateStr}</td>
-        <td>${r[8]}</td>
-        <td class="numeric">${Number(r[11]).toLocaleString()}</td>
-        <td class="numeric">${Number(r[12]).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-        <td>${r[13]}</td>
-        <td class="numeric">${Number(r[5]).toLocaleString()}</td>
-        <td>${r[7]}</td>
-        <td>${r[6]}</td>
-        <td>${r[9]}</td>
-        <td>${r[10]}</td>
-        <td>
-          <button class="edit-btn" data-index="${i}">✏️ 修改</button>
-          <button class="delete-btn" data-index="${i}">🗑️ 刪除</button>
-        </td>
+      html += `<tr>
+                <td>${r[3]}</td>
+                <td>${dateStr}</td>
+                <td>${r[8]}</td>
+                <td class="numeric">${Number(r[11]).toLocaleString()}</td>
+                <td class="numeric">
+                  ${Number(r[12]).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </td>
+                <td>${r[13]}</td>
+                <td class="numeric">${Number(r[5]).toLocaleString()}</td>
+                <td>${r[7]}</td>
+                <td>${r[6]}</td>
+                <td>${r[9]}</td>
+                <td>${r[10]}</td>
+                <td>
+                  <button class="edit-btn" data-index="${i}">✏️ 修改</button>
+                  <button class="delete-btn" data-index="${i}">🗑️ 刪除</button>
+                </td>
       </tr>`;
     });
-
     html += `</table>`;
+  
+    // ✅ 總額 & 筆數同樣用 rowsForDisplay
     const totalAmount = rowsForDisplay.reduce((sum, r) => sum + Number(r[5] || 0), 0);
     html += `<div class="total">📌 總額：${totalAmount.toLocaleString()} 元（共 ${rowsForDisplay.length} 筆）</div>`;
 
-    // ✅ 顯示在頁面上
-    document.getElementById("queryResult").innerHTML = html;
-  
-    // 綁定事件
-    setTimeout(() => {
-      document.querySelectorAll(".edit-btn").forEach(btn => {
-        btn.addEventListener("click", e => {
-          const rowData = rowsForDisplay[e.target.dataset.index];
-          editRecord(rowData);
-        });
-      });
-  
-      document.querySelectorAll(".delete-btn").forEach(btn => {
-        btn.addEventListener("click", e => {
-          const rowData = rowsForDisplay[e.target.dataset.index];
-          deleteRecord(rowData);
-        });
-      });
-    }, 0);
-  
-    // ✅ ← 把這段移進來這裡！！
     // 長條圖資料：金額總和 + 幣別最大值
     const dateSum = {};
     const maxCurrencyByDate = {};
-  
     rowsForDisplay.forEach(r => {
       const d = new Date(r[4]).toLocaleDateString("zh-TW");
       const amount = Number(r[5]);
       const currency = Number(r[13]);
-  
+
       dateSum[d] = (dateSum[d] || 0) + amount;
       if (!maxCurrencyByDate[d] || currency > maxCurrencyByDate[d]) {
         maxCurrencyByDate[d] = currency;
       }
     });
-  
-    const sortedDates = Object.keys(dateSum).sort((a, b) => new Date(a) - new Date(b));
-    const sumValues = sortedDates.map(d => dateSum[d]);
-    const currencyValues = sortedDates.map(d => maxCurrencyByDate[d] || 0);
-  
+
+    const sortedDates = Object.keys(dateSum).sort((a,b)=> new Date(a)-new Date(b));
+    const sumValues = sortedDates.map(d=> dateSum[d]);
+    const currencyValues = sortedDates.map(d=> maxCurrencyByDate[d] || 0);
+
     renderChart("bar", sortedDates, [sumValues, currencyValues]);
-  } // ✅ 結尾要在這裡
+  }
 
   // 分類、付款、店家、記帳者
   const sections = [
@@ -736,40 +694,7 @@ chartInstance = new Chart(ctx, {
   }
 }
 
-  async function saveOther(externalPayload) {
-  const payload = externalPayload || {
-    type: "other",
-    command: editIndex === -1 ? "add" : "update",
-    classify: document.getElementById("classify").value,
-    number: document.getElementById("number").value.trim(),
-    name: document.getElementById("name").value.trim(),
-    note: (document.getElementById("note")?.value || "").trim(),
-    oldNumber: window.oldNumber || undefined // ✅ 修改時要帶上舊的編號
-  };
-
-  try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const result = await res.json();
-    if (result.ok) {
-      alert(`✅ ${payload.command === "delete" ? "刪除" : "儲存"}成功！`);
-      sendQuery("明細"); // 重新查詢更新畫面
-      editIndex = -1;
-      oldNumber = undefined;
-    } else {
-      alert("❌ 操作失敗：" + (result.message || "未知錯誤"));
-    }
-  } catch (err) {
-    console.error(err);
-    alert("⚠️ 連線錯誤，請稍後再試");
-  }
-}
-  
-     // ✅ 匯出 CSV 功能
+    // ✅ 匯出 CSV 功能
     document.getElementById("exportCsvBtn").addEventListener("click", async () => {
     const queryDiv = document.getElementById("queryResult");
     if (!queryDiv || queryDiv.innerHTML.trim() === "") {
@@ -1133,19 +1058,5 @@ initApp();
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
