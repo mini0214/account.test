@@ -735,6 +735,39 @@ chartInstance = new Chart(ctx, {
     });
   }
 }
+
+  async function saveOther(externalPayload) {
+  const payload = externalPayload || {
+    type: "other",
+    command: editIndex === -1 ? "add" : "update",
+    classify: document.getElementById("classify").value,
+    number: document.getElementById("number").value.trim(),
+    name: document.getElementById("name").value.trim(),
+    note: (document.getElementById("note")?.value || "").trim(),
+    oldNumber: window.oldNumber || undefined // ✅ 修改時要帶上舊的編號
+  };
+
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await res.json();
+    if (result.ok) {
+      alert(`✅ ${payload.command === "delete" ? "刪除" : "儲存"}成功！`);
+      sendQuery("明細"); // 重新查詢更新畫面
+      editIndex = -1;
+      oldNumber = undefined;
+    } else {
+      alert("❌ 操作失敗：" + (result.message || "未知錯誤"));
+    }
+  } catch (err) {
+    console.error(err);
+    alert("⚠️ 連線錯誤，請稍後再試");
+  }
+}
   
      // ✅ 匯出 CSV 功能
     document.getElementById("exportCsvBtn").addEventListener("click", async () => {
@@ -1100,6 +1133,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
