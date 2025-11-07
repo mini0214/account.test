@@ -306,15 +306,36 @@ function renderResult(command, json) {
   if (currentUser && currentUser !== adminUser)
     filteredRows = filteredRows.filter(r => r[3] === currentUser);
 
-  // 🔹 定義修改/刪除
-  const editRecord = (rowData) => {
-    alert(`準備修改：店家 ${rowData[8]} / 金額 ${rowData[5]}`);
-  };
-
-  const deleteRecord = (rowData) => {
-    if (!confirm(`確定要刪除此筆資料嗎？\n店家：${rowData[8]} / 金額 ${rowData[5]}`)) return;
-    alert("已刪除（示意）");
-  };
+  // 🔹 修改資料
+  function editRecord(rowData) {
+    // 先把目前資料放入輸入欄位
+    document.getElementById("classify").value = rowData[2]; // 假設分類在第 2 欄
+    document.getElementById("number").value = rowData[3];   // 假設編號在第 3 欄
+    document.getElementById("name").value = rowData[8];     // 店家名稱
+    if (document.getElementById("note")) {
+      document.getElementById("note").value = rowData[9] || ""; // 備註
+    }
+  
+    // ✅ 標記目前是編輯模式
+    window.editIndex = rowData[0]; // 或者用某個唯一 ID
+    window.oldNumber = rowData[3]; // 保存舊的 number (依你 saveOther 的邏輯)
+  
+    alert(`🔧 進入修改模式：${rowData[8]} / 金額 ${rowData[5]}`);
+  }
+  
+  
+  // 🔹 刪除資料
+  function deleteRecord(rowData) {
+    if (!confirm(`確定要刪除此筆資料嗎？\n店家：${rowData[8]} / 金額：${rowData[5]}`)) return;
+  
+    const payload = {
+      type: "other",
+      command: "delete",
+      number: rowData[3], // 用 number 當識別碼
+    };
+  
+    saveOther(payload); // ✅ 直接呼叫共用處理函式
+  }
 
   if (command === "明細" && json.rows) {
     const rowsForDisplay = (currentUser === adminUser) ? json.rows : filteredRows;
@@ -1079,6 +1100,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
