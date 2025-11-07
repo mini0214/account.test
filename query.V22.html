@@ -334,9 +334,9 @@ function renderResult(command, json) {
               </tr>`;
 
     // ✅ 表格資料只輸出 rowsForDisplay
-    rowsForDisplay.forEach((r, i) => {
+    rowsForDisplay.forEach(r => {
       const dateStr = r[4] ? new Date(r[4]).toLocaleDateString("zh-TW") : "";
-      html += `<tr data-index="${i}">
+      html += `<tr>
                 <td>${r[3]}</td>
                 <td>${dateStr}</td>
                 <td>${r[8]}</td>
@@ -1058,7 +1058,5 @@ initApp();
 </script>
 </body>
 </html>
-
-
 
 
