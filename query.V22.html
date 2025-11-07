@@ -327,6 +327,7 @@ function renderResult(command, json) {
   if (command === "明細" && json.rows) {
     // ✅ 這裡不要重新定義 filteredRows，直接用前面已經處理好的
     const rowsForDisplay = (currentUser === adminUser) ? json.rows : filteredRows;
+    let html = ""; // ✅ 確保 html 變數初始化
     
     html += `<h5>📊 選擇查詢明細;標題按下即可排序</h5>`;
     html += `<table id="dataTable">
@@ -368,11 +369,15 @@ function renderResult(command, json) {
                 </td>
       </tr>`;
     });
+    
     html += `</table>`;
   
     // ✅ 總額 & 筆數同樣用 rowsForDisplay
     const totalAmount = rowsForDisplay.reduce((sum, r) => sum + Number(r[5] || 0), 0);
     html += `<div class="total">📌 總額：${totalAmount.toLocaleString()} 元（共 ${rowsForDisplay.length} 筆）</div>`;
+
+    // ✅ 這行是關鍵！要顯示在畫面上
+    document.getElementById("queryResult").innerHTML = html;
 
     // 綁定按鈕事件
     setTimeout(() => {
@@ -1090,6 +1095,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
