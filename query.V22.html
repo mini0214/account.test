@@ -327,7 +327,6 @@ function renderResult(command, json) {
   if (command === "明細" && json.rows) {
     // ✅ 這裡不要重新定義 filteredRows，直接用前面已經處理好的
     const rowsForDisplay = (currentUser === adminUser) ? json.rows : filteredRows;
-    let html = ""; // ✅ 確保 html 變數初始化
     
     html += `<h5>📊 選擇查詢明細;標題按下即可排序</h5>`;
     html += `<table id="dataTable">
@@ -1095,6 +1094,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
