@@ -31,6 +31,9 @@
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
     th { background-color: #f2f2f2; }
     .numeric { text-align: right; }
+    .delete-btn { background: #dc3545; margin: 0 2px; }    
+    .edit-btn { background: #28a745; }
+    .delete-btn:hover, .edit-btn:hover { opacity: 0.8; }
     .total { font-size: 28px; font-weight: bold; color: #d9534f; margin-top: 10px; }
     canvas { display: block; margin: 20px auto; width: 850px; height: 600px; }
   </style>
@@ -351,7 +354,7 @@ function renderResult(command, json) {
                 <td>${r[9]}</td>
                 <td>${r[10]}</td>
                 <td>
-                  <button class="edit-btn" data-index="${i}">✏️ 修改</button>
+                  <button class="edit-btn" data-index="${i}">📝 修改</button>
                   <button class="delete-btn" data-index="${i}">🗑️ 刪除</button>
                 </td>
       </tr>`;
@@ -1058,6 +1061,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
