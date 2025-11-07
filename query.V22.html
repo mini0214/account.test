@@ -299,104 +299,89 @@ async function sendQuery(command) {
 function renderResult(command, json) {
   let html = "";
 
-  const adminUser = "Betty Yi"; // ✅ 管理者帳號
-  
-  // ✅ 如果 currentUser 還沒定義，就用資料表第一筆 登入者的資料
-  if (!currentUser && json.rows && json.rows.length > 0) {
-    currentUser = json.rows[0][3];  // 第 4 欄是 display_name
-  }
+  const adminUser = "Betty Yi";
+  if (!currentUser && json.rows?.length > 0) currentUser = json.rows[0][3];
 
-  // ✅ 統一過濾：管理者看到全部，其它人只看自己
   let filteredRows = json.rows || [];
-  if (currentUser && currentUser !== adminUser) {
+  if (currentUser && currentUser !== adminUser)
     filteredRows = filteredRows.filter(r => r[3] === currentUser);
-  }
 
-  // 🔹 先定義修改與刪除函式（放在 if 區塊前，保證可用）
+  // 🔹 定義修改/刪除
   const editRecord = (rowData) => {
     alert(`準備修改：店家 ${rowData[8]} / 金額 ${rowData[5]}`);
-    // TODO: 這裡可改成開啟 modal 或帶入表單進行修改
   };
-  
+
   const deleteRecord = (rowData) => {
     if (!confirm(`確定要刪除此筆資料嗎？\n店家：${rowData[8]} / 金額 ${rowData[5]}`)) return;
-    // TODO: 呼叫後端 API 或更新前端資料
     alert("已刪除（示意）");
   };
-  
+
   if (command === "明細" && json.rows) {
-    // ✅ 這裡不要重新定義 filteredRows，直接用前面已經處理好的
     const rowsForDisplay = (currentUser === adminUser) ? json.rows : filteredRows;
-    
+
     html += `<h5>📊 選擇查詢明細;標題按下即可排序</h5>`;
     html += `<table id="dataTable">
-              <tr>
-                <th>記帳者</th>
-                <th>日期</th>
-                <th>店家</th>
-                <th class="numeric">收入</th>
-                <th class="numeric">支出</th>
-                <th>匯率</th>
-                <th class="numeric">金額</th>
-                <th>付款</th>
-                <th>分類</th>
-                <th>附註</th>
-                <th>備註</th>
-                <th>功能</th>  <!-- ✅ 新增操作欄 -->
-              </tr>`;
+      <tr>
+        <th>記帳者</th>
+        <th>日期</th>
+        <th>店家</th>
+        <th class="numeric">收入</th>
+        <th class="numeric">支出</th>
+        <th>匯率</th>
+        <th class="numeric">金額</th>
+        <th>付款</th>
+        <th>分類</th>
+        <th>附註</th>
+        <th>備註</th>
+        <th>功能</th>
+      </tr>`;
 
-    // ✅ 表格資料只輸出 rowsForDisplay ; 每筆資料加上「修改」「刪除」
     rowsForDisplay.forEach((r, i) => {
       const dateStr = r[4] ? new Date(r[4]).toLocaleDateString("zh-TW") : "";
       html += `<tr data-index="${i}">
-                <td>${r[3]}</td>
-                <td>${dateStr}</td>
-                <td>${r[8]}</td>
-                <td class="numeric">${Number(r[11]).toLocaleString()}</td>
-                <td class="numeric">
-                  ${Number(r[12]).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </td>
-                <td>${r[13]}</td>
-                <td class="numeric">${Number(r[5]).toLocaleString()}</td>
-                <td>${r[7]}</td>
-                <td>${r[6]}</td>
-                <td>${r[9]}</td>
-                <td>${r[10]}</td>
-                <td>
-                  <button class="edit-btn" data-index="${i}">✏️ 修改</button>
-                  <button class="delete-btn" data-index="${i}">🗑️ 刪除</button>
-                </td>
+        <td>${r[3]}</td>
+        <td>${dateStr}</td>
+        <td>${r[8]}</td>
+        <td class="numeric">${Number(r[11]).toLocaleString()}</td>
+        <td class="numeric">${Number(r[12]).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+        <td>${r[13]}</td>
+        <td class="numeric">${Number(r[5]).toLocaleString()}</td>
+        <td>${r[7]}</td>
+        <td>${r[6]}</td>
+        <td>${r[9]}</td>
+        <td>${r[10]}</td>
+        <td>
+          <button class="edit-btn" data-index="${i}">✏️ 修改</button>
+          <button class="delete-btn" data-index="${i}">🗑️ 刪除</button>
+        </td>
       </tr>`;
     });
-    
+
     html += `</table>`;
-  
-    // ✅ 總額 & 筆數同樣用 rowsForDisplay
     const totalAmount = rowsForDisplay.reduce((sum, r) => sum + Number(r[5] || 0), 0);
     html += `<div class="total">📌 總額：${totalAmount.toLocaleString()} 元（共 ${rowsForDisplay.length} 筆）</div>`;
 
-    // ✅ 這行是關鍵！要顯示在畫面上
+    // ✅ 顯示在頁面上
     document.getElementById("queryResult").innerHTML = html;
 
-    // 綁定按鈕事件
+    // 綁定事件
     setTimeout(() => {
       document.querySelectorAll(".edit-btn").forEach(btn => {
         btn.addEventListener("click", e => {
-          const index = e.target.dataset.index;
-          const rowData = rowsForDisplay[index];
+          const rowData = rowsForDisplay[e.target.dataset.index];
           editRecord(rowData);
         });
       });
-  
+
       document.querySelectorAll(".delete-btn").forEach(btn => {
         btn.addEventListener("click", e => {
-          const index = e.target.dataset.index;
-          const rowData = rowsForDisplay[index];
+          const rowData = rowsForDisplay[e.target.dataset.index];
           deleteRecord(rowData);
         });
       });
     }, 0);
   }
+}
 
      // 長條圖資料：金額總和 + 幣別最大值
     const dateSum = {};
@@ -1094,6 +1079,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
