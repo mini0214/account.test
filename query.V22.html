@@ -363,25 +363,39 @@ function renderResult(command, json) {
 
     //const API_URL = "https://your.api/delete"; // 🔹改成你的 API 位址
     // ✅ 刪除
-    try {
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+    // 綁定刪除按鈕事件
+    document.addEventListener("click", async (e) => {
+      if (e.target.classList.contains("action-btn")) {
+        const index = e.target.dataset.index;
     
-      const data = await res.json();
+        if (!confirm("確定要刪除此筆交易嗎？")) return;
     
-      if (data.ok) {
-        alert("✅ 刪除成功！");
-        e.target.closest("tr").remove();
-      } else {
-        alert("❌ 刪除失敗：" + (data.message || "未知錯誤"));
+        const payload = {
+          action: "delete",
+          index: index  // 或者改成 id, invoiceNo, date 等你的資料主鍵
+        };
+    
+        try {
+          const res = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+        
+          const data = await res.json();
+        
+          if (data.ok) {
+            alert("✅ 刪除成功！");
+            e.target.closest("tr").remove();
+          } else {
+            alert("❌ 刪除失敗：" + (data.message || "未知錯誤"));
+          }
+        } catch (err) {
+          console.error("刪除時發生錯誤：", err);
+          alert("⚠️ 連線錯誤，請稍後再試");
+        }
       }
-    } catch (err) {
-      console.error("刪除時發生錯誤：", err);
-      alert("⚠️ 連線錯誤，請稍後再試");
-    }
+    });
 
     // 長條圖資料：金額總和 + 幣別最大值
     const dateSum = {};
@@ -1079,6 +1093,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
