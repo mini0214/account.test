@@ -369,9 +369,9 @@ function renderResult(command, json) {
     
       const index = e.target.dataset.index;
     
-      if (!confirm(`確定要刪除此筆交易嗎？\nAPI_URL = ${API_URL}`)) return;
+      if (!confirm(`確定要刪除此筆交易嗎？`)) return;
     
-      const payload = { action: "delete", index }; // action="delete"只是告訴後端要刪除
+      const payload = { action: "delete", index };
     
       try {
         const res = await fetch(API_URL, {
@@ -389,7 +389,7 @@ function renderResult(command, json) {
           alert("❌ 刪除失敗：" + (data.message || "未知錯誤"));
         }
       } catch (err) {
-        console.error("刪除時發生錯誤：", err);
+        console.error("刪除錯誤：", err);
         alert("⚠️ 連線錯誤，請稍後再試");
       }
     });
@@ -1090,6 +1090,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
