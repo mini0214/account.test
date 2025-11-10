@@ -368,7 +368,8 @@ function renderResult(command, json) {
       if (e.target.classList.contains("action-btn")) {
         const index = e.target.dataset.index;
     
-        if (!confirm("確定要刪除此筆交易嗎？API_URL")) return;
+        //if (!confirm("確定要刪除此筆交易嗎？API_URL")) return;
+        if (!confirm(`確定要刪除此筆交易嗎？\nAPI_URL = ${API_URL}`)) return;
     
         const payload = {
           action: "delete",
@@ -1093,6 +1094,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
