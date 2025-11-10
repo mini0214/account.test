@@ -361,7 +361,7 @@ function renderResult(command, json) {
     const totalAmount = rowsForDisplay.reduce((sum, r) => sum + Number(r[5] || 0), 0);
     html += `<div class="total">📌 總額：${totalAmount.toLocaleString()} 元（共 ${rowsForDisplay.length} 筆）</div>`;
 
-    const API_URL = "https://your.api/delete"; // 🔹改成你的 API 位址
+    //const API_URL = "https://your.api/delete"; // 🔹改成你的 API 位址
 
     // 綁定刪除按鈕事件
     document.addEventListener("click", async (e) => {
@@ -376,7 +376,7 @@ function renderResult(command, json) {
         };
     
         try {
-          const res = await fetch(API_URL, {
+          const res = await fetch(`${API_URL}/delete`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
@@ -1094,5 +1094,6 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
