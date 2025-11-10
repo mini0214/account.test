@@ -364,42 +364,51 @@ function renderResult(command, json) {
     //const API_URL = "https://your.api/delete"; // 🔹改成你的 API 位址
     // ✅ 刪除
     // 綁定刪除按鈕事件
-    const payload = {
-      type: "delete",
-      target: {
-        記帳者: row[0],
-        日期: row[1],
-        店家: row[2],
-        收入: row[3],
-        支出: row[4],
-        匯率: row[5],
-        金額: row[6],
-        付款: row[7],
-        分類: row[8],
-        附註: row[9],
-        備註: row[10],
-        time: row[11]
-      }
-    };
+    document.addEventListener("click", async (e) => {
+      if (!e.target.classList.contains("action-btn")) return;
     
-    fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      mode: "cors"
-    })
-    .then(r => r.json())
-    .then(data => {
-      if (data.ok) {
-        alert("✅ 刪除成功！");
-        e.target.closest("tr").remove();
-      } else {
-        alert("❌ 刪除失敗：" + data.msg);
+      const tr = e.target.closest("tr");
+      const tds = tr.querySelectorAll("td");
+      const time = tr.dataset.time; // 從 data-time 拿到 time
+    
+      const payload = {
+        type: "delete",
+        target: {
+          記帳者: tds[0].innerText,
+          日期: tds[1].innerText,
+          店家: tds[2].innerText,
+          收入: tds[3].innerText,
+          支出: tds[4].innerText,
+          匯率: tds[5].innerText,
+          金額: tds[6].innerText,
+          付款: tds[7].innerText,
+          分類: tds[8].innerText,
+          附註: tds[9].innerText,
+          備註: tds[10].innerText,
+          time: time
+        }
+      };
+    
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          mode: "cors"
+        });
+    
+        const data = await res.json();
+    
+        if (data.ok) {
+          alert("✅ 刪除成功！");
+          tr.remove(); // 移除該列
+        } else {
+          alert("❌ 刪除失敗：" + data.msg);
+        }
+      } catch (err) {
+        console.error(err);
+        alert("⚠️ 連線錯誤，請稍後再試");
       }
-    })
-    .catch(err => {
-      console.error(err);
-      alert("⚠️ 連線錯誤，請稍後再試");
     });
 
     // 長條圖資料：金額總和 + 幣別最大值
@@ -1098,17 +1107,3 @@ initApp();
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
