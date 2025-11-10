@@ -371,25 +371,25 @@ function renderResult(command, json) {
     
       if (!confirm(`確定要刪除此筆交易嗎？`)) return;
     
-      const payload = { action: "delete", index };
-    
+      const payload = { type: "delete", index }; // index = row 在前端表格中的位置
+      
       try {
         const res = await fetch(API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
-    
+      
         const data = await res.json();
-    
+      
         if (data.ok) {
           alert("✅ 刪除成功！");
           e.target.closest("tr").remove();
         } else {
-          alert("❌ 刪除失敗：" + (data.message || "未知錯誤"));
+          alert("❌ 刪除失敗：" + (data.msg || "未知錯誤"));
         }
       } catch (err) {
-        console.error("刪除錯誤：", err);
+        console.error("刪除時發生錯誤：", err);
         alert("⚠️ 連線錯誤，請稍後再試");
       }
     });
@@ -1090,6 +1090,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
