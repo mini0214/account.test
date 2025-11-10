@@ -12,7 +12,6 @@
   <!-- PDF -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
   
   <style>
     body { font-family: Arial, sans-serif; padding: 50px; }
@@ -354,8 +353,8 @@ function renderResult(command, json) {
                 <td>${r[9]}</td>
                 <td>${r[10]}</td>
                 <td>
-                  <button class=".edit-btn" data-index="${i}">📝 修改</button>
-                  <button class=".action-btn" data-index="${i}">🗑️ 刪除</button>
+                  <button class="edit-btn" data-index="${i}">📝 修改</button>
+                  <button class="action-btn" data-index="${i}">🗑️ 刪除</button>
                 </td>
       </tr>`;
     });
@@ -1061,9 +1060,3 @@ initApp();
 </script>
 </body>
 </html>
-
-
-
-
-
-
