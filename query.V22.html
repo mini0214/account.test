@@ -30,8 +30,8 @@
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
     th { background-color: #f2f2f2; }
     .numeric { text-align: right; }
-    .edit-btn { font-size: 22px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background: #28a745; }
-    .action-btn { font-size: 22px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background: #dc3545; margin: 0 2px; }
+    .edit-btn { font-size: 26px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background: #28a745; }
+    .action-btn { font-size: 26px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background: #dc3545; margin: 0 2px; }
     .edit-btn:hover, .action-btn:hover { background: #0056b3; color: white; opacity: 0.8; } /* 按下藍色 */
     .total { font-size: 28px; font-weight: bold; color: #d9534f; margin-top: 10px; }
     canvas { display: block; margin: 20px auto; width: 850px; height: 600px; }
@@ -352,7 +352,7 @@ function renderResult(command, json) {
                 <td>${r[6]}</td>
                 <td>${r[9]}</td>
                 <td>${r[10]}</td>
-                <td><button class="edit-btn" data-index="${i}">📝 修改</button><button class="action-btn" data-index="${i}">🗑️ 刪除</button></td>
+                <td><button class="edit-btn" data-index="${i}">📝 修改</button><button class="action-btn" data-index="${i}"> 🗑️ 刪除</button></td>
       </tr>`;
     });
     html += `</table>`;
@@ -1057,3 +1057,4 @@ initApp();
 </script>
 </body>
 </html>
+
