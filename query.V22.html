@@ -365,36 +365,32 @@ function renderResult(command, json) {
     // ✅ 刪除
     // 綁定刪除按鈕事件
     document.addEventListener("click", async (e) => {
-      if (e.target.classList.contains("action-btn")) {
-        const index = e.target.dataset.index;
+      if (!e.target.classList.contains("action-btn")) return;
     
-        //if (!confirm("確定要刪除此筆交易嗎？API_URL")) return;
-        if (!confirm(`確定要刪除此筆交易嗎？\nAPI_URL = ${API_URL}`)) return;
+      const index = e.target.dataset.index;
     
-        const payload = {
-          action: "delete",
-          index: index  // 或者改成 id, invoiceNo, date 等你的資料主鍵
-        };
+      if (!confirm(`確定要刪除此筆交易嗎？\nAPI_URL = ${API_URL}`)) return;
     
-        try {
-          const res = await fetch(API_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-          });
-        
-          const data = await res.json();
-        
-          if (data.ok) {
-            alert("✅ 刪除成功！");
-            e.target.closest("tr").remove();
-          } else {
-            alert("❌ 刪除失敗：" + (data.message || "未知錯誤"));
-          }
-        } catch (err) {
-          console.error("刪除時發生錯誤：", err);
-          alert("⚠️ 連線錯誤，請稍後再試");
+      const payload = { action: "delete", index }; // action="delete"只是告訴後端要刪除
+    
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+    
+        const data = await res.json();
+    
+        if (data.ok) {
+          alert("✅ 刪除成功！");
+          e.target.closest("tr").remove();
+        } else {
+          alert("❌ 刪除失敗：" + (data.message || "未知錯誤"));
         }
+      } catch (err) {
+        console.error("刪除時發生錯誤：", err);
+        alert("⚠️ 連線錯誤，請稍後再試");
       }
     });
 
@@ -1094,6 +1090,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
