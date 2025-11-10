@@ -372,13 +372,14 @@ function renderResult(command, json) {
       //if (!confirm(`確定要刪除此筆交易嗎？`)) return;
       if (!confirm(`確定要刪除此筆交易嗎？\nAPI_URL = ${API_URL}`)) return;
     
-      const payload = { type: "/delete", index }; // index = row 在前端表格中的位置
+      const payload = { type: "delete", index }; // index = row 在前端表格中的位置
       
       try {
         const res = await fetch(API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
+          mode: "cors"  // 建議加上
         });
       
         const data = await res.json();
@@ -1091,6 +1092,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
