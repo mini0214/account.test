@@ -364,36 +364,42 @@ function renderResult(command, json) {
     //const API_URL = "https://your.api/delete"; // 🔹改成你的 API 位址
     // ✅ 刪除
     // 綁定刪除按鈕事件
-    document.addEventListener("click", async (e) => {
-      if (!e.target.classList.contains("action-btn")) return;
-    
-      const index = e.target.dataset.index;
-    
-      //if (!confirm(`確定要刪除此筆交易嗎？`)) return;
-      if (!confirm(`確定要刪除此筆交易嗎？\nAPI_URL = ${API_URL}`)) return;
-    
-      const payload = { type: "delete", index }; // index = row 在前端表格中的位置
-      
-      try {
-        const res = await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-          mode: "cors"  // 建議加上
-        });
-      
-        const data = await res.json();
-      
-        if (data.ok) {
-          alert("✅ 刪除成功！");
-          e.target.closest("tr").remove();
-        } else {
-          alert("❌ 刪除失敗：" + (data.msg || "未知錯誤"));
-        }
-      } catch (err) {
-        console.error("刪除時發生錯誤：", err);
-        alert("⚠️ 連線錯誤，請稍後再試");
+    const payload = {
+      type: "delete",
+      target: {
+        記帳者: row[0],
+        日期: row[1],
+        店家: row[2],
+        收入: row[3],
+        支出: row[4],
+        匯率: row[5],
+        金額: row[6],
+        付款: row[7],
+        分類: row[8],
+        附註: row[9],
+        備註: row[10],
+        time: row[11]
       }
+    };
+    
+    fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      mode: "cors"
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        alert("✅ 刪除成功！");
+        e.target.closest("tr").remove();
+      } else {
+        alert("❌ 刪除失敗：" + data.msg);
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      alert("⚠️ 連線錯誤，請稍後再試");
     });
 
     // 長條圖資料：金額總和 + 幣別最大值
@@ -1092,6 +1098,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
