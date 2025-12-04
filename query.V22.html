@@ -369,21 +369,18 @@ function renderResult(command, json) {
       const tds = tr.querySelectorAll("td");
     
       const rowData = {
-        version: tds[0].innerText,
-        time: tds[1].innerText,
-        line_user_id: tds[2].innerText,
-        display_name: tds[3].innerText,
-        date: tds[4].innerText,
-        amount: tds[5].innerText,
-        type: tds[6].innerText,
+        display_name: tds[0].innerText,
+        date: tds[1].innerText,
+        store: tds[2].innerText,
+        income: tds[3].innerText,
+        payout: tds[4].innerText,
+        currency: tds[5].innerText,
+        amount: tds[6].innerText,
         payment: tds[7].innerText,
-        store: tds[8].innerText,
+        type: tds[8].innerText,
         note: tds[9].innerText,
-        memo: tds[10].innerText,
-        income: tds[11].innerText,
-        payout: tds[12].innerText,
-        currency: tds[13].innerText,
-        exchange: tds[14].innerText
+        memo: tds[10].innerText
+        // 若需要 version/time/line_user_id，可在渲染表格時放入 data-* 屬性
       };
     
       localStorage.setItem("editRow", JSON.stringify(rowData));
@@ -1086,6 +1083,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
