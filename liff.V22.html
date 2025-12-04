@@ -383,9 +383,18 @@
         .split(".")[0]; 
 
       // 🔹 先抓目前最大值
-      // 假設 getMaxExchangeId() 是你自己寫的函數，用來讀取 exchange 目前最大 exchangeId
-      const maxExchangeId = await getMaxExchangeId(); 
-      const newExchangeId = maxExchangeId + 1;
+      let maxExchangeId = 0;
+        try {
+          // 🔹 呼叫 Apps Script 端讀最大值
+          maxExchangeId = await getMaxExchangeId();
+        } catch (err) {
+          console.error("取得最大 exchangeId 失敗", err);
+          alert("讀取最大值失敗，請稍後再試");
+          submitBtn.disabled = false;
+          submitBtn.innerText = "送出";
+          loadingMsg.style.display = "none";
+          return;
+        }
       
       const payload = {
         version: VERSION,
@@ -402,7 +411,7 @@
         note: note,
         memo: memo,
         createdAt: taiwanTime,
-        exchangeId: newExchangeId // 🔹 新增唯一值欄位
+        exchangeId: newExchangeId+1 // 🔹 新增唯一值欄位
       };
 
       const apiUrl = API_URL; 
@@ -541,4 +550,5 @@
   </script>
 </body>
 </html>
+
 
