@@ -361,6 +361,22 @@ function renderResult(command, json) {
     const totalAmount = rowsForDisplay.reduce((sum, r) => sum + Number(r[5] || 0), 0);
     html += `<div class="total">📌 總額：${totalAmount.toLocaleString()} 元（共 ${rowsForDisplay.length} 筆）</div>`;
 
+    // 將生成的 HTML 塞到畫面
+    document.getElementById("tableContainer").innerHTML = html;
+
+    // ✅ 刪除功能，事件代理
+    document.querySelector("#tableContainer").addEventListener("click", function(e){
+      if (e.target && e.target.classList.contains("action-btn")){
+        const index = parseInt(e.target.getAttribute("data-index"));
+        if (!isNaN(index)){
+          if (confirm("確定要刪除這筆資料嗎？")){
+            rowsForDisplay.splice(index,1); // 刪除資料
+            renderResult(command, json); // 重新渲染表格
+          }
+        }
+      }
+    });
+
     // 長條圖資料：金額總和 + 幣別最大值
     const dateSum = {};
     const maxCurrencyByDate = {};
@@ -1057,4 +1073,5 @@ initApp();
 </script>
 </body>
 </html>
+
 
