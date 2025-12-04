@@ -352,11 +352,33 @@ function renderResult(command, json) {
                 <td>${r[6]}</td>
                 <td>${r[9]}</td>
                 <td>${r[10]}</td>
-                <td><button class="edit-btn" data-index="${i}">📝 修改</button><button class="action-btn" data-index="${i}"> 🗑️ 刪除</button></td>
+                <td><button class="edit-btn" data-index="${i}">📝 修改</button><button class="delete-btn" data-time="${r[1]}">🗑️ 刪除</button></td>
       </tr>`;
     });
     html += `</table>`;
-  
+
+    // 刪除delete
+    document.querySelectorAll(".delete-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const time = btn.getAttribute("data-time");
+        if (!confirm("確定要刪除這筆資料嗎？")) return;
+    
+        try {
+          const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ command: "delete", time: time }),
+            headers: { "Content-Type": "application/json" }
+          });
+          const json = await res.json();
+          alert(json.msg);
+          if (json.ok) {
+            // 刪除成功後，可選擇重新整理表格
+            location.reload();
+          }
+        } catch (err) {
+          console.error(err);
+          alert("刪除失敗");
+        }
+      });
+    });
     // ✅ 總額 & 筆數同樣用 rowsForDisplay
     const totalAmount = rowsForDisplay.reduce((sum, r) => sum + Number(r[5] || 0), 0);
     html += `<div class="total">📌 總額：${totalAmount.toLocaleString()} 元（共 ${rowsForDisplay.length} 筆）</div>`;
@@ -1057,4 +1079,5 @@ initApp();
 </script>
 </body>
 </html>
+
 
