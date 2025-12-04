@@ -381,6 +381,11 @@
         .toISOString()
         .replace("T", " ")
         .split(".")[0]; 
+
+      // 🔹 先抓目前最大值
+      // 假設 getMaxExchangeId() 是你自己寫的函數，用來讀取 exchange 目前最大 exchangeId
+      const maxExchangeId = await getMaxExchangeId(); 
+      const newExchangeId = maxExchangeId + 1;
       
       const payload = {
         version: VERSION,
@@ -396,7 +401,8 @@
         type: type,
         note: note,
         memo: memo,
-        createdAt: taiwanTime
+        createdAt: taiwanTime,
+        exchangeId: newExchangeId // 🔹 新增唯一值欄位
       };
 
       const apiUrl = API_URL; 
@@ -535,3 +541,4 @@
   </script>
 </body>
 </html>
+
