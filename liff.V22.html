@@ -381,20 +381,6 @@
         .toISOString()
         .replace("T", " ")
         .split(".")[0]; 
-
-      // 🔹 先抓目前最大值
-      let maxExchangeId = 0;
-        try {
-          // 🔹 呼叫 Apps Script 端讀最大值
-          maxExchangeId = await getMaxExchangeId();
-        } catch (err) {
-          console.error("取得最大 exchangeId 失敗", err);
-          alert("讀取最大值失敗，請稍後再試");
-          submitBtn.disabled = false;
-          submitBtn.innerText = "送出";
-          loadingMsg.style.display = "none";
-          return;
-        }
       
       const payload = {
         version: VERSION,
@@ -411,7 +397,7 @@
         note: note,
         memo: memo,
         createdAt: taiwanTime,
-        exchangeId: maxExchangeId + 1 // 🔹 新增唯一值欄位
+        exchangeId: taiwanTime // 🔹 新增唯一值欄位
       };
 
       const apiUrl = API_URL; 
@@ -550,6 +536,7 @@
   </script>
 </body>
 </html>
+
 
 
 
