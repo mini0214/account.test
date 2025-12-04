@@ -399,6 +399,20 @@
         createdAt: taiwanTime
       };
 
+      // ✅ Step 0：先檢查 URL 是否有帶 editRow，方便確認
+      const params = new URLSearchParams(window.location.search);
+      const editRowStr = params.get("editRow");
+      if (editRowStr) {
+        try {
+          const editRowFromURL = JSON.parse(decodeURIComponent(editRowStr));
+          console.log("URL 傳來的編輯資料：", editRowFromURL);
+      
+          // 可選：同步到 localStorage
+          localStorage.setItem("editRow", JSON.stringify(editRowFromURL));
+        } catch (err) {
+          console.warn("URL editRow 解析失敗：", err);
+        }
+      }
       //query連入,修改或刪除
       let editRow = JSON.parse(localStorage.getItem("editRow") || "{}");
   
@@ -628,4 +642,5 @@
   </script>
 </body>
 </html>
+
 
