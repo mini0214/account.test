@@ -361,7 +361,7 @@ function renderResult(command, json) {
     const totalAmount = rowsForDisplay.reduce((sum, r) => sum + Number(r[5] || 0), 0);
     html += `<div class="total">📌 總額：${totalAmount.toLocaleString()} 元（共 ${rowsForDisplay.length} 筆）</div>`;
 
-    // ✅ 編輯：按下 📝 開啟 liff.v22.html 並帶資料
+    // ✅ 編輯：按下 📝 開啟 liff.V22.html 並帶資料
     document.addEventListener("click", (e) => {
       if (!e.target.classList.contains("edit-btn")) return;
     
@@ -384,14 +384,14 @@ function renderResult(command, json) {
       };
     
       //localStorage.setItem("editRow", JSON.stringify(rowData));
-      //window.location.href = "liff.v22.html";
+      //window.location.href = "liff.V22.html";
       
       // ✅ 用 console.log 檢查
       console.log("編輯的資料：", rowData);
     
       // ✅ 用 URL 傳到下一頁暫時確認
       const queryStr = encodeURIComponent(JSON.stringify(rowData));
-      window.location.href = `liff.v22.html?editRow=${queryStr}`;
+      window.location.href = `liff.V22.html?editRow=${queryStr}`;
     });
 
     // 長條圖資料：金額總和 + 幣別最大值
@@ -1090,6 +1090,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
