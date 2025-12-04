@@ -339,6 +339,9 @@ function renderResult(command, json) {
     rowsForDisplay.forEach((r, i) => {
       const dateStr = r[4] ? new Date(r[4]).toLocaleDateString("zh-TW") : "";
       html += `<tr>
+                data-version="${r[0]}" 
+                data-time="${r[1]}" 
+                data-line_user_id="${r[2]}">
                 <td>${r[3]}</td>
                 <td>${dateStr}</td>
                 <td>${r[8]}</td>
@@ -379,7 +382,10 @@ function renderResult(command, json) {
         payment: tds[7].innerText,
         type: tds[8].innerText,
         note: tds[9].innerText,
-        memo: tds[10].innerText
+        memo: tds[10].innerText,
+        version: tr.dataset.version,
+        time: tr.dataset.time,
+        line_user_id: tr.dataset.line_user_id
         // 若需要 version/time/line_user_id，可在渲染表格時放入 data-* 屬性
       };
     
@@ -1090,6 +1096,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
