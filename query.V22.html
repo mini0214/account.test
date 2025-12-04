@@ -361,33 +361,32 @@ function renderResult(command, json) {
     const totalAmount = rowsForDisplay.reduce((sum, r) => sum + Number(r[5] || 0), 0);
     html += `<div class="total">📌 總額：${totalAmount.toLocaleString()} 元（共 ${rowsForDisplay.length} 筆）</div>`;
 
-   // ✅ 編輯：按下 📝 開啟 liff.v22.html 並帶資料
+    // ✅ 編輯：按下 📝 開啟 liff.v22.html 並帶資料
     document.addEventListener("click", (e) => {
       if (!e.target.classList.contains("edit-btn")) return;
     
       const tr = e.target.closest("tr");
       const tds = tr.querySelectorAll("td");
     
-      // 要帶到下個頁面的資料
       const rowData = {
-        version: tds[0].innerText,        // 記帳者/版本？
-        date: tds[1].innerText,           // 日期
-        store: tds[2].innerText,          // 店家
-        income: tds[3].innerText,         // 收入（如果你不需要可忽略）
-        expense: tds[4].innerText,        // 支出（如果你不需要可忽略）
-        currency: tds[5].innerText,       // 匯率 or 幣別
-        amount: tds[6].innerText,         // 金額（最重要）
-        payment: tds[7].innerText,        // 付款方式
-        type: tds[8].innerText,           // 分類
-        note: tds[9].innerText,           // 附註
-        memo: tds[10].innerText,          // 備註
-        time: tr.dataset.time || ""       // 用 data-time 存唯一 ID
+        version: tds[0].innerText,
+        time: tds[1].innerText,
+        line_user_id: tds[2].innerText,
+        display_name: tds[3].innerText,
+        date: tds[4].innerText,
+        amount: tds[5].innerText,
+        type: tds[6].innerText,
+        payment: tds[7].innerText,
+        store: tds[8].innerText,
+        note: tds[9].innerText,
+        memo: tds[10].innerText,
+        income: tds[11].innerText,
+        payout: tds[12].innerText,
+        currency: tds[13].innerText,
+        exchange: tds[14].innerText
       };
     
-      // 👉 用 localStorage 傳資料到 liff.v22.html
       localStorage.setItem("editRow", JSON.stringify(rowData));
-    
-      // 👉 直接帶你去 liff.v22.html
       window.location.href = "liff.v22.html";
     });
 
@@ -1087,6 +1086,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
