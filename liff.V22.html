@@ -399,6 +399,99 @@
         createdAt: taiwanTime
       };
 
+      //query連入,修改或刪除
+      let editRow = JSON.parse(localStorage.getItem("editRow") || "{}");
+  
+      // 將資料填入表單
+      if (editRow) {
+        document.getElementById("date").value = editRow.date || "";
+        document.getElementById("store").value = editRow.store || "";
+        document.getElementById("income").value = editRow.income || 0;
+        document.getElementById("payout").value = editRow.payout || 0;
+        document.getElementById("currency").value = editRow.currency || "1";
+        document.getElementById("exchange").value = editRow.exchange || 0;
+        document.getElementById("type").value = editRow.type || "";
+        document.getElementById("payment").value = editRow.payment || "";
+        document.getElementById("note").value = editRow.note || "";
+        document.getElementById("memo").value = editRow.memo || "";
+      }
+  
+      // Update 按鈕
+      document.getElementById("updateBtn").addEventListener("click", async () => {
+        const payload = {
+          version: editRow.version,
+          time: editRow.time,
+          line_user_id: editRow.line_user_id,
+          display_name: editRow.display_name,
+          date: document.getElementById("date").value,
+          amount: Math.round((Number(document.getElementById("income").value || 0) - Number(document.getElementById("payout").value || 0)) * Number(document.getElementById("currency").value || 1)),
+          type: document.getElementById("type").value,
+          payment: document.getElementById("payment").value,
+          store: document.getElementById("store").value,
+          note: document.getElementById("note").value,
+          memo: document.getElementById("memo").value,
+          income: Number(document.getElementById("income").value || 0),
+          payout: Number(document.getElementById("payout").value || 0),
+          currency: document.getElementById("currency").value,
+          exchange: Number(document.getElementById("exchange").value || 0)
+        };
+  
+        try {
+          const res = await fetch(`${API_URL}?type=update`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (data.ok) {
+            alert("✅ 更新成功");
+            localStorage.removeItem("editRow");
+            window.close(); // 或回到前一頁
+          } else {
+            alert("❌ 更新失敗：" + (data.msg || ""));
+          }
+        } catch (err) {
+          console.error(err);
+          alert("⚠️ 連線錯誤");
+        }
+      });
+  
+      // Delete 按鈕
+      document.getElementById("deleteBtn").addEventListener("click", async () => {
+        if (!confirm("確定要刪除這筆資料嗎？")) return;
+  
+        // 用唯一值判斷刪除
+        const payload = {
+          version: editRow.version,
+          time: editRow.time,
+          line_user_id: editRow.line_user_id,
+          display_name: editRow.display_name,
+          date: editRow.date,
+          amount: editRow.amount,
+          type: editRow.type,
+          payment: editRow.payment
+        };
+  
+        try {
+          const res = await fetch(`${API_URL}?type=delete`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (data.ok) {
+            alert("✅ 刪除成功");
+            localStorage.removeItem("editRow");
+            window.close(); // 或回到前一頁
+          } else {
+            alert("❌ 刪除失敗：" + (data.msg || ""));
+          }
+        } catch (err) {
+          console.error(err);
+          alert("⚠️ 連線錯誤");
+        }
+      });
+
       const apiUrl = API_URL; 
       try {
         const res = await fetch(apiUrl, {
@@ -535,3 +628,4 @@
   </script>
 </body>
 </html>
+
