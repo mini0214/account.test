@@ -365,16 +365,20 @@ function renderResult(command, json) {
     document.getElementById("tableContainer").innerHTML = html;
 
     // ✅ 刪除功能，事件代理
-    document.querySelector("#tableContainer").addEventListener("click", function(e){
-      if (e.target && e.target.classList.contains("action-btn")){
-        const index = parseInt(e.target.getAttribute("data-index"));
-        if (!isNaN(index)){
-          if (confirm("確定要刪除這筆資料嗎？")){
-            rowsForDisplay.splice(index,1); // 刪除資料
-            renderResult(command, json); // 重新渲染表格
+    document.addEventListener("DOMContentLoaded", function() {
+      const container = document.getElementById("tableContainer");
+      
+      container.addEventListener("click", function(e) {
+        if (e.target && e.target.classList.contains("action-btn")) {
+          const index = parseInt(e.target.getAttribute("data-index"));
+          if (!isNaN(index)) {
+            if (confirm("確定要刪除這筆資料嗎？")) {
+              rowsForDisplay.splice(index, 1);
+              renderResult(currentCommand, currentJson); // 重新渲染
+            }
           }
         }
-      }
+      });
     });
 
     // 長條圖資料：金額總和 + 幣別最大值
@@ -1073,5 +1077,6 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
