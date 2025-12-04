@@ -361,54 +361,33 @@ function renderResult(command, json) {
     const totalAmount = rowsForDisplay.reduce((sum, r) => sum + Number(r[5] || 0), 0);
     html += `<div class="total">📌 總額：${totalAmount.toLocaleString()} 元（共 ${rowsForDisplay.length} 筆）</div>`;
 
-    //const API_URL = "https://your.api/delete"; // 🔹改成你的 API 位址
-    // ✅ 刪除
-    // 綁定刪除按鈕事件
-    document.addEventListener("click", async (e) => {
-      if (!e.target.classList.contains("action-btn")) return;
+   // ✅ 編輯：按下 📝 開啟 liff.v22.html 並帶資料
+    document.addEventListener("click", (e) => {
+      if (!e.target.classList.contains("edit-btn")) return;
     
       const tr = e.target.closest("tr");
       const tds = tr.querySelectorAll("td");
-      const time = tr.dataset.time; // 從 data-time 拿到 time
     
-      const payload = {
-        type: "delete",
-        target: {
-          記帳者: tds[0].innerText,
-          日期: tds[1].innerText,
-          店家: tds[2].innerText,
-          收入: tds[3].innerText,
-          支出: tds[4].innerText,
-          匯率: tds[5].innerText,
-          金額: tds[6].innerText,
-          付款: tds[7].innerText,
-          分類: tds[8].innerText,
-          附註: tds[9].innerText,
-          備註: tds[10].innerText,
-          time: time
-        }
+      // 要帶到下個頁面的資料
+      const rowData = {
+        記帳者: tds[0].innerText,
+        日期: tds[1].innerText,
+        店家: tds[2].innerText,
+        收入: tds[3].innerText,
+        支出: tds[4].innerText,
+        匯率: tds[5].innerText,
+        金額: tds[6].innerText,
+        付款: tds[7].innerText,
+        分類: tds[8].innerText,
+        附註: tds[9].innerText,
+        備註: tds[10].innerText
       };
     
-      try {
-        const res = await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-          mode: "cors"
-        });
+      // 👉 用 localStorage 傳資料到 liff.v22.html
+      localStorage.setItem("editRow", JSON.stringify(rowData));
     
-        const data = await res.json();
-    
-        if (data.ok) {
-          alert("✅ 刪除成功！");
-          tr.remove(); // 移除該列
-        } else {
-          alert("❌ 刪除失敗：" + data.msg);
-        }
-      } catch (err) {
-        console.error(err);
-        alert("⚠️ 連線錯誤，請稍後再試");
-      }
+      // 👉 直接帶你去 liff.v22.html
+      window.location.href = "liff.v22.html";
     });
 
     // 長條圖資料：金額總和 + 幣別最大值
@@ -1107,5 +1086,6 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
