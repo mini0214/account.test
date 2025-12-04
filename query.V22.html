@@ -361,15 +361,22 @@ function renderResult(command, json) {
     const totalAmount = rowsForDisplay.reduce((sum, r) => sum + Number(r[5] || 0), 0);
     html += `<div class="total">📌 總額：${totalAmount.toLocaleString()} 元（共 ${rowsForDisplay.length} 筆）</div>`;
 
+    <div id="tableContainer">
+      <table id="dataTable"></table>
+      <div class="total">📌 總額：0 元（共 0 筆）</div>
+    </div>
+    
     // action-btn刪除
-    // 全域陣列
+    // ✅ 全域陣列
     let rowsForDisplay = [];
     
+    // 初始化表格
     function initTable(data) {
-      rowsForDisplay = data; // 從後端或 JSON 初始化
+      rowsForDisplay = data; // 後端 json.rows 或 filteredRows
       renderTable();
     }
     
+    // 渲染表格
     function renderTable() {
       const table = document.getElementById("dataTable");
       let html = `<tr>
@@ -390,22 +397,22 @@ function renderResult(command, json) {
       rowsForDisplay.forEach((r, i) => {
         const dateStr = r[4] ? new Date(r[4]).toLocaleDateString("zh-TW") : "";
         html += `<tr>
-                  <td>${r[3]}</td>
-                  <td>${dateStr}</td>
-                  <td>${r[8]}</td>
-                  <td class="numeric">${Number(r[11]).toLocaleString()}</td>
-                  <td class="numeric">${Number(r[12]).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
-                  <td>${r[13]}</td>
-                  <td class="numeric">${Number(r[5]).toLocaleString()}</td>
-                  <td>${r[7]}</td>
-                  <td>${r[6]}</td>
-                  <td>${r[9]}</td>
-                  <td>${r[10]}</td>
-                  <td>
-                    <button class="edit-btn" data-index="${i}">📝 修改</button>
-                    <button class="action-btn" data-index="${i}"> 🗑️ 刪除</button>
-                  </td>
-                </tr>`;
+                   <td>${r[3]}</td>
+                   <td>${dateStr}</td>
+                   <td>${r[8]}</td>
+                   <td class="numeric">${Number(r[11]).toLocaleString()}</td>
+                   <td class="numeric">${Number(r[12]).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+                   <td>${r[13]}</td>
+                   <td class="numeric">${Number(r[5]).toLocaleString()}</td>
+                   <td>${r[7]}</td>
+                   <td>${r[6]}</td>
+                   <td>${r[9]}</td>
+                   <td>${r[10]}</td>
+                   <td>
+                     <button class="edit-btn" data-index="${i}">📝 修改</button>
+                     <button class="action-btn" data-index="${i}">🗑️ 刪除</button>
+                   </td>
+                 </tr>`;
       });
     
       table.innerHTML = html;
@@ -415,20 +422,20 @@ function renderResult(command, json) {
       document.querySelector(".total").innerText = `📌 總額：${totalAmount.toLocaleString()} 元（共 ${rowsForDisplay.length} 筆）`;
     }
     
-    // 事件代理綁定刪除按鈕
-    document.getElementById("dataTable").addEventListener("click", (e) => {
+    // ✅ 事件代理綁定刪除按鈕（固定存在的父容器）
+    document.getElementById("tableContainer").addEventListener("click", (e)=>{
       const btn = e.target;
-      if (btn.classList.contains("action-btn")) {
+      if(btn.classList.contains("action-btn")){
         const index = Number(btn.dataset.index);
-        if (confirm("確定要刪除這筆資料嗎？")) {
-          rowsForDisplay.splice(index, 1);
+        if(confirm("確定要刪除這筆資料嗎？")){
+          rowsForDisplay.splice(index,1);
           renderTable();
         }
       }
     });
     
-    // 初始化表格
-    initTable(filteredRows); // 或 json.rows
+    // 初始化表格，注意要傳入後端資料
+    initTable((currentUser === adminUser) ? json.rows : filteredRows);
 
     // 長條圖資料：金額總和 + 幣別最大值
     const dateSum = {};
@@ -1126,6 +1133,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
