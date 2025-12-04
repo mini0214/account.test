@@ -411,7 +411,7 @@
         note: note,
         memo: memo,
         createdAt: taiwanTime,
-        exchangeId: newExchangeId+1 // 🔹 新增唯一值欄位
+        exchangeId: maxExchangeId + 1 // 🔹 新增唯一值欄位
       };
 
       const apiUrl = API_URL; 
@@ -550,5 +550,6 @@
   </script>
 </body>
 </html>
+
 
 
