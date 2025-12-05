@@ -400,7 +400,74 @@
         exchange: taiwanTime
       };
 
-  //符合日期的明細
+// 發送查詢
+async function sendQuery(command) {
+  const startDate = document.getElementById("startDate").value;
+  const endDate = document.getElementById("endDate").value;
+  
+  if (!startDate || !endDate) {
+    alert("請選擇開始與結束日期");
+    return;
+  }
+  
+    // ✅ 查詢前清空舊的查詢結果
+    document.getElementById("queryResult").innerHTML = "";
+
+    // ✅ 隱藏匯出按鈕，避免舊按鈕閃現
+    document.getElementById("exportArea").style.display = "none";
+  
+    // ✅ 如果有舊圖表，銷毀掉
+    if (chartInstance) {
+      chartInstance.destroy();
+      chartInstance = null;
+    }
+    const ctx = document.getElementById("chartCanvas").getContext("2d");
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  
+    // ✅ 顯示載入中
+    document.getElementById("loading").style.display = "block";
+    
+    const body = {
+      type: "query",
+      command: command,
+      version: VERSION,
+      startDate: startDate + " 00:00:00",
+      endDate: endDate + " 23:59:59"
+    };
+ 
+    try {
+      const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(body) });
+      const json = await res.json();
+      if (!json.ok) {
+        document.getElementById("queryResult").innerHTML = `<p style="color:red">❌ 查詢失敗</p>`;
+        return;
+      }
+      renderResult(command, json);
+    } catch (err) {
+      document.getElementById("queryResult").innerHTML = `<p style="color:red">❌ 查詢失敗：${err.message}</p>`;
+    } finally {
+      // ✅ 查詢結束後隱藏
+      document.getElementById("loading").style.display = "none";
+    }
+  } // ✅ sendQuery() 結束
+
+// 顯示結果表格與圖表
+function renderResult(command, json) {
+  let html = "";
+
+  const adminUser = "Betty Yi"; // ✅ 管理者帳號
+  
+  // ✅ 如果 currentUser 還沒定義，就用資料表第一筆 登入者的資料
+  if (!currentUser && json.rows && json.rows.length > 0) {
+    currentUser = json.rows[0][3];  // 第 4 欄是 display_name
+  }
+
+  // ✅ 統一過濾：管理者看到全部，其它人只看自己
+  let filteredRows = json.rows || [];
+  if (currentUser && currentUser !== adminUser) {
+    filteredRows = filteredRows.filter(r => r[3] === currentUser);
+  }
+  
   if (command === "明細" && json.rows) {
     // ✅ 這裡不要重新定義 filteredRows，直接用前面已經處理好的
     const rowsForDisplay = (currentUser === adminUser) ? json.rows : filteredRows;
@@ -584,5 +651,6 @@
   </script>
 </body>
 </html>
+
 
 
