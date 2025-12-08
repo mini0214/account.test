@@ -204,6 +204,37 @@
     
         await liff.init({ liffId: LIFF_IDa });
         if (!liff.isLoggedIn()) liff.login();
+
+        // 2️⃣ 再放查單日的函式和事件綁定
+        async function querySingleDate(dateStr) {
+          try {
+            if (!API_URL) {
+              document.getElementById("result").innerHTML = "<p>❌ API_URL 未設定</p>";
+              return;
+            }
+        
+            document.getElementById("result").innerHTML = `<p>查詢中，日期：${dateStr}</p>`;
+        
+            const res = await fetch(`${API_URL}?type=query&command=查單日&date=${dateStr}`);
+            const json = await res.json();
+        
+            renderQueryResult(json);
+        
+          } catch (err) {
+            console.error("查單日失敗：", err);
+            document.getElementById("result").innerHTML = `<p>查單日失敗：${err.message}</p>`;
+          }
+        }
+        
+        // 監聽日期欄位變化
+        document.getElementById("date").addEventListener("change", (e) => {
+          const dateValue = e.target.value;
+          if (!dateValue) {
+            document.getElementById("result").innerHTML = "<p>請選擇日期</p>";
+            return;
+          }
+          querySingleDate(dateValue);
+        });
     
         document.getElementById("date").valueAsDate = new Date();
     
@@ -596,6 +627,7 @@
   </script>
 </body>
 </html>
+
 
 
 
