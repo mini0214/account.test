@@ -1,112 +1,33 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <title>查單日 + 統計</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    input, button { padding: 5px; margin: 5px 0; }
-    table { border-collapse: collapse; margin-top: 10px; width: 100%; }
-    th, td { border: 1px solid #ccc; padding: 5px; text-align: center; }
-    th { background-color: #f0f0f0; }
-    .stat-table { width: 50%; margin-bottom: 20px; }
-  </style>
+<meta charset="UTF-8">
+<title>查單日支出</title>
+<style>
+  body { font-family: Arial; padding: 20px; }
+  input, button { padding: 5px; margin: 5px 0; }
+  table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+  th, td { border: 1px solid #ccc; padding: 5px; text-align: center; }
+  th { background: #f0f0f0; }
+</style>
 </head>
 <body>
 
 <h3>查單日支出與統計</h3>
-<label for="dateInput">日期 (yyyy-mm-dd)：</label>
+<label>日期 (yyyy-mm-dd)：</label>
 <input type="date" id="dateInput">
 <button id="queryBtn">查詢</button>
 
 <div id="result"></div>
 
 <script>
-const GAS_URL = "https://script.google.com/macros/s/AKfycbxYkq5LaptDW-fFADbG2C4SMkQL23LtFPn50C_Hu5_d6lY8x6oM5D7ZnsyOsLIVlMiLLw/exec"; // ✅ 改成你的 URL
+const GAS_URL = "https://script.google.com/macros/s/AKfycby_2bt7JafVrWI8JZeGJrNf4E3coy15xDEssLmbY6Ga2fQtOA_iKPL6hTNMbXaIoj_1sw/exec"; // ✅換成你的部署 URL
 
 document.getElementById("queryBtn").addEventListener("click", async () => {
   const date = document.getElementById("dateInput").value;
   if (!date) return alert("請選擇日期");
 
-  const payload = { type: "query", command: "查單日", date };
-
   try {
     const res = await fetch(GAS_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-
-    if (!res.ok) throw new Error("網路錯誤：" + res.status);
-
-    const data = await res.json();
-
-    if (!data.ok) {
-      document.getElementById("result").innerHTML = `<p style="color:red">${data.msg || data.error}</p>`;
-      return;
-    }
-
-    // === 明細表格 ===
-    let html = `<p>日期：${data.date}，共 ${data.count} 筆，總額：${data.total}</p>`;
-    if (data.rows.length > 0) {
-      html += `<table>
-        <tr>
-          <th>日期</th><th>金額</th><th>分類</th><th>付款方式</th><th>店家</th><th>備註</th>
-        </tr>`;
-      data.rows.forEach(r => {
-        html += `<tr>
-          <td>${r[4]}</td>
-          <td>${r[5]}</td>
-          <td>${r[6]}</td>
-          <td>${r[7]}</td>
-          <td>${r[8]}</td>
-          <td>${r[9]}</td>
-        </tr>`;
-      });
-      html += `</table>`;
-    } else {
-      html += "<p>當天沒有資料</p>";
-    }
-
-    // === 分類總額 ===
-    const categories = data.categories || {};
-    html += `<h4>分類總額</h4>`;
-    if (Object.keys(categories).length > 0) {
-      html += `<table class="stat-table">
-        <tr><th>分類</th><th>金額</th></tr>`;
-      for (const [cat, amt] of Object.entries(categories)) {
-        html += `<tr><td>${cat}</td><td>${amt}</td></tr>`;
-      }
-      html += `</table>`;
-    } else {
-      html += "<p>無分類資料</p>";
-    }
-
-    // === 付款方式總額 ===
-    const payments = data.rows.reduce((acc, r) => {
-      const pay = r[7] || "未填寫";
-      acc[pay] = (acc[pay] || 0) + Number(r[5] || 0);
-      return acc;
-    }, {});
-    html += `<h4>付款方式總額</h4>`;
-    if (Object.keys(payments).length > 0) {
-      html += `<table class="stat-table">
-        <tr><th>付款方式</th><th>金額</th></tr>`;
-      for (const [pay, amt] of Object.entries(payments)) {
-        html += `<tr><td>${pay}</td><td>${amt}</td></tr>`;
-      }
-      html += `</table>`;
-    } else {
-      html += "<p>無付款方式資料</p>";
-    }
-
-    document.getElementById("result").innerHTML = html;
-
-  } catch (err) {
-    document.getElementById("result").innerHTML = `<p style="color:red">錯誤：${err.message}</p>`;
-  }
-});
-</script>
-
-</body>
-</html>
