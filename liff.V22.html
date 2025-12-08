@@ -205,109 +205,116 @@
         await liff.init({ liffId: LIFF_IDa });
         if (!liff.isLoggedIn()) liff.login();
 
-        // 2️⃣ 再放查單日的函式和事件綁定
-        async function querySingleDate(dateStr) {
-          try {
-            if (!API_URL) {
-              document.getElementById("result").innerHTML = "<p>❌ API_URL 未設定</p>";
-              return;
-            }
-        
-            document.getElementById("result").innerHTML = `<p>查詢中，日期：${dateStr}</p>`;
-        
-            const res = await fetch(`${API_URL}?type=query&command=查單日&date=${dateStr}`);
-            const json = await res.json();
-        
-            renderQueryResult(json);
-        
-          } catch (err) {
-            console.error("查單日失敗：", err);
-            document.getElementById("result").innerHTML = `<p>查單日失敗：${err.message}</p>`;
-          }
-        }
-        
-        // 監聽日期欄位變化
-        document.getElementById("date").addEventListener("change", (e) => {
-          const dateValue = e.target.value;
-          if (!dateValue) {
-            document.getElementById("result").innerHTML = "<p>請選擇日期</p>";
-            return;
-          }
-          querySingleDate(dateValue);
-        });
-    
-        document.getElementById("date").valueAsDate = new Date();
-    
-        if (API_URL) {
-          await loadListData();   // 先載入付款 / 分類清單
-          await loadStoreList();  // 再載入店家清單
-        }
-    
-      } catch (err) {
-        console.error("初始化設定失敗：", err);
-        alert("初始化設定失敗：" + err.message);
-      }
-    }
-
-    // === 🟩 查單日 (與明細相同渲染邏輯) ===
-    function renderQueryResult(json) {
-      let html = "";
-    
-      if (!json.rows || json.rows.length === 0) {
-        html = `<h5>🔍 查無資料</h5>`;
-        document.getElementById("result").innerHTML = html;
+ // 日期欄位監聽
+    const dateInput = document.getElementById("date");
+    dateInput.valueAsDate = new Date(); // 預設今天
+    dateInput.addEventListener("change", (e) => {
+      const dateValue = e.target.value;
+      if (!dateValue) {
+        document.getElementById("result").innerHTML = "<p>請選擇日期</p>";
         return;
       }
-    
-      html += `<h5>📅 單日明細（按標題可排序）</h5>`;
-      html += `
-        <table id="dataTable">
-          <thead>
-            <tr>
-              <th data-col="date">日期</th>
-              <th data-col="store">店家</th>
-              <th data-col="payment">付款</th>
-              <th data-col="type">分類</th>
-              <th data-col="amount">金額</th>
-              <th data-col="note">附註</th>
-              <th data-col="memo">備註</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-      `;
-    
-      json.rows.forEach((row, i) => {
-        html += `
-          <tr>
-            <td>${row.date || ""}</td>
-            <td>${row.store || ""}</td>
-            <td>${row.payment || ""}</td>
-            <td>${row.type || ""}</td>
-            <td style="text-align:right; color:${row.amount >= 0 ? "blue" : "red"};">
-              ${row.amount}
-            </td>
-            <td>${row.note || ""}</td>
-            <td>${row.memo || ""}</td>
-            <td>
-              <button class="edit-btn" data-index="${i}">📝 修改</button>
-              <button class="action-btn" data-index="${i}">🗑️ 刪除</button>
-            </td>
-          </tr>
-        `;
-      });
-    
-      html += `</tbody></table>`;
-    
-      document.getElementById("result").innerHTML = html;
-    
-      // === 綁定操作按鈕 ===
-      bindEditButtons(json.rows);
-      bindDeleteButtons(json.rows);
-    
-      // === 表格排序功能 ===
-      enableTableSort("dataTable");
+      querySingleDate(dateValue);
+    });
+
+    // 先載入付款/分類/店家清單
+    if (API_URL) {
+      await loadListData();
+      await loadStoreList();
+      // 預設查今天
+      querySingleDate(dateInput.value);
     }
+
+  } catch (err) {
+    console.error("初始化設定失敗：", err);
+    alert("初始化設定失敗：" + err.message);
+  }
+}
+
+// ----------------------------------------------------
+// 查單日
+// ----------------------------------------------------
+async function querySingleDate(dateStr){
+  try {
+    if (!API_URL) {
+      document.getElementById("result").innerHTML = "<p>❌ API_URL 未設定</p>";
+      return;
+    }
+
+    // 將日期統一成 YYYY/MM/DD
+    const formattedDate = dateStr.replace(/-/g, "/");
+
+    document.getElementById("result").innerHTML = `<p>查詢中，日期：${formattedDate}</p>`;
+
+    const res = await fetch(`${API_URL}?type=query&command=查單日&date=${formattedDate}`);
+    const json = await res.json();
+
+    console.log("查單日回傳資料:", json);
+    renderQueryResult(json);
+
+  } catch (err) {
+    console.error("查單日失敗：", err);
+    document.getElementById("result").innerHTML = `<p>查單日失敗：${err.message}</p>`;
+  }
+}
+
+// ----------------------------------------------------
+// 渲染查單日結果
+// ----------------------------------------------------
+function renderQueryResult(json) {
+  let html = "";
+
+  if (!json.rows || json.rows.length === 0) {
+    html = `<h5>🔍 查無資料</h5>`;
+    document.getElementById("result").innerHTML = html;
+    return;
+  }
+
+  html += `<h5>📅 單日明細（按標題可排序）</h5>`;
+  html += `
+    <table id="dataTable">
+      <thead>
+        <tr>
+          <th data-col="date">日期</th>
+          <th data-col="store">店家</th>
+          <th data-col="payment">付款</th>
+          <th data-col="type">分類</th>
+          <th data-col="amount">金額</th>
+          <th data-col="note">附註</th>
+          <th data-col="memo">備註</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  json.rows.forEach((row, i) => {
+    html += `
+      <tr>
+        <td>${row.date || ""}</td>
+        <td>${row.store || ""}</td>
+        <td>${row.payment || ""}</td>
+        <td>${row.type || ""}</td>
+        <td style="text-align:right; color:${row.amount >= 0 ? "blue" : "red"};">
+          ${row.amount}
+        </td>
+        <td>${row.note || ""}</td>
+        <td>${row.memo || ""}</td>
+        <td>
+          <button class="edit-btn" data-index="${i}">📝 修改</button>
+          <button class="action-btn" data-index="${i}">🗑️ 刪除</button>
+        </td>
+      </tr>
+    `;
+  });
+
+  html += `</tbody></table>`;
+  document.getElementById("result").innerHTML = html;
+
+  bindEditButtons(json.rows);
+  bindDeleteButtons(json.rows);
+  enableTableSort("dataTable");
+}
   
     //清單(type/payment)
     async function loadListData() {
@@ -627,6 +634,7 @@
   </script>
 </body>
 </html>
+
 
 
 
