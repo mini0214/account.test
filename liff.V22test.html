@@ -1,46 +1,82 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
-  <meta charset="utf-8">
-  <title>送出 GAS 指令</title>
+  <meta charset="UTF-8">
+  <title>查單日範例</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    input, button { padding: 5px; margin: 5px 0; }
+    table { border-collapse: collapse; margin-top: 10px; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 5px; text-align: center; }
+    th { background-color: #f0f0f0; }
+  </style>
 </head>
 <body>
-  <h2>送出查單日指令</h2>
 
-  <textarea id="jsonInput" rows="6" cols="50">
-{
-  "type": "query",
-  "command": "查單日",
-  "date": "2025-12-08"
-}
-  </textarea>
-  <br>
-  <button id="sendBtn">送出指令</button>
+  <h3>查單日支出</h3>
+  <label for="dateInput">日期 (yyyy-mm-dd)：</label>
+  <input type="date" id="dateInput">
+  <button id="queryBtn">查詢</button>
 
-  <h3>回傳結果：</h3>
-  <pre id="result"></pre>
+  <div id="result"></div>
 
   <script>
-    const url = "https://script.google.com/macros/s/AKfycbxYkq5LaptDW-fFADbG2C4SMkQL23LtFPn50C_Hu5_d6lY8x6oM5D7ZnsyOsLIVlMiLLw/exec"; // 替換成你實際部署的網址
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxYkq5LaptDW-fFADbG2C4SMkQL23LtFPn50C_Hu5_d6lY8x6oM5D7ZnsyOsLIVlMiLLw/exec"; // ✅ 換成你部署後的 URL
 
-    document.getElementById("sendBtn").addEventListener("click", async () => {
+    document.getElementById("queryBtn").addEventListener("click", async () => {
+      const date = document.getElementById("dateInput").value;
+      if (!date) return alert("請選擇日期");
+
+      const payload = {
+        type: "query",
+        command: "查單日",
+        date
+      };
+
       try {
-        const jsonText = document.getElementById("jsonInput").value;
-        const payload = JSON.parse(jsonText);
-
-        const res = await fetch(url, {
+        const res = await fetch(GAS_URL, {
           method: "POST",
-          body: JSON.stringify(payload),
-          headers: { "Content-Type": "application/json" }
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
         });
 
+        if (!res.ok) throw new Error("網路錯誤：" + res.status);
+
         const data = await res.json();
-        document.getElementById("result").textContent = JSON.stringify(data, null, 2);
+
+        if (!data.ok) {
+          document.getElementById("result").innerHTML = `<p style="color:red">${data.msg || data.error}</p>`;
+          return;
+        }
+
+        // ✅ 建立表格顯示結果
+        let html = `<p>日期：${data.date}，共 ${data.count} 筆，總額：${data.total}</p>`;
+        if (data.rows.length > 0) {
+          html += `<table><tr>
+            <th>日期</th><th>金額</th><th>分類</th><th>付款方式</th><th>店家</th><th>備註</th>
+          </tr>`;
+          data.rows.forEach(r => {
+            html += `<tr>
+              <td>${r[4]}</td>
+              <td>${r[5]}</td>
+              <td>${r[6]}</td>
+              <td>${r[7]}</td>
+              <td>${r[8]}</td>
+              <td>${r[9]}</td>
+            </tr>`;
+          });
+          html += `</table>`;
+        } else {
+          html += "<p>當天沒有資料</p>";
+        }
+
+        document.getElementById("result").innerHTML = html;
+
       } catch (err) {
-        document.getElementById("result").textContent = "錯誤：" + err.message;
+        document.getElementById("result").innerHTML = `<p style="color:red">錯誤：${err.message}</p>`;
       }
     });
   </script>
+
 </body>
 </html>
-
