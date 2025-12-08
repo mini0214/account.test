@@ -241,16 +241,25 @@ async function querySingleDate(dateStr){
       return;
     }
 
-    // 將日期統一成 YYYY/MM/DD
     const formattedDate = dateStr.replace(/-/g, "/");
-
     document.getElementById("result").innerHTML = `<p>查詢中，日期：${formattedDate}</p>`;
 
     const res = await fetch(`${API_URL}?type=query&command=查單日&date=${formattedDate}`);
     const json = await res.json();
 
     console.log("查單日回傳資料:", json);
-    renderQueryResult(json);
+
+    // ✅ 判斷資料來源
+    let rows = [];
+    if (json.rows && Array.isArray(json.rows)) rows = json.rows;
+    else if (json.data && Array.isArray(json.data)) rows = json.data;
+    else if (Array.isArray(json)) rows = json; // 若直接回傳陣列
+    else {
+      document.getElementById("result").innerHTML = "<p>❌ 查單日回傳格式不支援</p>";
+      return;
+    }
+
+    renderQueryResult(rows);
 
   } catch (err) {
     console.error("查單日失敗：", err);
@@ -261,10 +270,10 @@ async function querySingleDate(dateStr){
 // ----------------------------------------------------
 // 渲染查單日結果
 // ----------------------------------------------------
-function renderQueryResult(json) {
+function renderQueryResult(rows) {
   let html = "";
 
-  if (!json.rows || json.rows.length === 0) {
+  if (!rows || rows.length === 0) {
     html = `<h5>🔍 查無資料</h5>`;
     document.getElementById("result").innerHTML = html;
     return;
@@ -288,15 +297,15 @@ function renderQueryResult(json) {
       <tbody>
   `;
 
-  json.rows.forEach((row, i) => {
+  rows.forEach((row, i) => {
     html += `
       <tr>
-        <td>${row.date || ""}</td>
+        <td>${row.date || row.inputDate || ""}</td>
         <td>${row.store || ""}</td>
         <td>${row.payment || ""}</td>
         <td>${row.type || ""}</td>
         <td style="text-align:right; color:${row.amount >= 0 ? "blue" : "red"};">
-          ${row.amount}
+          ${row.amount || row.payout || row.income || 0}
         </td>
         <td>${row.note || ""}</td>
         <td>${row.memo || ""}</td>
@@ -311,8 +320,8 @@ function renderQueryResult(json) {
   html += `</tbody></table>`;
   document.getElementById("result").innerHTML = html;
 
-  bindEditButtons(json.rows);
-  bindDeleteButtons(json.rows);
+  bindEditButtons(rows);
+  bindDeleteButtons(rows);
   enableTableSort("dataTable");
 }
   
@@ -634,6 +643,7 @@ function renderQueryResult(json) {
   </script>
 </body>
 </html>
+
 
 
 
