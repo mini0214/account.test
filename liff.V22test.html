@@ -21,7 +21,7 @@
 <div id="result"></div>
 
 <script>
-const GAS_URL = "https://script.google.com/macros/s/AKfycby_2bt7JafVrWI8JZeGJrNf4E3coy15xDEssLmbY6Ga2fQtOA_iKPL6hTNMbXaIoj_1sw/exec"; // ✅換成你的部署 URL
+const GAS_URL = "https://script.google.com/macros/s/AKfycby5Y8dZyKDrdnLWefKr-PNPEkxIvrsQKXevupbOrmKmQD1jaDDkHzI_ysrKTEOyjcKaAg/exec"; // ✅換成你的部署 URL
 
 document.getElementById("queryBtn").addEventListener("click", async () => {
   const date = document.getElementById("dateInput").value;
@@ -31,3 +31,4 @@ document.getElementById("queryBtn").addEventListener("click", async () => {
     const res = await fetch(GAS_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+
