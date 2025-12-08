@@ -224,7 +224,7 @@
     
       if (!json.rows || json.rows.length === 0) {
         html = `<h5>🔍 查無資料</h5>`;
-        document.getElementById("output").innerHTML = html;
+        document.getElementById("result").innerHTML = html;
         return;
       }
     
@@ -268,7 +268,7 @@
     
       html += `</tbody></table>`;
     
-      document.getElementById("output").innerHTML = html;
+      document.getElementById("result").innerHTML = html;
     
       // === 綁定操作按鈕 ===
       bindEditButtons(json.rows);
@@ -596,6 +596,7 @@
   </script>
 </body>
 </html>
+
 
 
 
