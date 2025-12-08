@@ -400,6 +400,62 @@
         exchange: taiwanTime
       };
 
+      //查單日
+      function renderQueryResult(json) {
+        let html = "";
+      
+        // === 🟩 查單日 (與明細完全相同的渲染邏輯) ===
+        if (json.command === "查單日" && json.rows) {
+          const rowsForDisplay = json.rows;   // 單日查詢不需過濾使用者
+      
+          html += `<h5>📅 查詢日期：${json.date}（共 ${rowsForDisplay.length} 筆）</h5>`;
+          html += `<table id="dataTable">
+                    <tr>
+                      <th>記帳者</th>
+                      <th>日期</th>
+                      <th>店家</th>
+                      <th class="numeric">收入</th>
+                      <th class="numeric">支出</th>
+                      <th>匯率</th>
+                      <th class="numeric">金額</th>
+                      <th>付款</th>
+                      <th>分類</th>
+                      <th>附註</th>
+                      <th>備註</th>
+                      <th>功能</th>
+                    </tr>`;
+      
+          rowsForDisplay.forEach((r, i) => {
+            const dateStr = r[4] ? new Date(r[4]).toLocaleDateString("zh-TW") : "";
+            html += `<tr>
+                      <td>${r[3]}</td>
+                      <td>${dateStr}</td>
+                      <td>${r[8]}</td>
+                      <td class="numeric">${Number(r[11]).toLocaleString()}</td>
+                      <td class="numeric">
+                        ${Number(r[12]).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                      <td>${r[13]}</td>
+                      <td class="numeric">${Number(r[5]).toLocaleString()}</td>
+                      <td>${r[7]}</td>
+                      <td>${r[6]}</td>
+                      <td>${r[9]}</td>
+                      <td>${r[10]}</td>
+                      <td>
+                        <button class="edit-btn" data-index="${i}">📝 修改</button>
+                        <button class="action-btn" data-index="${i}">🗑️ 刪除</button>
+                      </td>
+                    </tr>`;
+          });
+      
+          html += `</table>`;
+      
+          const totalAmount = rowsForDisplay.reduce((sum, r) => sum + Number(r[5] || 0), 0);
+          html += `<div class="total">📌 總額：${totalAmount.toLocaleString()} 元</div>`;
+        }
+      
+        document.getElementById("result").innerHTML = html;
+
       const apiUrl = API_URL; 
       try {
         const res = await fetch(apiUrl, {
@@ -536,4 +592,5 @@
   </script>
 </body>
 </html>
+
 
