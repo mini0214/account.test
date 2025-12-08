@@ -624,7 +624,13 @@ function renderQueryResult(rows) {
               
                 alert(alertMsg);
               }
-        
+
+              // ✅ 送出成功後刷新明細表
+              const dateValue = document.getElementById("date").value;
+              if (dateValue) {
+                querySingleDate(dateValue);  // 這行就是關鍵
+              }
+          
               // ✅ 重設表單
               document.getElementById("expenseForm").reset();
               document.getElementById("date").valueAsDate = new Date();
@@ -643,6 +649,7 @@ function renderQueryResult(rows) {
   </script>
 </body>
 </html>
+
 
 
 
