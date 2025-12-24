@@ -26,6 +26,7 @@
     
     <label>類別：</label>
     <select id="classify">
+      <option value="payment">匯率 currency</option>
       <option value="payment">付款 payment</option>
       <option value="type">分類 type</option>
     </select><br>
@@ -39,6 +40,9 @@
     <label>備註：</label>
     <input type="text" id="note" placeholder="選填"><br>
 
+    <label>匯率：</label>
+    <input type="text" id="exchange" placeholder="轉換幣別必填"><br>
+
     <!-- 儲存/查詢按鈕放入容器置中 -->
     <div style="text-align: center; margin-bottom: 20px;">
       <button onclick="saveOther()">📤 儲存</button>
@@ -47,7 +51,7 @@
 
     <table id="otherTable">
       <thead>
-        <tr><th>類別</th><th>編號</th><th>名稱</th><th>備註</th><th>功能</th></tr>
+        <tr><th>類別</th><th>編號</th><th>名稱</th><th>備註</th><th>匯率</th><th>功能</th></tr>
       </thead>
       <tbody></tbody>
     </table>
@@ -105,7 +109,7 @@ async function initApp(){
   }
 }
 // ----------------------------------------------------
-// 1️⃣ 儲存/修改（加上type/payment綁定檢查）
+// 1️⃣ 儲存/修改（加上curreny.type.payment綁定檢查）
 // ----------------------------------------------------
 async function saveOther() {
   const payload = {
@@ -115,6 +119,7 @@ async function saveOther() {
     number: document.getElementById("number").value.trim(),
     name: document.getElementById("name").value.trim(),
     note: (document.getElementById("note")?.value || "").trim(),
+    exchange: (document.getElementById("exchange")?.value || "").trim(),
     oldNumber: window.oldNumber || undefined // ✅ 修改時要帶上舊的編號
   };
 
@@ -124,22 +129,25 @@ async function saveOther() {
   }
 
   try {
-    // 取得分類與付款方式列表
-    const [typeRes, paymentRes] = await Promise.all([
+    // 取得匯率.分類.付款方式列表
+    const [currencys, typeRes, paymentRes] = await Promise.all([
+      fetch(API_URL + "?type=query&command=cashdate.currency"),
       fetch(API_URL + "?type=query&command=cashdate.type"),
       fetch(API_URL + "?type=query&command=cashdate.payment")
     ]);
 
+    const currencyData = await typeRes.json();
     const typeData = await typeRes.json();
     const paymentData = await paymentRes.json();
 
     const allNames = [
+      ...(currencyData.types || []),
       ...(typeData.types || []),
       ...(paymentData.payments || [])
     ];
 
     if (allNames.includes(payload.name)) {
-      alert(`⚠️「${payload.name}」已存在於系統分類或付款方式中，無法新增/修改`);
+      alert(`⚠️「${payload.name}」已存在於系統匯率.分類.付款方式中，無法新增/修改`);
       return;
     }
 
@@ -196,7 +204,7 @@ async function loadOther() {
           <td>${row.number}</td>
           <td>${row.name}</td>
           <td>${row.note || ""}</td>
-          <td>
+          <td>${row.exchange}</td>  <td>
             <button class="edit-btn" onclick="editOther(${idx})">📝 修改</button>
             <button class="action-btn" onclick="deleteOther(${idx})">🗑️ 刪除</button>
           </td>
@@ -208,11 +216,13 @@ async function loadOther() {
       window.otherDataCache = result.list;
       
       // ✅ 統計筆數
+      const exchanges = result.list.filter(r => r.classify === "exchange");
       const typeRows = result.list.filter(r => r.classify === "type");
       const paymentRows = result.list.filter(r => r.classify === "payment");
       document.getElementById("summary").innerHTML = `
       <table>
         <tr class=".total">
+          
           <td>payment 付款<br>💳 ${paymentRows.length} 筆</td>
           <td>type 分類<br>📂 ${typeRows.length} 筆</td>
           <td>總計<br>📌 ${result.list.length} 筆</td>
@@ -305,6 +315,7 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
 
 
