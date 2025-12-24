@@ -222,7 +222,7 @@ async function loadOther() {
       document.getElementById("summary").innerHTML = `
       <table>
         <tr class=".total">
-          
+          <td>exchange 匯率<br>💳 ${exchangeRows.length} 筆</td>     
           <td>payment 付款<br>💳 ${paymentRows.length} 筆</td>
           <td>type 分類<br>📂 ${typeRows.length} 筆</td>
           <td>總計<br>📌 ${result.list.length} 筆</td>
@@ -246,7 +246,8 @@ function editOther(idx) {
   document.getElementById("classify").value = row.classify;
   document.getElementById("number").value = row.number;
   document.getElementById("name").value = row.name;
-  document.getElementById("note").value = row.note || "";
+  document.getElementById("note").value = row.note;
+  document.getElementById("exchange").value = row.exchange || "";
   editIndex = idx;
   window.oldNumber = row.number; // ✅ 記錄原始編號
 }
@@ -260,23 +261,26 @@ async function deleteOther(idx) {
   if (!row) return;
 
   try {
-    // 🔹 同時查詢「分類(type)」與「付款(payment)」清單
-    const [typeRes, paymentRes] = await Promise.all([
+    // 🔹 同時查詢「匯率(exchange)」.「分類(type)」.「付款(payment)」清單
+    const [exchanges, typeRes, paymentRes] = await Promise.all([
+      fetch(API_URL + "?type=query&command=cashdate.exchange"),
       fetch(API_URL + "?type=query&command=cashdate.type"),
       fetch(API_URL + "?type=query&command=cashdate.payment")
     ]);
 
+    const exchangeData = await typeRes.json();   
     const typeData = await typeRes.json();
     const paymentData = await paymentRes.json();
 
     const allNames = [
+      ...(exchangeData.types || []),
       ...(typeData.types || []),
       ...(paymentData.payments || [])
     ];
 
-    // ✅ 如果這筆名稱已存在於分類或付款方式，就禁止刪除
+    // ✅ 如果這筆名稱已存在於匯率.分類.付款方式，就禁止刪除
     if (allNames.includes(row.name)) {
-      alert(`⚠️「${row.name}」已被使用於分類或付款清單中，無法刪除！`);
+      alert(`⚠️「${row.name}」已被使用於匯率.分類.付款方式中，無法刪除！`);
       return;
     }
 
@@ -307,6 +311,7 @@ function clearForm() {
   document.getElementById("number").value = "";
   document.getElementById("name").value = "";
   document.getElementById("note").value = "";
+  document.getElementById("exchange").value = "";
   editIndex = -1;
   window.oldNumber = undefined;
 }
@@ -315,17 +320,3 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
