@@ -12,6 +12,7 @@
   <!-- PDF -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
   
   <style>
     body { font-family: Arial, sans-serif; padding: 50px; }
@@ -30,9 +31,6 @@
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
     th { background-color: #f2f2f2; }
     .numeric { text-align: right; }
-    .edit-btn { font-size: 26px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background: #28a745; }
-    .action-btn { font-size: 26px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background: #dc3545; margin: 0 2px; }
-    .edit-btn:hover, .action-btn:hover { background: #0056b3; color: white; opacity: 0.8; } /* 按下藍色 */
     .total { font-size: 28px; font-weight: bold; color: #d9534f; margin-top: 10px; }
     canvas { display: block; margin: 20px auto; width: 850px; height: 600px; }
   </style>
@@ -89,7 +87,7 @@
 // FALLBACK_GAS_SETTINGS_URL 是「啟動保底設定URL」。第一次啟動時用它讀取設定表。所以未來重新部署 GAS，不需修改此行，除非設定表失效。
 // 若設定表內有 D5（SETTINGS_URL），會自動更新成 D5。
 // 暫時用,後續會自動轉換成設定檔內的固定 D5。這行只是啟動用的臨時鑰匙，真的開門後會自動換成設定表的正式鑰匙。
-let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycby2-1JvsriAfskOJXHyMB8HASeuMs7V-mJOQneD73Q_dJN56NhbWH0Dj8Ldu0LcfxMe/exec";
+let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbwjK8tbxy6xHOIcYsZ0eCBzfFByNrLCXtSsKN2TcsvDZfWygJ_2Q38MHi-Wc1mG3s_S/exec";
      
 let API_URL = "";    // ✅ 從設定檔 D6
 let VERSION = "V";   // ✅ 從設定檔 D10
@@ -332,11 +330,10 @@ function renderResult(command, json) {
                 <th>分類</th>
                 <th>附註</th>
                 <th>備註</th>
-                <th>功能</th>
               </tr>`;
 
     // ✅ 表格資料只輸出 rowsForDisplay
-    rowsForDisplay.forEach((r, i) => {
+    rowsForDisplay.forEach(r => {
       const dateStr = r[4] ? new Date(r[4]).toLocaleDateString("zh-TW") : "";
       html += `<tr>
                 <td>${r[3]}</td>
@@ -352,7 +349,6 @@ function renderResult(command, json) {
                 <td>${r[6]}</td>
                 <td>${r[9]}</td>
                 <td>${r[10]}</td>
-                <td><button class="edit-btn" data-index="${i}">📝 修改</button><button class="action-btn" data-index="${i}"> 🗑️ 刪除</button></td>
       </tr>`;
     });
     html += `</table>`;
@@ -537,7 +533,7 @@ function parseCellValue(txt, colIndex, map) {
   const v = txt.replace(/,/g, "").replace("%", "");
   return isNaN(v) ? txt : parseFloat(v);
 }
-  
+
 // 畫圖
 function renderChart(type, labels, values) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
