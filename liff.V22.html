@@ -88,27 +88,34 @@
         income.value = "";
       });
 
-      // ✅ 監聽支出欄位輸入
-      payout.addEventListener("input", () => {
-        const val = payout.value;
-        if (val.includes(".")) {
-          currency.value = "20";  // 有小數點 → 澳幣
-        } else if (val !== "") {
-          currency.value = "1";   // 無小數點 → 台幣
-        } else {
-          currency.value = "";    // 若清空輸入 → 清空幣別
-        }
-      });
-    </script>      
-
-    <div class="form-block">
+     <div class="form-row">
       <label for="currency">幣別：</label>
       <select id="currency" required>
         <option value="">請選擇幣別</option>
-        <option value="1">台幣:1</option>
-        <option value="20">澳幣:20</option>
       </select>
-    </div>
+     </div>
+
+      // ✅ 監聽支出欄位輸入
+      // payout.addEventListener("input", () => {
+      //   const val = payout.value;
+      //   if (val.includes(".")) {
+      //     currency.value = "20";  // 有小數點 → 澳幣
+      //   } else if (val !== "") {
+      //     currency.value = "1";   // 無小數點 → 台幣
+      //   } else {
+      //     currency.value = "";    // 若清空輸入 → 清空幣別
+      //   }
+      //   
+      //</script>      
+
+    //<div class="form-block">
+    //  <label for="currency">幣別：</label>
+    //  <select id="currency" required>
+    //    <option value="">請選擇幣別</option>
+    //    <option value="1">台幣:1</option>
+    //    <option value="20">澳幣:20</option>
+    //  </select>
+    //</div>
   
     <div class="form-row">
       <label for="payment">付款：</label>
@@ -218,7 +225,7 @@
       }
     }
 
-    //清單(type/payment)
+    //清單(currency/type/payment)
     async function loadListData() {
       try {
         const res = await fetch(`${API_URL}?type=query&command=清單`);
@@ -228,13 +235,23 @@
         if (!data.ok || !data.list) throw new Error("清單資料格式錯誤");
         
         const list = data.list;
+        const currencySelect = document.getElementById("currency");
         const typeSelect = document.getElementById("type");
         const paymentSelect = document.getElementById("payment");
     
         // ✅ 先清空原本選項
+        currencySelect.innerHTML = '<option value="">請選擇幣別</option>';
         typeSelect.innerHTML = '<option value="">請選擇分類</option>';
         paymentSelect.innerHTML = '<option value="">請選擇付款</option>';
-    
+
+        // ✅ 動態加入幣別(currency)
+        list.type.forEach(c => {
+          const opt = document.createElement("option");
+          opt.value = c.exchange;
+          opt.textContent = c.name;
+          currencySelect.appendChild(opt);
+        });
+        
         // ✅ 動態加入分類(type)
         list.type.forEach(t => {
           const opt = document.createElement("option");
@@ -370,6 +387,7 @@
       const payout = document.getElementById("payout").value;
       const payment = document.getElementById("payment").value;
       const currency = document.getElementById("currency").value;
+      const exchange = document.getElementById("exchange").value;
       const type = document.getElementById("type").value;
       const note = document.getElementById("note").value;
       const memo = document.getElementById("memo").value;
@@ -397,7 +415,7 @@
         note: note,
         memo: memo,
         createdAt: taiwanTime,
-        exchange: taiwanTime
+        exchange: exchange
       };
 
       const apiUrl = API_URL; 
@@ -536,4 +554,5 @@
   </script>
 </body>
 </html>
+
 
