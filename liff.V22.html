@@ -245,7 +245,7 @@
         paymentSelect.innerHTML = '<option value="">請選擇付款</option>';
 
         // ✅ 動態加入幣別(currency)
-        list.exchange.forEach(c => {
+        list.currency.forEach(c => {
           const opt = document.createElement("option");
           opt.value = c.exchange;
           opt.textContent = c.name;
@@ -554,6 +554,7 @@
   </script>
 </body>
 </html>
+
 
 
 
