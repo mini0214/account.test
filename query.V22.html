@@ -403,7 +403,7 @@ function renderResult(command, json) {
       
       // 依 filteredRows 計算統計
       const counts = {};
-      filteredRows.forEach(r => {
+      rowsForCalc.forEach(r => {
         const value = r[sec.key] || "未知";
         counts[value] = (counts[value] || 0) + Number(r[5] || 0); // 金額在 r[5]
       });
@@ -1070,6 +1070,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
