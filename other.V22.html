@@ -136,7 +136,7 @@ async function saveOther() {
       fetch(API_URL + "?type=query&command=cashdate.payment")
     ]);
 
-    const currencyData = await typeRes.json();
+    const currencyData = await currencyRes.json();
     const typeData = await typeRes.json();
     const paymentData = await paymentRes.json();
 
@@ -268,7 +268,7 @@ async function deleteOther(idx) {
       fetch(API_URL + "?type=query&command=cashdate.payment")
     ]);
 
-    const exchangeData = await typeRes.json();   
+    const exchangeData = await exchangeRes.json();   
     const typeData = await typeRes.json();
     const paymentData = await paymentRes.json();
 
@@ -320,4 +320,5 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
