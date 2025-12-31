@@ -217,6 +217,7 @@
         const currencySelect = document.getElementById("currency");
         const typeSelect = document.getElementById("type");
         const paymentSelect = document.getElementById("payment");
+        const payoutInput = document.getElementById("payout");
     
         // ✅ 先清空原本選項
         currencySelect.innerHTML = '<option value="">請選擇幣別</option>';
@@ -224,12 +225,25 @@
         paymentSelect.innerHTML = '<option value="">請選擇付款</option>';
 
         // ✅ 動態加入幣別(currency)
-        list.currency.forEach(c => {
-          const opt = document.createElement("option");
-          opt.value = c.exchange;                   // 🔑 value 存「換算值」
-          opt.textContent = `${c.name}:${c.exchange}`;  // 🔑 顯示「幣別:匯率」澳幣:20
-          opt.dataset.name = c.name;                // 🔑 幣別名稱額外帶著
-          currencySelect.appendChild(opt);
+        function renderCurrencyOptions(hasDecimal = false) {
+          currencySelect.innerHTML = '<option value="">請選擇幣別</option>';
+          list.currency.forEach(c => {
+            if (hasDecimal && !c.allowDecimal) return;    // 小數點時只顯示允許小數的幣別
+            const opt = document.createElement("option");
+            opt.value = c.exchange;                       // 🔑 value 存「換算值」
+            opt.textContent = `${c.name}:${c.exchange}`;  // 🔑 顯示「幣別:匯率」澳幣:20
+            opt.dataset.name = c.name;                    // 🔑 幣別名稱額外帶著
+            currencySelect.appendChild(opt);
+          });
+        }
+
+        // 初始顯示全部幣別
+        renderCurrencyOptions(false);
+
+        // 🔹 支出欄位輸入時動態篩選
+        payoutInput.addEventListener("input", () => {
+          const hasDecimal = payoutInput.value.includes(".");
+          renderCurrencyOptions(hasDecimal);
         });
         
         // ✅ 動態加入分類(type)
@@ -248,7 +262,7 @@
           paymentSelect.appendChild(opt);
         });
         
-        // ✅ 加上這行 (關鍵)
+        // ✅ 保存全域清單
         window.otherList = list;  
     
         console.log("✅ 清單載入完成");    
@@ -537,6 +551,7 @@
   </script>
 </body>
 </html>
+
 
 
 
