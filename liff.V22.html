@@ -224,6 +224,11 @@
         typeSelect.innerHTML = '<option value="">請選擇分類</option>';
         paymentSelect.innerHTML = '<option value="">請選擇付款</option>';
 
+        // 🔹 加 allowDecimal 屬性，根據 exchange 判斷
+        list.currency.forEach(c => {
+          c.allowDecimal = c.exchange.toString().includes('.');
+        });
+
         // ✅ 動態加入幣別(currency)
         function renderCurrencyOptions(hasDecimal = false) {
           currencySelect.innerHTML = '<option value="">請選擇幣別</option>';
@@ -459,7 +464,7 @@
                     `📆 日期：${payload.inputDate}\n` +
                     `📋 店家：${payload.store || " "}\n` +
                     `💰 收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
-                    `💰 幣別：${payload.currency}\n` +
+                    `💰 幣別：${payload.exchange}:${payload.currency}\n` +
                     `💰 金額：${payload.amount}\n` +
                     `💳 付款：${payload.payment}\n` +
                     `📂 分類：${payload.type}\n` +
@@ -519,7 +524,7 @@
                   `📆 日期：${payload.inputDate}\n` +
                   `📋 店家：${payload.store || " "}\n` +
                   `💰 收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
-                  `💰 幣別：${payload.currency}\n` +
+                  `💰 幣別：${payload.exchange}:${payload.currency}\n` +
                   `💰 金額：${payload.amount}\n` +
                   `💳 付款：${payload.payment}\n` +
                   `📂 分類：${payload.type}\n` +
@@ -551,9 +556,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
-
