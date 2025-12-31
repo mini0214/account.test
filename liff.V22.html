@@ -226,9 +226,9 @@
         // ✅ 動態加入幣別(currency)
         list.currency.forEach(c => {
           const opt = document.createElement("option");
-          opt.value = c.name;
-          opt.textContent = c.name; // 顯示幣別
-          opt.dataset.exchange= c.exchange; // 匯率另外帶
+          opt.value = c.exchange;                   // 🔑 value 存「換算值」
+          opt.textContent = c.name:${c.exchange}`;  // 🔑 顯示「幣別:匯率」澳幣:20
+          opt.dataset.name = c.name;                // 🔑 幣別名稱額外帶著
           currencySelect.appendChild(opt);
         });
         
@@ -534,4 +534,5 @@
   </script>
 </body>
 </html>
+
 
