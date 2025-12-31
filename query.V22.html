@@ -467,21 +467,21 @@ function makeTableSortable(table, orderMaps = {}) {
   const headers = table.querySelectorAll("th");
 
   // 🔹 自動找出欄位索引（避免硬編 colIndex）
-  let paymentCol = -1, typeCol = -1, dateCol = -1, currencyCol = -1;
+  let paymentCol = -1, typeCol = -1, dateCol = -1, exchangeCol = -1;
   headers.forEach((th, i) => {
     const text = th.innerText.trim();
     if (text.includes("付款")) paymentCol = i;
     if (text.includes("分類")) typeCol = i;
     if (text.includes("日期")) dateCol = i;
-    if (text.includes("幣別")) currencyCol = i;
+    if (text.includes("幣別")) exchangeCol = i;
   });
 
   headers.forEach((th, colIndex) => {
     th.style.cursor = "pointer";
     th.addEventListener("click", () => {
       const rows = Array.from(table.querySelectorAll("tr")).slice(1);
-      const currentOrder = th.dataset.order || null;
-      const newOrder = currentOrder === "asc" ? "desc" : "asc";
+      const exchangeOrder = th.dataset.order || null;
+      const newOrder = exchangeOrder === "asc" ? "desc" : "asc";
       th.dataset.order = newOrder;
 
       // reset 標記
@@ -1070,6 +1070,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
