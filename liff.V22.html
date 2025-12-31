@@ -368,8 +368,8 @@
       const payment = document.getElementById("payment").value;
       //幣別轉換填入相關值
       const currencySelect = document.getElementById("currency");
-      const currency = Number(currencySelect.value);               // 20
-      const exchange = currencySelect.selectedOptions[0]?.dataset.name || "";
+      const currency = Number(currencySelect.value);                         // 20
+      const exchange = currencySelect.selectedOptions[0]?.dataset.name || "";// 澳幣
       
       const type = document.getElementById("type").value;
       const note = document.getElementById("note").value;
@@ -405,9 +405,6 @@
       try {
         const res = await fetch(apiUrl, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
           body: JSON.stringify(payload)
         });
 
@@ -540,6 +537,7 @@
   </script>
 </body>
 </html>
+
 
 
 
