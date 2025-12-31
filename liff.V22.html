@@ -386,7 +386,7 @@
       const income = document.getElementById("income").value;
       const payout = document.getElementById("payout").value;
       const payment = document.getElementById("payment").value;
-      const currency = document.getElementById("currency").value;
+      const currency = Number(document.getElementById("currency").value); //數值20
       const exchange = document.getElementById("exchange").value;
       const type = document.getElementById("type").value;
       const note = document.getElementById("note").value;
@@ -554,6 +554,7 @@
   </script>
 </body>
 </html>
+
 
 
 
