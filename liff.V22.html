@@ -219,6 +219,10 @@
         const paymentSelect = document.getElementById("payment");
         const incomeInput = document.getElementById("income");
         const payoutInput = document.getElementById("payout");
+
+        function renderCurrencyOptions(hasDecimal = false) {
+          // 🔹 先記住當前選擇值
+          const currentValue = currencySelect.value;
     
         // ✅ 先清空原本選項
         currencySelect.innerHTML = '<option value="">請選擇幣別</option>';
@@ -241,6 +245,13 @@
             opt.dataset.name = c.name;                    // 🔑 幣別名稱額外帶著
             currencySelect.appendChild(opt);
           });
+
+          // 🔹 如果原本選的幣別還在新的選項裡，保留選中
+          if ([...currencySelect.options].some(opt => opt.dataset.name === currentValue)) {
+            currencySelect.value = [...currencySelect.options].find(opt => opt.dataset.name === currentValue).value;
+          } else {
+            currencySelect.value = ""; // 否則清空
+          }
         }
 
         // 初始顯示全部幣別
@@ -563,4 +574,5 @@
   </script>
 </body>
 </html>
+
 
