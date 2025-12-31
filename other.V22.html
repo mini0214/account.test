@@ -26,7 +26,7 @@
     
     <label>類別：</label>
     <select id="classify">
-      <option value="payment">匯率 currency</option>
+      <option value="currency">匯率 currency</option>
       <option value="payment">付款 payment</option>
       <option value="type">分類 type</option>
     </select><br>
@@ -216,13 +216,13 @@ async function loadOther() {
       window.otherDataCache = result.list;
       
       // ✅ 統計筆數
-      const exchanges = result.list.filter(r => r.classify === "exchange");
+      const currencys = result.list.filter(r => r.classify === "currency");
       const typeRows = result.list.filter(r => r.classify === "type");
       const paymentRows = result.list.filter(r => r.classify === "payment");
       document.getElementById("summary").innerHTML = `
       <table>
         <tr class=".total">
-          <td>exchange 匯率<br>💳 ${exchanges.length} 筆</td>     
+          <td>exchange 匯率<br>💳 ${currencys.length} 筆</td>     
           <td>payment 付款<br>💳 ${paymentRows.length} 筆</td>
           <td>type 分類<br>📂 ${typeRows.length} 筆</td>
           <td>總計<br>📌 ${result.list.length} 筆</td>
@@ -261,9 +261,9 @@ async function deleteOther(idx) {
   if (!row) return;
 
   try {
-    // 🔹 同時查詢「匯率(exchange)」.「分類(type)」.「付款(payment)」清單
-    const [exchanges, typeRes, paymentRes] = await Promise.all([
-      fetch(API_URL + "?type=query&command=cashdate.exchange"),
+    // 🔹 同時查詢「匯率(currency)」.「分類(type)」.「付款(payment)」清單
+    const [currencys, typeRes, paymentRes] = await Promise.all([
+      fetch(API_URL + "?type=query&command=cashdate.currency"),
       fetch(API_URL + "?type=query&command=cashdate.type"),
       fetch(API_URL + "?type=query&command=cashdate.payment")
     ]);
@@ -320,6 +320,7 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
 
 
