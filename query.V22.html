@@ -87,7 +87,7 @@
 // FALLBACK_GAS_SETTINGS_URL 是「啟動保底設定URL」。第一次啟動時用它讀取設定表。所以未來重新部署 GAS，不需修改此行，除非設定表失效。
 // 若設定表內有 D5（SETTINGS_URL），會自動更新成 D5。
 // 暫時用,後續會自動轉換成設定檔內的固定 D5。這行只是啟動用的臨時鑰匙，真的開門後會自動換成設定表的正式鑰匙。
-let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycby2-1JvsriAfskOJXHyMB8HASeuMs7V-mJOQneD73Q_dJN56NhbWH0Dj8Ldu0LcfxMe/exec";
+let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbwjK8tbxy6xHOIcYsZ0eCBzfFByNrLCXtSsKN2TcsvDZfWygJ_2Q38MHi-Wc1mG3s_S/exec";
      
 let API_URL = "";    // ✅ 從設定檔 D6
 let VERSION = "V";   // ✅ 從設定檔 D10
@@ -533,7 +533,7 @@ function parseCellValue(txt, colIndex, map) {
   const v = txt.replace(/,/g, "").replace("%", "");
   return isNaN(v) ? txt : parseFloat(v);
 }
-  
+
 // 畫圖
 function renderChart(type, labels, values) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
@@ -1053,6 +1053,3 @@ initApp();
 </script>
 </body>
 </html>
-
-
-
