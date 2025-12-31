@@ -445,7 +445,7 @@ function renderResult(command, json) {
         const list = res.list || {};
         const paymentOrder = (list.payment || []).map(p => p.name);
         const typeOrder = (list.type || []).map(t => t.name);
-        const exchangeOrder = (list.exchange || []).map(c => c.name);
+        const exchangeOrder = (list.currency || []).map(c => c.name); //從清單來的所以要將currency帶給exchange
   
         const dataTable = document.getElementById("dataTable");
         if (dataTable) {
@@ -1070,6 +1070,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
