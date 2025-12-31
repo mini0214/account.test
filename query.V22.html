@@ -363,7 +363,7 @@ function renderResult(command, json) {
     const totalAmount = rowsForDisplay.reduce((sum, r) => sum + Number(r[5] || 0), 0);
     html += `<div class="total">📌 總額：${totalAmount.toLocaleString()} 元（共 ${rowsForDisplay.length} 筆）</div>`;
 
-    // 長條圖資料：金額總和 + 幣別最大值
+    // 長條圖資料：金額總和 + 匯率最大值
     const dateSum = {};
     const maxCurrencyByDate = {};
     rowsForDisplay.forEach(r => {
@@ -1067,3 +1067,4 @@ initApp();
 </script>
 </body>
 </html>
+
