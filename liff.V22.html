@@ -56,6 +56,43 @@
       <input type="number" id="income" placeholder="請輸入收入金額" style="width:550px; color:blue; display:none;" step="0.01">
       <input type="number" id="payout" placeholder="請輸入支出金額" style="width:550px; color:red; display:inline-block;" step="0.01">
     </div>   
+
+    <div class="form-row">
+      <label for="currency">幣別：</label>
+      <select id="currency" required>
+        <option value="">請選擇幣別</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label for="payment">付款：</label>
+      <select id="payment" required>
+        <option value="">請選擇付款</option>
+      </select>
+    </div>
+
+    <div class="form-block">
+      <label for="type">分類：</label>
+      <select id="type" required>
+        <option value="">請選擇分類</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label for="store">附註：</label>
+      <input type="text" id="note" placeholder="選填">
+    </div>
+
+    <div class="form-row">
+      <label for="store">備註：</label>
+      <input type="text" id="memo" placeholder="選填">
+    </div>
+
+    <button type="submit" id="submitBtn">送出</button>
+    <div id="loadingMsg" style="display:none; font-size:40px; color:red; text-align:center; margin-top:20px;">
+      ⏳ 資料送出中，請稍候...
+    </div>
+  </form>
     
     <script>      
       const btnIncome = document.getElementById("btnIncome");
@@ -87,56 +124,7 @@
         income.style.display = "none";
         income.value = "";
       });
-
-     <div class="form-row">
-      <label for="currency">幣別：</label>
-      <select id="currency" required>
-        <option value="">請選擇幣別</option>
-      </select>
-     </div>
-
-      // ✅ 監聽支出欄位輸入
-      // payout.addEventListener("input", () => {
-      //   const val = payout.value;
-      //   if (val.includes(".")) {
-      //     currency.value = "20";  // 有小數點 → 澳幣
-      //   } else if (val !== "") {
-      //     currency.value = "1";   // 無小數點 → 台幣
-      //   } else {
-      //     currency.value = "";    // 若清空輸入 → 清空幣別
-      //   }
-      //   
-      //</script>      
-
-    <div class="form-row">
-      <label for="payment">付款：</label>
-      <select id="payment" required>
-        <option value="">請選擇付款</option>
-      </select>
-    </div>
-
-    <div class="form-block">
-      <label for="type">分類：</label>
-      <select id="type" required>
-        <option value="">請選擇分類</option>
-      </select>
-    </div>
-
-    <div class="form-row">
-      <label for="store">附註：</label>
-      <input type="text" id="note" placeholder="選填">
-    </div>
-
-    <div class="form-row">
-      <label for="store">備註：</label>
-      <input type="text" id="memo" placeholder="選填">
-    </div>
-
-    <button type="submit" id="submitBtn">送出</button>
-    <div id="loadingMsg" style="display:none; font-size:40px; color:red; text-align:center; margin-top:20px;">
-      ⏳ 資料送出中，請稍候...
-    </div>
-  </form>
+    </script>
 
   <!-- LIFF 初始化 + 登錄送出 -->
   <script>  
@@ -546,12 +534,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
