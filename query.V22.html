@@ -330,6 +330,7 @@ function renderResult(command, json) {
                 <th>分類</th>
                 <th>附註</th>
                 <th>備註</th>
+                <th>幣別</th>
               </tr>`;
 
     // ✅ 表格資料只輸出 rowsForDisplay
@@ -349,6 +350,7 @@ function renderResult(command, json) {
                 <td>${r[6]}</td>
                 <td>${r[9]}</td>
                 <td>${r[10]}</td>
+                <td>${r[14]}</td>
       </tr>`;
     });
     html += `</table>`;
@@ -1053,6 +1055,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
