@@ -467,13 +467,13 @@ function makeTableSortable(table, orderMaps = {}) {
   const headers = table.querySelectorAll("th");
 
   // 🔹 自動找出欄位索引（避免硬編 colIndex）
-  let paymentCol = -1, typeCol = -1, dateCol = -1, exchangeCol = -1;
+  let paymentCol = -1, typeCol = -1, dateCol = -1, currencyCol = -1;
   headers.forEach((th, i) => {
     const text = th.innerText.trim();
     if (text.includes("付款")) paymentCol = i;
     if (text.includes("分類")) typeCol = i;
     if (text.includes("日期")) dateCol = i;
-    if (text.includes("幣別")) exchangeCol = i;
+    if (text.includes("幣別")) currencyCol = i;
   });
 
   headers.forEach((th, colIndex) => {
@@ -1070,6 +1070,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
