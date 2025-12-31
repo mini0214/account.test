@@ -220,23 +220,15 @@
         const incomeInput = document.getElementById("income");
         const payoutInput = document.getElementById("payout");
 
-        function renderCurrencyOptions(hasDecimal = false) {
-          // 🔹 先記住當前選擇值
-          const currentValue = currencySelect.value;
-    
-        // ✅ 先清空原本選項
-        currencySelect.innerHTML = '<option value="">請選擇幣別</option>';
-        typeSelect.innerHTML = '<option value="">請選擇分類</option>';
-        paymentSelect.innerHTML = '<option value="">請選擇付款</option>';
-
         // 🔹 加 allowDecimal 屬性，根據 exchange 判斷
         list.currency.forEach(c => {
           c.allowDecimal = c.exchange.toString().includes('.');
-        });
-
+        });        
+        
         // ✅ 動態加入幣別(currency)
         function renderCurrencyOptions(hasDecimal = false) {
-          currencySelect.innerHTML = '<option value="">請選擇幣別</option>';
+          const currentValue = currencySelect.value;                         // ✅ 記住原本選擇
+          currencySelect.innerHTML = '<option value="">請選擇幣別</option>';  // ✅ 先清空原本選項
           list.currency.forEach(c => {
             if (hasDecimal && !c.allowDecimal) return;    // 小數點時只顯示允許小數的幣別
             const opt = document.createElement("option");
@@ -270,6 +262,7 @@
         });
         
         // ✅ 動態加入分類(type)
+        typeSelect.innerHTML = '<option value="">請選擇分類</option>';  // ✅ 先清空原本選項
         list.type.forEach(t => {
           const opt = document.createElement("option");
           opt.value = t.name;
@@ -278,6 +271,7 @@
         });
     
         // ✅ 動態加入付款(payment)
+        paymentSelect.innerHTML = '<option value="">請選擇付款</option>';  // ✅ 先清空原本選項
         list.payment.forEach(p => {
           const opt = document.createElement("option");
           opt.value = p.name;
@@ -574,5 +568,6 @@
   </script>
 </body>
 </html>
+
 
 
