@@ -247,8 +247,9 @@
         // ✅ 動態加入幣別(currency)
         list.currency.forEach(c => {
           const opt = document.createElement("option");
-          opt.value = c.exchange;
-          opt.textContent = c.name;
+          opt.value = c.name;
+          opt.textContent = c.name; // 顯示幣別
+          opt.dataset.exchange= c.exchange; // 匯率另外帶
           currencySelect.appendChild(opt);
         });
         
@@ -554,6 +555,7 @@
   </script>
 </body>
 </html>
+
 
 
 
