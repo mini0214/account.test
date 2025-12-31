@@ -217,6 +217,7 @@
         const currencySelect = document.getElementById("currency");
         const typeSelect = document.getElementById("type");
         const paymentSelect = document.getElementById("payment");
+        const incomeInput = document.getElementById("income");
         const payoutInput = document.getElementById("payout");
     
         // ✅ 先清空原本選項
@@ -244,6 +245,12 @@
 
         // 初始顯示全部幣別
         renderCurrencyOptions(false);
+
+        // 🔹 收入欄位輸入時動態篩選
+        incomeInput.addEventListener("input", () => {
+          const hasDecimal = incomeInput.value.includes(".");
+          renderCurrencyOptions(hasDecimal);
+        });
 
         // 🔹 支出欄位輸入時動態篩選
         payoutInput.addEventListener("input", () => {
@@ -464,7 +471,7 @@
                     `📆 日期：${payload.inputDate}\n` +
                     `📋 店家：${payload.store || " "}\n` +
                     `💰 收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
-                    `💰 幣別：${payload.exchange}:${payload.currency}\n` +
+                    `💰 幣別：${payload.exchange} : ${payload.currency}\n` +
                     `💰 金額：${payload.amount}\n` +
                     `💳 付款：${payload.payment}\n` +
                     `📂 分類：${payload.type}\n` +
@@ -524,7 +531,7 @@
                   `📆 日期：${payload.inputDate}\n` +
                   `📋 店家：${payload.store || " "}\n` +
                   `💰 收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
-                  `💰 幣別：${payload.exchange}:${payload.currency}\n` +
+                  `💰 幣別：${payload.exchange} : ${payload.currency}\n` +
                   `💰 金額：${payload.amount}\n` +
                   `💳 付款：${payload.payment}\n` +
                   `📂 分類：${payload.type}\n` +
@@ -556,3 +563,4 @@
   </script>
 </body>
 </html>
+
