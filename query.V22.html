@@ -541,8 +541,8 @@ function parseCellValue(txt, colIndex, map) {
   }
 
   // 🔹 幣別欄位（依清單順序）
-  if (colIndex === map.exchangeCol && map.exchangeOrder?.length) {
-    const idx = map.exchangeOrder.indexOf(txt);
+  if (colIndex === map.currencyCol && map.currencyOrder?.length) {
+    const idx = map.currencyOrder.indexOf(txt);
     return idx !== -1 ? idx : 999;
   }
 
@@ -1070,6 +1070,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
