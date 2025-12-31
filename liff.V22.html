@@ -94,6 +94,28 @@
         <option value="">請選擇幣別</option>
       </select>
      </div>
+
+      // ✅ 監聽支出欄位輸入
+      // payout.addEventListener("input", () => {
+      //   const val = payout.value;
+      //   if (val.includes(".")) {
+      //     currency.value = "20";  // 有小數點 → 澳幣
+      //   } else if (val !== "") {
+      //     currency.value = "1";   // 無小數點 → 台幣
+      //   } else {
+      //     currency.value = "";    // 若清空輸入 → 清空幣別
+      //   }
+      //   
+      //</script>      
+
+    //<div class="form-block">
+    //  <label for="currency">幣別：</label>
+    //  <select id="currency" required>
+    //    <option value="">請選擇幣別</option>
+    //    <option value="1">台幣:1</option>
+    //    <option value="20">澳幣:20</option>
+    //  </select>
+    //</div>
  
     <div class="form-row">
       <label for="payment">付款：</label>
@@ -533,6 +555,7 @@
   </script>
 </body>
 </html>
+
 
 
 
