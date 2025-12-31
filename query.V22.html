@@ -340,10 +340,12 @@ function renderResult(command, json) {
                 <td>${r[3]}</td>
                 <td>${dateStr}</td>
                 <td>${r[8]}</td>
-                <td class="numeric">${Number(r[11]).toLocaleString()}</td>
+                <td class="numeric">
+                  ${Number(r[11]).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
                 <td class="numeric">
                   ${Number(r[12]).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </td>
+                  </td>
                 <td>${r[13]}</td>
                 <td class="numeric">${Number(r[5]).toLocaleString()}</td>
                 <td>${r[7]}</td>
@@ -1055,7 +1057,3 @@ initApp();
 </script>
 </body>
 </html>
-
-
-
-
