@@ -55,6 +55,7 @@
   <button id="queryMonthPayBtn">💳 付款</button>
   <button id="queryMonthTypeBtn">📂 分類</button>
   <button id="queryMonthStoreBtn">📋 店家</button>
+  <button id="queryMonthExchangeBtn">💰 幣別</button>
   <button id="queryMonthUserBtn">👤 記帳者</button>
 </div>
 
@@ -242,6 +243,7 @@ document.getElementById("queryMonthBtn").addEventListener("click", () => sendQue
 document.getElementById("queryMonthTypeBtn").addEventListener("click", () => sendQuery("分類"));
 document.getElementById("queryMonthPayBtn").addEventListener("click", () => sendQuery("付款"));
 document.getElementById("queryMonthStoreBtn").addEventListener("click", () => sendQuery("店家"));
+document.getElementById("queryMonthExchangeBtn").addEventListener("click", () => sendQuery("幣別"));
 document.getElementById("queryMonthUserBtn").addEventListener("click", () => sendQuery("記帳者"));
 
 // 發送查詢
@@ -382,11 +384,12 @@ function renderResult(command, json) {
     renderChart("bar", sortedDates, [sumValues, currencyValues]);
   }
 
-  // 分類、付款、店家、記帳者
+  // 分類、付款、店家、幣別、記帳者
   const sections = [
     { cmd: "分類", key: 6, title: "📂 選擇分類統計;標題按下即可排序" },
     { cmd: "付款", key: 7, title: "💳 選擇付款統計;標題按下即可排序" },
     { cmd: "店家", key: 8, title: "📋 選擇店家統計;標題按下即可排序" },
+    { cmd: "幣別", key: 14, title: "📋 選擇幣別統計;標題按下即可排序" },
     { cmd: "記帳者", key: 3, title: "👤 選擇記帳者統計;標題按下即可排序" }
   ];
 
@@ -412,7 +415,7 @@ function renderResult(command, json) {
       html += `<h5>${sec.title}</h5>`;
       html += `<table id="dataTable">
                  <tr>
-                   <th>${sec.cmd==="店家"?"店家":sec.cmd==="付款"?"付款方式":sec.cmd==="記帳者"?"記帳者":"分類方式"}</th>
+                   <th>${sec.cmd==="店家"?"店家":sec.cmd==="付款"?"付款方式":sec.cmd==="幣別"?"幣別":sec.cmd==="記帳者"?"記帳者":"分類方式"}</th>
                    <th class="numeric">金額</th>
                    <th class="numeric">佔比</th>
                  </tr>`;
@@ -435,17 +438,18 @@ function renderResult(command, json) {
   document.getElementById("queryResult").innerHTML = html;
 
   // ✅ 若是明細.付款.分類查詢，依清單順序排序付款與分類
-  if (command === "明細" || command === "付款" || command === "分類") {
+  if (command === "明細" || command === "付款" || command === "分類" || command === "幣別") {
     fetch(API_URL + "?type=query&command=清單")
       .then(r => r.json())
       .then(res => {
         const list = res.list || {};
         const paymentOrder = (list.payment || []).map(p => p.name);
         const typeOrder = (list.type || []).map(t => t.name);
+        const currencyOrder = (list.currency || []).map(c => c.name);
   
         const dataTable = document.getElementById("dataTable");
         if (dataTable) {
-          makeTableSortable(dataTable, { paymentOrder, typeOrder });
+          makeTableSortable(dataTable, { paymentOrder, typeOrder, currencyOrder });
         }
       })
       .catch(err => console.error("清單排序載入失敗:", err));
@@ -530,6 +534,12 @@ function parseCellValue(txt, colIndex, map) {
   // 🔹 分類欄位（依清單順序）
   if (colIndex === map.typeCol && map.typeOrder?.length) {
     const idx = map.typeOrder.indexOf(txt);
+    return idx !== -1 ? idx : 999;
+  }
+
+  // 🔹 幣別欄位（依清單順序）
+  if (colIndex === map.currencyCol && map.currencyOrder?.length) {
+    const idx = map.currencyOrder.indexOf(txt);
     return idx !== -1 ? idx : 999;
   }
 
