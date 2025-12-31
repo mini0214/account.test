@@ -498,12 +498,14 @@ function makeTableSortable(table, orderMaps = {}) {
           paymentCol,
           typeCol,
           dateCol,
+          exchangeCol,
           ...orderMaps
         });
         const bVal = parseCellValue(b.cells[colIndex]?.innerText || "", colIndex, {
           paymentCol,
           typeCol,
           dateCol,
+          exchangeCol,
           ...orderMaps
         });
 
@@ -1068,5 +1070,6 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
