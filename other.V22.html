@@ -252,7 +252,7 @@ function editOther(idx) {
   window.oldNumber = row.number; // ✅ 記錄原始編號
 }
 // ----------------------------------------------------
-// 4️⃣ 刪除（加上type/payment綁定檢查）
+// 4️⃣ 刪除（加上currency/type/payment綁定檢查）
 // ----------------------------------------------------
 async function deleteOther(idx) {
   if (!confirm("❗確定要刪除這筆資料嗎？")) return;
@@ -273,7 +273,7 @@ async function deleteOther(idx) {
     const paymentData = await paymentRes.json();
 
     const allNames = [
-      ...(currencyRes.types || []),
+      ...(currencyData.types || []),
       ...(typeData.types || []),
       ...(paymentData.payments || [])
     ];
