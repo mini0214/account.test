@@ -267,18 +267,18 @@ async function deleteOther(idx) {
 
   try {
     // 🔹 同時查詢「匯率(currency)」.「分類(type)」.「付款(payment)」清單
-    const [currencyRes, typeRes, paymentRes] = await Promise.all([
-      fetch(API_URL + "?type=query&command=cashdate.currency"),
+    const [exchangeRes, typeRes, paymentRes] = await Promise.all([
+      fetch(API_URL + "?type=query&command=cashdate.exchange"),
       fetch(API_URL + "?type=query&command=cashdate.type"),
       fetch(API_URL + "?type=query&command=cashdate.payment")
     ]);
 
-    const currencyData = await currencyRes.json();   
+    const exchangeData = await exchangeRes.json();   
     const typeData = await typeRes.json();
     const paymentData = await paymentRes.json();
 
     const allNames = [
-      ...(currencyData.types || []),
+      ...(exchangeData.currendys || []),// ✅ 這裡是 currencys
       ...(typeData.types || []),
       ...(paymentData.payments || [])
     ];
@@ -325,10 +325,3 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
