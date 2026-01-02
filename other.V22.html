@@ -141,7 +141,7 @@ async function saveOther() {
     const paymentData = await paymentRes.json();
 
     const allNames = [
-      ...(currencyData.types || []),
+      ...(currencyData.currencys || []),
       ...(typeData.types || []),
       ...(paymentData.payments || [])
     ];
@@ -320,3 +320,4 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
