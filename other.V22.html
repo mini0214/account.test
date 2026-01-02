@@ -137,7 +137,7 @@ async function saveOther() {
     ]);
 
     const exchangeData = await exchangeRes.json();
-    alert("💱 exchange query result: " + JSON.stringify(exchangeData));
+    alert("💰 exchange query result: " + JSON.stringify(exchangeData));
     
     const typeData = await typeRes.json();
     alert("📂 type query result: " + JSON.stringify(typeData));
@@ -274,11 +274,16 @@ async function deleteOther(idx) {
     ]);
 
     const exchangeData = await exchangeRes.json();   
+    alert("💰 exchange query result: " + JSON.stringify(exchangeData));
+    
     const typeData = await typeRes.json();
+    alert("📂 type query result: " + JSON.stringify(typeData));
+    
     const paymentData = await paymentRes.json();
+    alert("💳 payment query result: " + JSON.stringify(paymentData));
 
     const allNames = [
-      ...(exchangeData.currendys || []),// ✅ 這裡是 currencys
+      ...(exchangeData.currendys || []), // ✅ 這裡用 currencys
       ...(typeData.types || []),
       ...(paymentData.payments || [])
     ];
