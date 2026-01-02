@@ -149,6 +149,12 @@ async function saveOther() {
       ...(paymentData.payments || [])
     ];
 
+    // 如果正在修改，把自己的舊名稱排除
+    if (editIndex !== -1 && window.oldName) {
+      allNames = allNames.filter(n => n !== window.oldName);
+    }
+
+    // ⚠️ 檢查名稱重複
     if (allNames.includes(payload.name)) {
       alert(`⚠️「${payload.name}」已存在於系統匯率.分類.付款方式中，無法新增/修改`);
       return;
@@ -253,6 +259,7 @@ function editOther(idx) {
   document.getElementById("exchange").value = row.exchange || "";
   editIndex = idx;
   window.oldNumber = row.number; // ✅ 記錄原始編號
+  window.oldName = row.name;     // ✅ 新增保留舊名稱
 }
 // ----------------------------------------------------
 // 4️⃣ 刪除（加上currency/type/payment綁定檢查）
@@ -320,14 +327,10 @@ function clearForm() {
   document.getElementById("exchange").value = "";
   editIndex = -1;
   window.oldNumber = undefined;
+  window.oldName = undefined; // ✅ 清掉舊名稱
 }
 
 initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
-
-
-
-
-
