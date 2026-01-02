@@ -139,7 +139,9 @@ async function saveOther() {
     const currencyData = await currencyRes.json();
     alert("exchange query result: " + JSON.stringify(currencyData));
     const typeData = await typeRes.json();
+    alert("type query result: " + JSON.stringify(typeData));
     const paymentData = await paymentRes.json();
+    alert("payment query result: " + JSON.stringify(paymentData));
 
     const allNames = [
       ...(currencyData.currencys || []),
@@ -321,6 +323,7 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
 
 
