@@ -128,6 +128,12 @@ async function saveOther() {
     return;
   }
 
+  // 🔹 如果是 currency，exchange 欄位必填
+  if (payload.classify === "currency" && !payload.exchange) {
+    alert("❗匯率 currency 類別，匯率欄位必填！");
+    return;
+  }
+  
   try {
     // 取得匯率.分類.付款方式列表
     const [exchangeRes, typeRes, paymentRes] = await Promise.all([
@@ -334,4 +340,5 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
