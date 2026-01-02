@@ -131,7 +131,7 @@ async function saveOther() {
   try {
     // 取得匯率.分類.付款方式列表
     const [currencyRes, typeRes, paymentRes] = await Promise.all([
-      fetch(API_URL + "?type=query&command=cashdate.currency"),
+      fetch(API_URL + "?type=query&command=cashdate.exchange"),//cashdata.exchange
       fetch(API_URL + "?type=query&command=cashdate.type"),
       fetch(API_URL + "?type=query&command=cashdate.payment")
     ]);
@@ -320,4 +320,5 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
