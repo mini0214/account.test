@@ -143,16 +143,16 @@ async function saveOther() {
     const paymentData = await paymentRes.json();
     //alert("💳 payment query result: " + JSON.stringify(paymentData)); //顯示cashdata的distinct的資料
 
-    let allNames = [
+    const allNames = [
       ...(exchangeData.exchanges || []),
       ...(typeData.types || []),
       ...(paymentData.payments || [])
     ];
 
     // 如果正在修改，把自己的舊名稱排除
-    if (editIndex !== -1 && window.oldName) {
-      allNames = allNames.filter(n => n !== window.oldName);
-    }
+    const checkNames = (editIndex !== -1 && window.oldName) 
+        ? allNames.filter(n => n !== window.oldName)
+        : allNames;
 
     // ⚠️ 檢查名稱重複
     if (allNames.includes(payload.name)) {
@@ -334,4 +334,3 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
-
