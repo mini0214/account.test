@@ -272,11 +272,11 @@ async function deleteOther(idx) {
     ]);
 
     const exchangeData = await exchangeRes.json();   
-    alert("💰 exchange query result: " + JSON.stringify(exchangeData)); //顯示cashdata的distinct的資料
+    //alert("💰 exchange query result: " + JSON.stringify(exchangeData)); //顯示cashdata的distinct的資料
     const typeData = await typeRes.json();
-    alert("📂 type query result: " + JSON.stringify(typeData)); //顯示cashdata的distinct的資料
+    //alert("📂 type query result: " + JSON.stringify(typeData)); //顯示cashdata的distinct的資料
     const paymentData = await paymentRes.json();
-    alert("💳 payment query result: " + JSON.stringify(paymentData)); //顯示cashdata的distinct的資料
+    //alert("💳 payment query result: " + JSON.stringify(paymentData)); //顯示cashdata的distinct的資料
 
     const allNames = [
       ...(exchangeData.exchanges || []), 
@@ -326,6 +326,7 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
 
 
