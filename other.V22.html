@@ -155,7 +155,7 @@ async function saveOther() {
         : allNames;
 
     // ⚠️ 檢查名稱重複
-    if (allNames.includes(payload.name)) {
+    if (checkNames.includes(payload.name)) {
       alert(`⚠️「${payload.name}」已存在於系統匯率.分類.付款方式中，無法新增/修改`);
       return;
     }
@@ -334,3 +334,4 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
