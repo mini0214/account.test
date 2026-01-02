@@ -283,7 +283,7 @@ async function deleteOther(idx) {
     alert("💳 payment query result: " + JSON.stringify(paymentData));
 
     const allNames = [
-      ...(exchangeData.currendys || []), // ✅ 這裡用 currencys
+      ...(exchangeData.currencys || []), // ✅ 這裡用 currencys
       ...(typeData.types || []),
       ...(paymentData.payments || [])
     ];
@@ -330,4 +330,5 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
