@@ -146,7 +146,7 @@ async function saveOther() {
     //alert("💳 payment query result: " + JSON.stringify(paymentData));
 
     const allNames = [
-      ...(exchangeData.currencys || []), // ✅ 這裡用 currencys
+      ...(exchangeData.exchanges || []),
       ...(typeData.types || []),
       ...(paymentData.payments || [])
     ];
@@ -283,7 +283,7 @@ async function deleteOther(idx) {
     alert("💳 payment query result: " + JSON.stringify(paymentData));
 
     const allNames = [
-      ...(exchangeData.currencys || []), // ✅ 這裡用 currencys
+      ...(exchangeData.exchanges || []), 
       ...(typeData.types || []),
       ...(paymentData.payments || [])
     ];
@@ -330,5 +330,6 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
 
