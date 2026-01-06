@@ -464,14 +464,15 @@ function renderResult(command, json) {
           window.categoryTrendChart.destroy();
         }
       
-        // 取金額最大的前 5 類（避免太亂）
         const totals = Object.entries(categoryMonthMap).map(([cat, m]) => {
           const sum = Object.values(m).reduce((a, b) => a + b, 0);
           return { cat, sum };
         });
-      
-        totals.sort((a, b) => b.sum - a.sum);
-        const topCats = totals.slice(0, 5).map(t => t.cat);
+        
+        // 取金額最大的前 5 類（避免太亂）      
+        // totals.sort((a, b) => b.sum - a.sum);
+        // const topCats = totals.slice(0, 5).map(t => t.cat);
+        const topCats = Object.keys(categoryMonthMap); // 直接取所有類別
       
         const datasets = topCats.map((cat, idx) => ({
           label: cat,
@@ -1149,6 +1150,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
