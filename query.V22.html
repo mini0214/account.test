@@ -501,6 +501,12 @@ function renderResult(command, json) {
   });
 
   document.getElementById("queryResult").innerHTML = html;
+  
+  // ⭐ 這裡呼叫一次即可
+  renderCategoryTrendForCommand(command, json);
+  
+  // ✅ 查詢完成後顯示匯出按鈕
+  document.getElementById("exportArea").style.display = "block";
 
   // ✅ 若是明細.付款.分類查詢，依清單順序排序付款與分類
   if (command === "明細" || command === "付款" || command === "分類" || command === "幣別") {
@@ -1135,6 +1141,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
