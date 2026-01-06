@@ -439,6 +439,22 @@ function renderResult(command, json) {
         renderCategoryTrend(json.months_6m, json.categories_6m);
       }
 
+      if (command === "付款" && json.months_6m && json.categories_6m) {
+        renderCategoryTrend(json.months_6m, json.categories_6m);
+      }
+
+      if (command === "店家" && json.months_6m && json.categories_6m) {
+        renderCategoryTrend(json.months_6m, json.categories_6m);
+      }
+
+      if (command === "幣別" && json.months_6m && json.categories_6m) {
+        renderCategoryTrend(json.months_6m, json.categories_6m);
+      }
+
+      if (command === "記帳者" && json.months_6m && json.categories_6m) {
+        renderCategoryTrend(json.months_6m, json.categories_6m);
+      }
+      
       //⭐ 近 6 個月「分類趨勢圖」「專用畫圖函式」（不動你原本 renderChart）
       function renderCategoryTrend(months, categoryMonthMap) {
         const ctx = document.getElementById("categoryTrendCanvas").getContext("2d");
@@ -1133,6 +1149,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
