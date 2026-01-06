@@ -67,7 +67,7 @@
 <!-- 📊 查詢結果顯示區 -->  
 <div id="queryResult"></div> 
 <canvas id="chartCanvas"></canvas>
-<canvas id="categoryTrendCanvas"></canvas> <!-- ⭐ 近 6 個月「分類趨勢圖」 -->
+<canvas id="categoryTrendCanvas"></canvas> <!-- ⭐ 近 6 個月「趨勢圖」 -->
   
 <!-- ✅ 匯出按鈕獨立區塊（固定位置） -->
 <div id="exportArea" style="text-align:center; margin-top:10px; display:none;">
@@ -434,47 +434,49 @@ function renderResult(command, json) {
       // Pie Chart
       renderChart("pie", labels, values);
 
-      // ⭐ 近 6 個月「分類趨勢圖」
-      if (command === "分類" && json.months_6m && json.categories_6m) {
-        renderCategoryTrend(json.months_6m, json.categories_6m);
-      }
-
-      if (command === "付款" && json.months_6m && json.payment_6m) {
-        renderCategoryTrend(json.months_6m, json.payment_6m);
-      }
-
-      if (command === "店家" && json.months_6m && json.store_6m) {
-        renderCategoryTrend(json.months_6m, json.store_6m);
-      }
-
-      if (command === "幣別" && json.months_6m && json.exchanges_6m) {
-        renderCategoryTrend(json.months_6m, json.exchanges_6m);
-      }
-
-      if (command === "記帳者" && json.months_6m && json.users_6m) {
-        renderCategoryTrend(json.months_6m, json.users_6m);
+      // ⭐ 近 6 個月「趨勢圖」通用化
+      function renderCategoryTrendForCommand(command, json) {
+        let months, dataMap;
+      
+        switch(command) {
+          case "分類":
+            months = json.months_6m;
+            dataMap = json.categories_6m;
+            break;
+          case "付款":
+            months = json.months_6m;
+            dataMap = json.payment_6m;
+            break;
+          case "店家":
+            months = json.months_6m;
+            dataMap = json.store_6m;
+            break;
+          case "幣別":
+            months = json.months_6m;
+            dataMap = json.exchanges_6m;
+            break;
+          case "記帳者":
+            months = json.months_6m;
+            dataMap = json.users_6m;
+            break;
+          default:
+            return; // 沒有對應資料就跳出
+        }
+      
+        if (!months || !dataMap) return;
+        renderCategoryTrend(months, dataMap);
       }
       
-      //⭐ 近 6 個月「分類趨勢圖」「專用畫圖函式」（不動你原本 renderChart）
+      // ⭐ 近 6 個月「趨勢圖」專用函式
       function renderCategoryTrend(months, categoryMonthMap) {
         const ctx = document.getElementById("categoryTrendCanvas").getContext("2d");
       
-        // 若有舊圖先清掉
-        if (window.categoryTrendChart) {
-          window.categoryTrendChart.destroy();
-        }
+        if (window.categoryTrendChart) window.categoryTrendChart.destroy();
       
-        const totals = Object.entries(categoryMonthMap).map(([cat, m]) => {
-          const sum = Object.values(m).reduce((a, b) => a + b, 0);
-          return { cat, sum };
-        });
-        
-        // 取金額最大的前 5 類（避免太亂）      
-        // totals.sort((a, b) => b.sum - a.sum);
-        // const topCats = totals.slice(0, 5).map(t => t.cat);
-        const topCats = Object.keys(categoryMonthMap); // 直接取所有類別
+        // 取所有類別
+        const topCats = Object.keys(categoryMonthMap);
       
-        const datasets = topCats.map((cat, idx) => ({
+        const datasets = topCats.map(cat => ({
           label: cat,
           data: months.map(m => categoryMonthMap[cat][m] || 0),
           tension: 0.2,
@@ -483,31 +485,14 @@ function renderResult(command, json) {
       
         window.categoryTrendChart = new Chart(ctx, {
           type: "line",
-          data: {
-            labels: months,
-            datasets
-          },
+          data: { labels: months, datasets },
           options: {
             responsive: true,
             plugins: {
-              legend: {
-                position: "top",
-                labels: { font: { size: 26 } }
-              },
-              tooltip: {
-                titleFont: { size: 26 },
-                bodyFont: { size: 30 }
-              }
+              legend: { position: "top", labels: { font: { size: 26 } } },
+              tooltip: { titleFont: { size: 26 }, bodyFont: { size: 30 } }
             },
-            scales: {
-              y: {
-                beginAtZero: true,
-                title: {
-                  display: true,
-                  text: "金額"
-                }
-              }
-            }
+            scales: { y: { beginAtZero: true, title: { display: true, text: "金額" } } }
           }
         });
       }
@@ -1150,6 +1135,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
