@@ -70,49 +70,7 @@
 <!-- 原本區間 Pie / Bar -->
 <canvas id="chartCanvas"></canvas>  
 <!-- ✅ 新增：6 個月分析（固定在下方） -->
-<canvas id="chart6mCanvas"></canvas>
-
-  <!--✅ 新增一個「6 個月畫圖函式」（獨立、不干擾）-->
-  let chart6mInstance = null;
-
-  function render6MonthChart(months, seriesMap, titleText) {
-    const ctx = document.getElementById("chart6mCanvas").getContext("2d");
-  
-    if (chart6mInstance) {
-      chart6mInstance.destroy();
-      chart6mInstance = null;
-    }
-  
-    const labels = months;
-  
-    const datasets = Object.keys(seriesMap).map((name, i) => ({
-      label: name,
-      data: months.map(m => seriesMap[name][m] || 0),
-      backgroundColor: `hsl(${i * 360 / Object.keys(seriesMap).length},70%,60%)`
-    }));
-  
-    chart6mInstance = new Chart(ctx, {
-      type: "bar",
-      data: { labels, datasets },
-      options: {
-        responsive: true,
-        plugins: {
-          title: {
-            display: true,
-            text: titleText,
-            font: { size: 28 }
-          },
-          legend: {
-            position: "top",
-            labels: { font: { size: 24 } }
-          }
-        },
-        scales: {
-          y: { beginAtZero: true }
-        }
-      }
-    });
-  }
+<canvas id="chart6mCanvas"></canvas>  
   
 <!-- ✅ 匯出按鈕獨立區塊（固定位置） -->
 <div id="exportArea" style="text-align:center; margin-top:10px; display:none;">
@@ -359,6 +317,48 @@ function renderResult(command, json) {
   if (currentUser && currentUser !== adminUser) {
     filteredRows = filteredRows.filter(r => r[3] === currentUser);
   }
+
+  <!--✅ 新增一個「6 個月畫圖函式」（獨立、不干擾）-->
+    let chart6mInstance = null;
+  
+    function render6MonthChart(months, seriesMap, titleText) {
+      const ctx = document.getElementById("chart6mCanvas").getContext("2d");
+    
+      if (chart6mInstance) {
+        chart6mInstance.destroy();
+        chart6mInstance = null;
+      }
+    
+      const labels = months;
+    
+      const datasets = Object.keys(seriesMap).map((name, i) => ({
+        label: name,
+        data: months.map(m => seriesMap[name][m] || 0),
+        backgroundColor: `hsl(${i * 360 / Object.keys(seriesMap).length},70%,60%)`
+      }));
+    
+      chart6mInstance = new Chart(ctx, {
+        type: "bar",
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: titleText,
+              font: { size: 28 }
+            },
+            legend: {
+              position: "top",
+              labels: { font: { size: 24 } }
+            }
+          },
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+    }
   
   if (command === "明細" && json.rows) {
     // ✅ 這裡不要重新定義 filteredRows，直接用前面已經處理好的
@@ -479,15 +479,18 @@ function renderResult(command, json) {
       // Pie Chart
       renderChart("pie", labels, values);
 
-      // ✅ 6 個月分析（直接接 GAS）
-      if (json.months_6m && json.types_6m) {
-        render6MonthChart(
-          json.months_6m,
-          json.types_6m,
-          "📈 近 6 個月分類分析"
-        );
+      let seriesKeyMap = {
+        "分類": { key: "types_6m", title: "📈 近 6 個月分類分析" },
+        "付款": { key: "payments_6m", title: "📈 近 6 個月付款方式分析" },
+        "店家": { key: "stores_6m", title: "📈 近 6 個月店家分析" },
+        "幣別": { key: "exchanges_6m", title: "📈 近 6 個月幣別分析" },
+        "記帳者": { key: "users_6m", title: "📈 近 6 個月記帳者分析" }
+      };
+      
+      const cfg = seriesKeyMap[command];
+      if (cfg && json.months_6m && json[cfg.key]) {
+        render6MonthChart(json.months_6m, json[cfg.key], cfg.title);
       }
-    }
   });
 
   document.getElementById("queryResult").innerHTML = html;
@@ -1125,6 +1128,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
