@@ -67,6 +67,7 @@
 <!-- 📊 查詢結果顯示區 -->  
 <div id="queryResult"></div> 
 <canvas id="chartCanvas"></canvas>
+<canvas id="categoryTrendCanvas"></canvas> <!-- ⭐ 新增 -->
   
 <!-- ✅ 匯出按鈕獨立區塊（固定位置） -->
 <div id="exportArea" style="text-align:center; margin-top:10px; display:none;">
@@ -432,6 +433,69 @@ function renderResult(command, json) {
 
       // Pie Chart
       renderChart("pie", labels, values);
+      // ===============================
+      // ⭐ 近 6 個月「分類趨勢圖」
+      // ===============================
+      if (command === "分類" && json.months_6m && json.categories_6m) {
+        renderCategoryTrend(json.months_6m, json.categories_6m);
+      }
+
+      function renderCategoryTrend(months, categoryMonthMap) {
+        const ctx = document.getElementById("categoryTrendCanvas").getContext("2d");
+      
+        // 若有舊圖先清掉
+        if (window.categoryTrendChart) {
+          window.categoryTrendChart.destroy();
+        }
+      
+        // 取金額最大的前 5 類（避免太亂）
+        const totals = Object.entries(categoryMonthMap).map(([cat, m]) => {
+          const sum = Object.values(m).reduce((a, b) => a + b, 0);
+          return { cat, sum };
+        });
+      
+        totals.sort((a, b) => b.sum - a.sum);
+        const topCats = totals.slice(0, 5).map(t => t.cat);
+      
+        const datasets = topCats.map((cat, idx) => ({
+          label: cat,
+          data: months.map(m => categoryMonthMap[cat][m] || 0),
+          tension: 0.2,
+          pointRadius: 4
+        }));
+      
+        window.categoryTrendChart = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: months,
+            datasets
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                position: "top",
+                labels: { font: { size: 26 } }
+              },
+              tooltip: {
+                titleFont: { size: 26 },
+                bodyFont: { size: 30 }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: "金額"
+                }
+              }
+            }
+          }
+        });
+      }
+      
+      
     }
   });
 
@@ -1070,6 +1134,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
