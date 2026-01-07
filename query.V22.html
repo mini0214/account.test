@@ -383,12 +383,12 @@ function renderResult(command, json) {
     const currencyValues = sortedDates.map(d=> maxCurrencyByDate[d] || 0);
 
     renderChart("bar", sortedDates, [sumValues, currencyValues]);
-  }
-
-      // ⭐ 近 6 個月「分類趨勢圖」
+      
+     // ⭐ 近 6 個月「分類趨勢圖」
       if (command === "明細" && json.months_6m && json.detail_category_6m) {
         renderCategoryTrend(json.months_6m, json.detail_category_6m);
       }
+  }
 
   // 分類、付款、店家、幣別、記帳者
   const sections = [
@@ -1155,6 +1155,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
