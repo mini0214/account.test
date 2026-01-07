@@ -439,12 +439,12 @@ function renderResult(command, json) {
         renderCategoryTrend(json.months_6m, json.categories_6m);
       }
 
-      if (command === "付款" && json.months_6m && json.payment_6m) {
-        renderCategoryTrend(json.months_6m, json.payment_6m);
+      if (command === "付款" && json.months_6m && json.payments_6m) {
+        renderCategoryTrend(json.months_6m, json.payments_6m);
       }
 
-      if (command === "店家" && json.months_6m && json.store_6m) {
-        renderCategoryTrend(json.months_6m, json.store_6m);
+      if (command === "店家" && json.months_6m && json.stores_6m) {
+        renderCategoryTrend(json.months_6m, json.stores_6m);
       }
 
       if (command === "幣別" && json.months_6m && json.exchanges_6m) {
@@ -1150,6 +1150,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
