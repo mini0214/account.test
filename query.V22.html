@@ -385,6 +385,11 @@ function renderResult(command, json) {
     renderChart("bar", sortedDates, [sumValues, currencyValues]);
   }
 
+      // ⭐ 近 6 個月「分類趨勢圖」
+      if (command === "明細" && json.months_6m && json.detail_category_6m) {
+        renderCategoryTrend(json.months_6m, json.detail_category_6m);
+      }
+
   // 分類、付款、店家、幣別、記帳者
   const sections = [
     { cmd: "分類", key: 6, title: "📂 選擇分類統計;標題按下即可排序" },
@@ -435,10 +440,6 @@ function renderResult(command, json) {
       renderChart("pie", labels, values);
 
       // ⭐ 近 6 個月「分類趨勢圖」
-      if (command === "明細" && json.months_6m && json.detail_category_6m) {
-        renderCategoryTrend(json.months_6m, json.detail_category_6m);
-      }
-
       if (command === "付款" && json.months_6m && json.payments_6m) {
         renderCategoryTrend(json.months_6m, json.payments_6m);
       }      
@@ -1154,6 +1155,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
