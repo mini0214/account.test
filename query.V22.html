@@ -270,6 +270,14 @@ async function sendQuery(command) {
     }
     const ctx = document.getElementById("chartCanvas").getContext("2d");
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+    // ✅ 清除近 6 個月分析表
+    if (window.categoryTrendChart) {
+      window.categoryTrendChart.destroy();
+      window.categoryTrendChart = null;
+    }
+    const categoryCtx = document.getElementById("categoryTrendCanvas").getContext("2d");
+    categoryCtx.clearRect(0, 0, categoryCtx.canvas.width, categoryCtx.canvas.height);
   
     // ✅ 顯示載入中
     document.getElementById("loading").style.display = "block";
@@ -1155,6 +1163,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
