@@ -435,12 +435,16 @@ function renderResult(command, json) {
       renderChart("pie", labels, values);
 
       // ⭐ 近 6 個月「分類趨勢圖」
-      if (command === "分類" && json.months_6m && json.categories_6m) {
-        renderCategoryTrend(json.months_6m, json.categories_6m);
+      if (command === "明細" && json.months_6m && json.detail_category_6m) {
+        renderCategoryTrend(json.months_6m, json.detail_category_6m);
       }
 
       if (command === "付款" && json.months_6m && json.payments_6m) {
         renderCategoryTrend(json.months_6m, json.payments_6m);
+      }      
+      
+      if (command === "分類" && json.months_6m && json.categories_6m) {
+        renderCategoryTrend(json.months_6m, json.categories_6m);
       }
 
       if (command === "店家" && json.months_6m && json.stores_6m) {
@@ -1150,6 +1154,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
