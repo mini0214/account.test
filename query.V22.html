@@ -436,50 +436,19 @@ function renderResult(command, json) {
       html += `</table>`;
       html += `<div class="total">📌 總額：${total.toLocaleString()} 元（共 ${labels.length} 筆）</div>`;
 
-      // Pie Chart
-      renderChart("pie", labels, values);
-
-      // ⭐ 近 6 個月「分類趨勢圖」
-      if (command === "付款" && json.months_6m && json.payments_6m) {
-        renderCategoryTrend(json.months_6m, json.payments_6m);
-      }      
-      
-      if (command === "分類" && json.months_6m && json.categories_6m) {
-        renderCategoryTrend(json.months_6m, json.categories_6m);
-      }
-
-      if (command === "店家" && json.months_6m && json.stores_6m) {
-        renderCategoryTrend(json.months_6m, json.stores_6m);
-      }
-
-      if (command === "幣別" && json.months_6m && json.exchanges_6m) {
-        renderCategoryTrend(json.months_6m, json.exchanges_6m);
-      }
-
-      if (command === "記帳者" && json.months_6m && json.users_6m) {
-        renderCategoryTrend(json.months_6m, json.users_6m);
-      }
-      
-      //⭐ 近 6 個月「分類趨勢圖」「專用畫圖函式」（不動你原本 renderChart）
+      // ⭐ 近 6 個月「分類趨勢圖」共用函式（全域）
       function renderCategoryTrend(months, categoryMonthMap) {
-        const ctx = document.getElementById("categoryTrendCanvas").getContext("2d");
+        const canvas = document.getElementById("categoryTrendCanvas");
+        if (!canvas) return;
       
-        // 若有舊圖先清掉
+        const ctx = canvas.getContext("2d");
+      
         if (window.categoryTrendChart) {
           window.categoryTrendChart.destroy();
+          window.categoryTrendChart = null;
         }
       
-        const totals = Object.entries(categoryMonthMap).map(([cat, m]) => {
-          const sum = Object.values(m).reduce((a, b) => a + b, 0);
-          return { cat, sum };
-        });
-        
-        // 取金額最大的前 5 類（避免太亂）      
-        // totals.sort((a, b) => b.sum - a.sum);
-        // const topCats = totals.slice(0, 5).map(t => t.cat);
-        const topCats = Object.keys(categoryMonthMap); // 直接取所有類別
-      
-        const datasets = topCats.map((cat, idx) => ({
+        const datasets = Object.keys(categoryMonthMap).map(cat => ({
           label: cat,
           data: months.map(m => categoryMonthMap[cat][m] || 0),
           tension: 0.2,
@@ -507,19 +476,37 @@ function renderResult(command, json) {
             scales: {
               y: {
                 beginAtZero: true,
-                title: {
-                  display: true,
-                  text: "金額"
-                }
+                title: { display: true, text: "金額" }
               }
             }
           }
         });
       }
       
-    }
-  });
+      // Pie Chart
+      renderChart("pie", labels, values);
 
+      // ⭐ 近 6 個月「分類趨勢圖」
+      if (command === "付款" && json.months_6m && json.payments_6m) {
+        renderCategoryTrend(json.months_6m, json.payments_6m);
+      }      
+      
+      if (command === "分類" && json.months_6m && json.categories_6m) {
+        renderCategoryTrend(json.months_6m, json.categories_6m);
+      }
+
+      if (command === "店家" && json.months_6m && json.stores_6m) {
+        renderCategoryTrend(json.months_6m, json.stores_6m);
+      }
+
+      if (command === "幣別" && json.months_6m && json.exchanges_6m) {
+        renderCategoryTrend(json.months_6m, json.exchanges_6m);
+      }
+
+      if (command === "記帳者" && json.months_6m && json.users_6m) {
+        renderCategoryTrend(json.months_6m, json.users_6m);
+      }
+      
   document.getElementById("queryResult").innerHTML = html;
 
   // ✅ 若是明細.付款.分類查詢，依清單順序排序付款與分類
@@ -1155,6 +1142,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
