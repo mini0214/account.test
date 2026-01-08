@@ -67,7 +67,7 @@
 <!-- 📊 查詢結果顯示區 -->  
 <div id="queryResult"></div> 
 <canvas id="chartCanvas"></canvas>
-<canvas id="categoryTrendCanvas"></canvas> <!-- ⭐ 近 6 個月「分類趨勢圖」 -->
+<canvas id="categoryTrendCanvas"></canvas> <!-- ⭐ 近 6 個月「趨勢圖」 -->
   
 <!-- ✅ 匯出按鈕獨立區塊（固定位置） -->
 <div id="exportArea" style="text-align:center; margin-top:10px; display:none;">
@@ -392,7 +392,7 @@ function renderResult(command, json) {
 
     renderChart("bar", sortedDates, [sumValues, currencyValues]);
       
-     // ⭐ 近 6 個月「分類趨勢圖」
+     // ⭐ 近 6 個月「趨勢圖」
       if (command === "明細" && json.months_6m && json.detail_category_6m) {
         renderCategoryTrend(json.months_6m, json.detail_category_6m);
       }
@@ -447,12 +447,12 @@ function renderResult(command, json) {
       // Pie Chart
       renderChart("pie", labels, values);
 
-      // ⭐ 近 6 個月「分類趨勢圖」
+      // ⭐ 近 6 個月「趨勢圖」
       if (command === "付款" && json.months_6m && json.payments_6m) {
           const months = json.months_6m;
           const paymentsMap = json.payments_6m;
       
-          let tableHtml = `<h5>💳 最近 6 個月統計表</h5>`;
+          let tableHtml = `<h5>💳 最近 6 個月付款統計表</h5>`;
           tableHtml += `<table id="table6m"><tr><th>付款</th>`;
           // 月份標題
           months.forEach(m => tableHtml += `<th>${m}</th>`);
@@ -495,7 +495,7 @@ function renderResult(command, json) {
           const months = json.months_6m;
           const categoriesMap = json.categories_6m;
       
-          let tableHtml = `<h5>📂 最近 6 個月統計表</h5>`;
+          let tableHtml = `<h5>📂 最近 6 個月分類統計表</h5>`;
           tableHtml += `<table id="table6m"><tr><th>分類</th>`;
           // 月份標題
           months.forEach(m => tableHtml += `<th>${m}</th>`);
@@ -538,7 +538,7 @@ function renderResult(command, json) {
           const months = json.months_6m;
           const storesMap = json.stores_6m;
       
-          let tableHtml = `<h5>📋 最近 6 個月統計表</h5>`;
+          let tableHtml = `<h5>📋 最近 6 個月店家統計表</h5>`;
           tableHtml += `<table id="table6m"><tr><th>店家</th>`;
           // 月份標題
           months.forEach(m => tableHtml += `<th>${m}</th>`);
@@ -581,7 +581,7 @@ function renderResult(command, json) {
           const months = json.months_6m;
           const exchangesMap = json.exchanges_6m;
       
-          let tableHtml = `<h5>💰 最近 6 個月統計表</h5>`;
+          let tableHtml = `<h5>💰 最近 6 個月幣別統計表</h5>`;
           tableHtml += `<table id="table6m"><tr><th>幣別</th>`;
           // 月份標題
           months.forEach(m => tableHtml += `<th>${m}</th>`);
@@ -624,7 +624,7 @@ function renderResult(command, json) {
           const months = json.months_6m;
           const usersMap = json.users_6m;
       
-          let tableHtml = `<h5>👤 最近 6 個月統計表</h5>`;
+          let tableHtml = `<h5>👤 最近 6 個月記帳者統計表</h5>`;
           tableHtml += `<table id="table6m"><tr><th>記帳者</th>`;
           // 月份標題
           months.forEach(m => tableHtml += `<th>${m}</th>`);
@@ -666,7 +666,7 @@ function renderResult(command, json) {
       // 最後再更新一次 queryResult
       document.getElementById("queryResult").innerHTML = html;
       
-      //⭐ 近 6 個月「分類趨勢圖」「專用畫圖函式」（不動你原本 renderChart）
+      //⭐ 近 6 個月「趨勢圖」「專用畫圖函式」（不動你原本 renderChart）
       function renderCategoryTrend(months, categoryMonthMap) {
         const ctx = document.getElementById("categoryTrendCanvas").getContext("2d");
       
@@ -1361,33 +1361,3 @@ initApp();
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
