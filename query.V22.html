@@ -16,7 +16,8 @@
     .green-btn { background-color: #28a745; }
     .pdf-btn { background-color: #d9534f; }
     .excel-btn { background-color: #1d6f42; }
-    
+
+    .slogan { font-size: 32px; text-align: center; margin: 30px 0 10px 0; color: #333; font-weight: bold; }
     h5 { font-size: 32px; margin: 40px 0 10px 0; text-align: center; font-weight: bold; }
     table { font-size: 22px; border-collapse: collapse; width: 100%; margin-top: 15px; background: white; }
     th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
@@ -50,6 +51,8 @@
   <button id="lastYearBtn" class="date-btn">去年</button>
 </div>
 
+<div class="slogan">選擇您想要看的(直球對決)</div>
+    
 <div style="text-align:center">
   <button id="queryMonthBtn">📊 明細</button>
   <button id="queryMonthPayBtn">💳 付款</button>
@@ -59,7 +62,7 @@
   <button id="queryMonthUserBtn">👤 記帳者</button>
 </div>
 
-<div id="loading" style="display:none;">⏳ 正在生成匯出報表...</div>
+<div id="loading" style="display:none;">⏳ 正在載入中,請稍侯...</div>
 
 <div id="queryResult"></div>
 <canvas id="chartCanvas"></canvas>
@@ -328,3 +331,4 @@ document.getElementById("exportPdfBtn").onclick = () => {
 </script>
 </body>
 </html>
+
