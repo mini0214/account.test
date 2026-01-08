@@ -308,11 +308,11 @@ async function sendQuery(command) {
 //定義「6 個月資料對照表」
 const sixMonthConfig = {
   "明細": {
-    title: "📊 近 6 個月明細方式統計",
+    title: "📊 近 6 個月明細統計",
     dataKey: "detail_category_6m"
   },
   "付款": {
-    title: "💳 近 6 個月付款方式統計",
+    title: "💳 近 6 個月付款統計",
     dataKey: "payments_6m"
   },
   "分類": {
@@ -452,7 +452,7 @@ function renderResult(command, json) {
       if (command === "明細" && json.months_6m && json.detail_category_6m) {
         // ⭐ 先顯示 6 個月數字表格
         html += renderSixMonthTable(
-          "📅 近 6 個月明細方式統計",
+          "📅 近 6 個月明細統計",
           json.months_6m,
           json.detail_category_6m
         );      
@@ -492,7 +492,7 @@ function renderResult(command, json) {
       html += `<h5>${sec.title}</h5>`;
       html += `<table id="dataTable">
                  <tr>
-                   <th>${sec.cmd==="店家"?"店家":sec.cmd==="付款"?"付款方式":sec.cmd==="幣別"?"幣別":sec.cmd==="記帳者"?"記帳者":"分類方式"}</th>
+                   <th>${sec.cmd==="店家"?"店家":sec.cmd==="付款"?"付款":sec.cmd==="幣別"?"幣別":sec.cmd==="記帳者"?"記帳者":"分類"}</th>
                    <th class="numeric">金額</th>
                    <th class="numeric">佔比</th>
                  </tr>`;
@@ -514,7 +514,7 @@ function renderResult(command, json) {
       if (command === "付款" && json.months_6m && json.payments_6m) {
         // ⭐ 先顯示 6 個月數字表格
         html += renderSixMonthTable(
-          "💳 近 6 個月付款方式統計",
+          "💳 近 6 個月付款統計",
           json.months_6m,
           json.payments_6m
         );      
@@ -525,7 +525,7 @@ function renderResult(command, json) {
       if (command === "分類" && json.months_6m && json.categories_6m) {
         // ⭐ 先顯示 6 個月數字表格
         html += renderSixMonthTable(
-          "📂 近 6 個月分類方式統計",
+          "📂 近 6 個月分類統計",
           json.months_6m,
           json.categories_6m
         );      
@@ -536,7 +536,7 @@ function renderResult(command, json) {
       if (command === "店家" && json.months_6m && json.stores_6m) {
         // ⭐ 先顯示 6 個月數字表格
         html += renderSixMonthTable(
-          "📋 近 6 個月店家方式統計",
+          "📋 近 6 個月店家統計",
           json.months_6m,
           json.stores_6m
         );      
@@ -547,7 +547,7 @@ function renderResult(command, json) {
       if (command === "幣別" && json.months_6m && json.exchanges_6m) {
         // ⭐ 先顯示 6 個月數字表格
         html += renderSixMonthTable(
-          "💰 近 6 個月幣別方式統計",
+          "💰 近 6 個月幣別統計",
           json.months_6m,
           json.exchanges_6m
         );      
@@ -558,7 +558,7 @@ function renderResult(command, json) {
       if (command === "記帳者" && json.months_6m && json.users_6m) {
         // ⭐ 先顯示 6 個月數字表格
         html += renderSixMonthTable(
-          "👤 近 6 個月記帳者方式統計",
+          "👤 近 6 個月記帳者統計",
           json.months_6m,
           json.users_6m
         );      
@@ -1261,4 +1261,5 @@ initApp();
 </script>
 </body>
 </html>
+
 
