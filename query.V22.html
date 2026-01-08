@@ -252,7 +252,7 @@ function getExportHeader() {
     ["🔍 零用金支出統計報表"],
     [`日期區間：${start} ~ ${end}`],
     [`匯出時間：${new Date().toLocaleString()}`],
-    [`${currentCommandName}統計`], 
+    [`選擇${currentCommandName}統計`], 
     []
   ];
 }
@@ -261,6 +261,7 @@ function getTableData(tableId, isMain = false) {
   const table = document.getElementById(tableId);
   if (!table) return null;
   const data = [];
+  const tbody = table.querySelector("tbody");
   
   // 獲取標題列
   const headers = [];
@@ -270,19 +271,22 @@ function getTableData(tableId, isMain = false) {
   data.push(headers);
   
   // 獲取資料內容
-  for (let row of table.querySelector("tbody").rows) {
+  const rows = Array.from(tbody.rows);
+  rows.forEach(row => {
     const rowData = [];
     for (let cell of row.cells) rowData.push(cell.innerText);
     data.push(rowData);
-  }
+  });
   
-  // 如果是主表，直接接續總額與筆數，不增加額外空行
+  // --- 修正筆數邏輯 ---
   if (isMain) {
+    // 這裡計算的是 tbody 裡的行數，即「選定類別的數量」
+    const categoryCount = rows.length; 
+    
     data.push([`當期${currentCommandName}統計總額`, globalStats.total.toLocaleString()]);
-    data.push([`當期${currentCommandName}統計筆數`, globalStats.count]);
+    data.push([`當期${currentCommandName}統計筆數`, categoryCount]); // 顯示項目數量
   }
   
-  // 獲取結尾列 (如 6 個月統計的每月總計)
   const tfoot = table.querySelector("tfoot");
   if (tfoot) { 
     for (let row of tfoot.rows) { 
@@ -302,7 +306,7 @@ document.getElementById("exportExcelBtn").onclick = () => {
 
   let allRows = [...header];
   if (mainData) { 
-    allRows.push([`[ 當前${currentCommandName}統計 ]`]); 
+    allRows.push([`[ 當期${currentCommandName}統計 ]`]); 
     allRows = allRows.concat(mainData); 
   }
   if (sixMonthData) { 
@@ -347,3 +351,4 @@ document.getElementById("exportPdfBtn").onclick = () => window.print();
 </script>
 </body>
 </html>
+
