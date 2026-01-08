@@ -10,20 +10,19 @@
     h3 { font-size: 50px; text-align: center; margin-bottom: 50px; }
     .date-inputs { font-size: 50px; text-align: center; margin-bottom: 20px; }
     .date-inputs input { font-size: 50px; margin: 0 10px; padding: 5px; }
-    h4 { font-size: 36px; text-align: center; margin-bottom: 20px; }
     button { font-size: 40px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background-color: #0056b3; color: white; }
     .date-btn { font-size: 40px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background-color: #888; color: white; }
     .green-btn { font-size: 40px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background-color: #28a745; color: white; }
-    #queryResult { margin-top: 1px; }
-    h5 { font-size: 28px; margin: 30px 0 10px 0; text-align: center; font-weight: bold; }
-    table { font-size: 28px; border-collapse: collapse; width: 100%; margin-top: 15px; }
+    h5 { font-size: 28px; margin: 40px 0 10px 0; text-align: center; font-weight: bold; color: #333; }
+    table { font-size: 26px; border-collapse: collapse; width: 100%; margin-top: 15px; }
     th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
-    th { background-color: #f2f2f2; cursor: pointer; position: relative; }
-    th:hover { background-color: #e0e0e0; }
+    th { background-color: #f2f2f2; cursor: pointer; }
+    th:hover { background-color: #e9e9e9; }
+    tfoot { background-color: #fff9c4; font-weight: bold; }
     .numeric { text-align: right; }
-    .total { font-size: 32px; font-weight: bold; color: #d9534f; margin: 20px 0; text-align: center; border: 3px solid #d9534f; padding: 15px; border-radius: 12px; }
+    .total { font-size: 32px; font-weight: bold; color: #d9534f; margin: 20px 0; text-align: center; border: 3px solid #d9534f; padding: 15px; border-radius: 12px; background-color: #fff5f5; }
     canvas { display: block; margin: 20px auto; width: 850px; height: 600px; }
-    #sixMonthTableArea { margin-top: 50px; }
+    #loading { font-size: 38px; text-align: center; margin: 20px; }
   </style>
 </head>
 <body>
@@ -35,8 +34,6 @@
   結束日期：<input type="date" id="endDate"><br>
   <button id="prevMonthBtn" class="date-btn">上月</button>
   <button id="nextMonthBtn" class="date-btn">下月</button>
-  <button id="thisYearBtn" class="date-btn">整年</button>
-  <button id="lastYearBtn" class="date-btn">去年</button>
 </div>
 
 <div style="text-align:center">
@@ -44,22 +41,26 @@
   <button id="queryMonthPayBtn">💳 付款</button>
   <button id="queryMonthTypeBtn">📂 分類</button>
   <button id="queryMonthStoreBtn">📋 店家</button>
-  <button id="queryMonthExchangeBtn">💰 幣別</button>
-  <button id="queryMonthUserBtn">👤 記帳者</button>
 </div>
 
-<div id="loading" style="display:none; text-align:center; margin:20px;">
-  <span style="font-size: 38px;">⏳ 載入中...</span>
-</div>
+<div id="loading" style="display:none;">⏳ 載入中...</div>
 
-<div id="queryResult"></div> <canvas id="chartCanvas"></canvas> <div id="sixMonthTableArea"></div> <canvas id="categoryTrendCanvas"></canvas> <div id="exportArea" style="text-align:center; margin-top:10px; display:none;">
+<div id="queryResult"></div>
+<canvas id="chartCanvas"></canvas>
+<div id="sixMonthArea"></div>
+<canvas id="categoryTrendCanvas"></canvas>
+
+<div id="exportArea" style="text-align:center; margin-top:20px; display:none;">
   <button id="exportCsvBtn" class="green-btn">📤 匯出CSV</button>
-  <button id="exportExcelBtn" class="green-btn">📤 匯出Excel</button>
 </div>
 
 <script>
+let API_URL = ""; 
+let VERSION = "V"; 
+let LIFF_IDq = "";
+let currentUser = null; 
+let chartInstance = null;
 let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycby2-1JvsriAfskOJXHyMB8HASeuMs7V-mJOQneD73Q_dJN56NhbWH0Dj8Ldu0LcfxMe/exec";
-let API_URL = ""; let VERSION = "V"; let LIFF_IDq = ""; let currentUser = null; let chartInstance = null;
 
 async function initApp(){
   try {
@@ -70,159 +71,147 @@ async function initApp(){
     VERSION = settings.D10.trim();
     LIFF_IDq = settings.D12.trim();
     document.getElementById("version").textContent = VERSION;
+    
     await liff.init({ liffId: LIFF_IDq });
     if (!liff.isLoggedIn()) liff.login();
     const profile = await liff.getProfile();
     currentUser = profile.displayName;
-    setDefaultDateRange();
+    
+    setDefaultDateRange(); // 初始化日期
   } catch (e) { console.error(e); }
 }
 initApp();
 
+// --- 修正後的日期處理 ---
 function setDefaultDateRange() {
   const now = new Date();
-  document.getElementById("startDate").value = toInputDate(new Date(now.getFullYear(), now.getMonth(), 1));
-  document.getElementById("endDate").value = toInputDate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+  // 本月第一天
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+  // 本月最後一天
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  
+  document.getElementById("startDate").value = toInputDate(firstDay);
+  document.getElementById("endDate").value = toInputDate(lastDay);
 }
-function toInputDate(d) { return d.toISOString().split('T')[0]; }
 
-// 查詢事件綁定
+function toInputDate(d) {
+  // 修正：手動拼接本地日期的 YYYY-MM-DD，避免 toISOString() 的時區偏移問題
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+// 查詢事件
 document.querySelectorAll("button[id^='queryMonth']").forEach(btn => {
-  btn.addEventListener("click", () => sendQuery(btn.innerText.replace(/[^\u4e00-\u9fa5]/g, '')));
+  btn.onclick = () => sendQuery(btn.innerText.replace(/[^\u4e00-\u9fa5]/g, ''));
 });
 
 async function sendQuery(command) {
-  const start = document.getElementById("startDate").value;
-  const end = document.getElementById("endDate").value;
   document.getElementById("loading").style.display = "block";
   document.getElementById("queryResult").innerHTML = "";
-  document.getElementById("sixMonthTableArea").innerHTML = "";
+  document.getElementById("sixMonthArea").innerHTML = "";
   if(chartInstance) chartInstance.destroy();
   if(window.categoryTrendChart) window.categoryTrendChart.destroy();
 
+  const body = {
+    type: "query", command, version: VERSION,
+    startDate: document.getElementById("startDate").value + " 00:00:00",
+    endDate: document.getElementById("endDate").value + " 23:59:59"
+  };
+
   try {
-    const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({
-      type: "query", command, version: VERSION, startDate: start + " 00:00:00", endDate: end + " 23:59:59"
-    })});
+    const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(body) });
     const json = await res.json();
     renderResult(command, json);
-  } catch (e) { alert("查詢失敗"); }
+  } catch (e) { alert("系統忙碌中"); }
   finally { document.getElementById("loading").style.display = "none"; }
 }
 
 function renderResult(command, json) {
   let mainHtml = "";
-  let sixMonthHtml = "";
   const adminUser = "Betty Yi";
-  let filteredRows = (currentUser === adminUser) ? json.rows : (json.rows || []).filter(r => r[3] === currentUser);
+  let rows = (currentUser === adminUser) ? json.rows : (json.rows || []).filter(r => r[3] === currentUser);
 
-  // 1. 產生當前統計表格
+  // 1. 當月統計
   if (command === "明細") {
-    mainHtml += `<h5>📊 查詢明細 (點擊標題排序)</h5><table id="dataTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th class="numeric">金額</th><th>付款</th><th>分類</th><th>幣別</th></tr></thead><tbody>`;
-    filteredRows.forEach(r => {
-      mainHtml += `<tr><td>${r[3]}</td><td>${new Date(r[4]).toLocaleDateString()}</td><td>${r[8]}</td><td class="numeric">${Number(r[5]).toLocaleString()}</td><td>${r[7]}</td><td>${r[6]}</td><td>${r[14]}</td></tr>`;
+    mainHtml += `<h5>📊 查詢明細</h5><table id="mainTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th class="numeric">金額</th><th>付款</th><th>分類</th></tr></thead><tbody>`;
+    rows.forEach(r => {
+      mainHtml += `<tr><td>${r[3]}</td><td>${new Date(r[4]).toLocaleDateString()}</td><td>${r[8]}</td><td class="numeric">${Number(r[5]).toLocaleString()}</td><td>${r[7]}</td><td>${r[6]}</td></tr>`;
     });
     mainHtml += `</tbody></table>`;
-    const total = filteredRows.reduce((sum, r) => sum + Number(r[5] || 0), 0);
-    mainHtml += `<div class="total">📌 總額：${total.toLocaleString()} 元</div>`;
-    document.getElementById("queryResult").innerHTML = mainHtml;
   } else {
-    const sections = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
-    const key = sections[command];
-    const counts = {};
-    filteredRows.forEach(r => { const v = r[key] || "未知"; counts[v] = (counts[v] || 0) + Number(r[5] || 0); });
-    const labels = Object.keys(counts);
-    const values = Object.values(counts);
-    const total = values.reduce((a,b)=>a+b,0);
+    const keyMap = { "分類":6, "付款":7, "店家":8 };
+    const colKey = keyMap[command];
+    let counts = {};
+    rows.forEach(r => { let v = r[colKey] || "其他"; counts[v] = (counts[v] || 0) + Number(r[5] || 0); });
+    let labels = Object.keys(counts);
+    let values = Object.values(counts);
+    let totalSum = values.reduce((a, b) => a + b, 0);
 
-    mainHtml += `<h5>📂 ${command}統計 (點擊標題排序)</h5><table id="dataTable"><thead><tr><th>${command}</th><th class="numeric">金額</th><th class="numeric">佔比</th></tr></thead><tbody>`;
+    mainHtml += `<h5>📂 ${command}統計</h5><table id="mainTable"><thead><tr><th>${command}</th><th class="numeric">金額</th><th class="numeric">佔比</th></tr></thead><tbody>`;
     labels.forEach((l, i) => {
-      mainHtml += `<tr><td>${l}</td><td class="numeric">${values[i].toLocaleString()}</td><td class="numeric">${((values[i]/total)*100).toFixed(1)}%</td></tr>`;
+      mainHtml += `<tr><td>${l}</td><td class="numeric">${values[i].toLocaleString()}</td><td class="numeric">${((values[i]/totalSum)*100).toFixed(1)}%</td></tr>`;
     });
-    mainHtml += `</tbody></table><div class="total">📌 總額：${total.toLocaleString()} 元</div>`;
-    
-    document.getElementById("queryResult").innerHTML = mainHtml;
-    renderChart("pie", labels, values); // 畫圓餅圖
-
-    // 2. 產生 6 個月統計表
-    const dataMapKey = { "分類":"categories_6m", "付款":"payments_6m", "店家":"stores_6m", "幣別":"exchanges_6m", "記帳者":"users_6m" }[command];
-    if (json.months_6m && json[dataMapKey]) {
-      const months = json.months_6m;
-      const dataMap = json[dataMapKey];
-      sixMonthHtml += `<h5>📅 最近 6 個月${command}統計表</h5><table id="table6m"><thead><tr><th>${command}</th>`;
-      months.forEach(m => sixMonthHtml += `<th>${m}</th>`);
-      sixMonthHtml += `<th>總額</th></tr></thead><tbody>`;
-      Object.keys(dataMap).forEach(k => {
-        let rTotal = 0;
-        sixMonthHtml += `<tr><td>${k}</td>`;
-        months.forEach(m => { const v = dataMap[k][m] || 0; rTotal += v; sixMonthHtml += `<td class="numeric">${v.toLocaleString()}</td>`; });
-        sixMonthHtml += `<td class="numeric"><strong>${rTotal.toLocaleString()}</strong></td></tr>`;
-      });
-      sixMonthHtml += `</tbody></table>`;
-      document.getElementById("sixMonthTableArea").innerHTML = sixMonthHtml;
-      renderCategoryTrend(months, dataMap); // 畫趨勢圖
-    }
+    mainHtml += `</tbody></table>`;
+    mainHtml += `<div class="total">💰 總額：${totalSum.toLocaleString()} 元</div>`;
+    renderChart("pie", labels, values);
   }
+  document.getElementById("queryResult").innerHTML = mainHtml;
+  makeTableSortable(document.getElementById("mainTable"));
 
-  // 3. 恢復排序功能
-  initSorting(command);
+  // 2. 6 個月統計表 (含總額與排序)
+  const sixKey = { "分類":"categories_6m", "付款":"payments_6m", "店家":"stores_6m" }[command];
+  if (json.months_6m && json[sixKey]) {
+    const months = json.months_6m;
+    const dataMap = json[sixKey];
+    let monthlySums = new Array(months.length).fill(0);
+    let grandTotal = 0;
+
+    let sixHtml = `<h5>📅 最近 6 個月${command}統計 (點擊標題排序)</h5>`;
+    sixHtml += `<table id="table6m"><thead><tr><th>${command}</th>`;
+    months.forEach(m => sixHtml += `<th>${m}</th>`);
+    sixHtml += `<th>總額</th></tr></thead><tbody>`;
+
+    Object.keys(dataMap).forEach(itemKey => {
+      let rowSum = 0;
+      sixHtml += `<tr><td>${itemKey}</td>`;
+      months.forEach((m, idx) => {
+        let val = dataMap[itemKey][m] || 0;
+        rowSum += val; monthlySums[idx] += val;
+        sixHtml += `<td class="numeric">${val.toLocaleString()}</td>`;
+      });
+      grandTotal += rowSum;
+      sixHtml += `<td class="numeric"><strong>${rowSum.toLocaleString()}</strong></td></tr>`;
+    });
+    sixHtml += `</tbody><tfoot><tr><td>每月總計</td>`;
+    monthlySums.forEach(sum => sixHtml += `<td class="numeric">${sum.toLocaleString()}</td>`);
+    sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td></tr></tfoot></table>`;
+
+    document.getElementById("sixMonthArea").innerHTML = sixHtml;
+    makeTableSortable(document.getElementById("table6m"));
+    renderCategoryTrend(months, dataMap);
+  }
   document.getElementById("exportArea").style.display = "block";
 }
 
-// 排序初始化與邏輯
-function initSorting(command) {
-  fetch(API_URL + "?type=query&command=清單")
-    .then(r => r.json())
-    .then(res => {
-      const list = res.list || {};
-      const orderMaps = {
-        paymentOrder: (list.payment || []).map(p => p.name),
-        typeOrder: (list.type || []).map(t => t.name),
-        exchangeOrder: (list.currency || []).map(c => c.name)
-      };
-      const table = document.getElementById("dataTable");
-      if (table) makeTableSortable(table, orderMaps);
-    });
-}
-
-function makeTableSortable(table, orderMaps) {
-  const headers = table.querySelectorAll("th");
-  let paymentCol = -1, typeCol = -1, dateCol = -1, exchangeCol = -1;
-  headers.forEach((th, i) => {
-    const txt = th.innerText;
-    if (txt.includes("付款")) paymentCol = i;
-    if (txt.includes("分類")) typeCol = i;
-    if (txt.includes("日期")) dateCol = i;
-    if (txt.includes("幣別")) exchangeCol = i;
-  });
-
+function makeTableSortable(table) {
+  if (!table) return;
+  const headers = table.querySelectorAll("thead th");
   headers.forEach((th, colIdx) => {
     th.addEventListener("click", () => {
-      const rows = Array.from(table.querySelectorAll("tbody tr"));
+      const tbody = table.querySelector("tbody");
+      const rows = Array.from(tbody.querySelectorAll("tr"));
       const isAsc = th.dataset.order !== "asc";
       th.dataset.order = isAsc ? "asc" : "desc";
-      
       rows.sort((a, b) => {
-        const aVal = parseCellValue(a.cells[colIdx].innerText, colIdx, { paymentCol, typeCol, dateCol, exchangeCol, ...orderMaps });
-        const bVal = parseCellValue(b.cells[colIdx].innerText, colIdx, { paymentCol, typeCol, dateCol, exchangeCol, ...orderMaps });
-        return isAsc ? (aVal > bVal ? 1 : -1) : (aVal < bVal ? 1 : -1);
+        let aVal = a.cells[colIdx].innerText.replace(/,/g, '');
+        let bVal = b.cells[colIdx].innerText.replace(/,/g, '');
+        return isAsc ? (parseFloat(aVal) - parseFloat(bVal) || aVal.localeCompare(bVal)) : (parseFloat(bVal) - parseFloat(aVal) || bVal.localeCompare(aVal));
       });
-      
-      const tbody = table.querySelector("tbody");
       rows.forEach(r => tbody.appendChild(r));
-      headers.forEach(h => h.innerText = h.innerText.replace(/ [▲▼]/, ""));
-      th.innerText += isAsc ? " ▲" : " ▼";
     });
   });
-}
-
-function parseCellValue(txt, idx, map) {
-  txt = txt.trim().replace(/,/g, '');
-  if (idx === map.dateCol) return new Date(txt).getTime() || 0;
-  if (idx === map.paymentCol && map.paymentOrder) return map.paymentOrder.indexOf(txt);
-  if (idx === map.typeCol && map.typeOrder) return map.typeOrder.indexOf(txt);
-  const n = parseFloat(txt.replace('%', ''));
-  return isNaN(n) ? txt : n;
 }
 
 function renderChart(type, labels, values) {
