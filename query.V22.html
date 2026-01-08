@@ -509,67 +509,7 @@ function renderResult(command, json) {
 
       // Pie Chart
       renderChart("pie", labels, values);
-
-      // ⭐ 近 6 個月「分類趨勢圖」
-      if (command === "付款" && json.months_6m && json.payments_6m) {
-        // ⭐ 先顯示 6 個月數字表格
-        html += renderSixMonthTable(
-          "💳 近 6 個月付款統計",
-          json.months_6m,
-          json.payments_6m
-        );      
-        // ⭐ 再顯示趨勢圖
-        renderCategoryTrend(json.months_6m, json.payments_6m);
-      }      
-      
-      if (command === "分類" && json.months_6m && json.categories_6m) {
-        // ⭐ 先顯示 6 個月數字表格
-        html += renderSixMonthTable(
-          "📂 近 6 個月分類統計",
-          json.months_6m,
-          json.categories_6m
-        );      
-        // ⭐ 再顯示趨勢圖
-        renderCategoryTrend(json.months_6m, json.categories_6m);
-      }
-
-      if (command === "店家" && json.months_6m && json.stores_6m) {
-        // ⭐ 先顯示 6 個月數字表格
-        html += renderSixMonthTable(
-          "📋 近 6 個月店家統計",
-          json.months_6m,
-          json.stores_6m
-        );      
-        // ⭐ 再顯示趨勢圖
-        renderCategoryTrend(json.months_6m, json.stores_6m);
-      }
-
-      if (command === "幣別" && json.months_6m && json.exchanges_6m) {
-        // ⭐ 先顯示 6 個月數字表格
-        html += renderSixMonthTable(
-          "💰 近 6 個月幣別統計",
-          json.months_6m,
-          json.exchanges_6m
-        );      
-        // ⭐ 再顯示趨勢圖
-        renderCategoryTrend(json.months_6m, json.exchanges_6m);
-      }
-
-      if (command === "記帳者" && json.months_6m && json.users_6m) {
-        // ⭐ 先顯示 6 個月數字表格
-        html += renderSixMonthTable(
-          "👤 近 6 個月記帳者統計",
-          json.months_6m,
-          json.users_6m
-        );      
-        // ⭐ 再顯示趨勢圖
-        renderCategoryTrend(json.months_6m, json.users_6m);
-      }
-      
-      //⭐ 近 6 個月「分類趨勢圖」「專用畫圖函式」（不動你原本 renderChart）
-      function renderCategoryTrend(months, categoryMonthMap) {
-        const ctx = document.getElementById("categoryTrendCanvas").getContext("2d");
-      
+     
         // 若有舊圖先清掉
         if (window.categoryTrendChart) {
           window.categoryTrendChart.destroy();
@@ -1261,5 +1201,6 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
