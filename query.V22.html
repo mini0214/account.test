@@ -27,12 +27,8 @@
       font-weight: bold; 
     }
     .total {
-      font-size: 36px; 
-      margin: 20px 0; 
-      text-align: center; 
-      border: 3px solid white; 
-      padding: 20px; 
-      border-radius: 12px;
+      font-size: 36px; margin: 20px 0; text-align: center; 
+      border: 3px solid white; padding: 20px; border-radius: 12px;
       box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
     tfoot td { border: 1px solid white !important; }
@@ -41,7 +37,6 @@
     canvas { display: block; margin: 30px auto; width: 900px; height: 600px; }
     #loading { font-size: 40px; text-align: center; color: #0056b3; font-weight: bold; margin: 30px; }
     
-    /* 列印 PDF 時隱藏按鈕 */
     @media print {
       button, .date-inputs, h3 { display: none !important; }
     }
@@ -54,8 +49,10 @@
 <div class="date-inputs">
   開始日期：<input type="date" id="startDate"><br>
   結束日期：<input type="date" id="endDate"><br>
-  <button id="prevMonthBtn" class="date-btn" onclick="changeMonth(-1)">上月</button>
-  <button id="nextMonthBtn" class="date-btn" onclick="changeMonth(1)">下月</button>
+  <button id="prevMonthBtn" class="date-btn">上月</button>
+  <button id="nextMonthBtn" class="date-btn">下月</button>
+  <button id="thisYearBtn" class="date-btn">整年</button>
+  <button id="lastYearBtn" class="date-btn">去年</button>
 </div>
 
 <div style="text-align:center">
@@ -63,9 +60,11 @@
   <button id="queryMonthPayBtn">💳 付款</button>
   <button id="queryMonthTypeBtn">📂 分類</button>
   <button id="queryMonthStoreBtn">📋 店家</button>
+  <button id="queryMonthExchangeBtn">💰 幣別</button>
+  <button id="queryMonthUserBtn">👤 記帳者</button>
 </div>
 
-<div id="loading" style="display:none;">⏳ 正在計算數據，請稍候...</div>
+<div id="loading" style="display:none;">⏳ 正在處理中...</div>
 
 <div id="queryResult"></div>
 <canvas id="chartCanvas"></canvas>
@@ -82,7 +81,6 @@ let API_URL = ""; let VERSION = "V"; let LIFF_IDq = ""; let currentUser = null;
 let chartInstance = null; let trendChartInstance = null;
 let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycby2-1JvsriAfskOJXHyMB8HASeuMs7V-mJOQneD73Q_dJN56NhbWH0Dj8Ldu0LcfxMe/exec";
 
-// 初始化
 async function initApp(){
   try {
     const res = await fetch(FALLBACK_GAS_SETTINGS_URL + "?type=query&command=設定");
@@ -91,13 +89,12 @@ async function initApp(){
     VERSION = json.data.D10.trim();
     LIFF_IDq = json.data.D12.trim();
     document.getElementById("version").textContent = VERSION;
-    
     await liff.init({ liffId: LIFF_IDq });
     if (!liff.isLoggedIn()) liff.login();
     const profile = await liff.getProfile();
     currentUser = profile.displayName;
     setDefaultDateRange();
-  } catch (e) { console.error("初始化失敗", e); }
+  } catch (e) { console.error(e); }
 }
 initApp();
 
@@ -113,16 +110,29 @@ function toInputDate(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+// --- 日期按鈕邏輯 ---
+document.getElementById("prevMonthBtn").onclick = () => changeMonth(-1);
+document.getElementById("nextMonthBtn").onclick = () => changeMonth(1);
+document.getElementById("thisYearBtn").onclick = () => {
+  const y = new Date().getFullYear();
+  document.getElementById("startDate").value = `${y}-01-01`;
+  document.getElementById("endDate").value = `${y}-12-31`;
+};
+document.getElementById("lastYearBtn").onclick = () => {
+  const y = new Date().getFullYear() - 1;
+  document.getElementById("startDate").value = `${y}-01-01`;
+  document.getElementById("endDate").value = `${y}-12-31`;
+};
+
 function changeMonth(offset) {
-  const startInp = document.getElementById("startDate");
-  const d = new Date(startInp.value);
-  const newFirst = new Date(d.getFullYear(), d.getMonth() + offset, 1);
-  const newLast = new Date(d.getFullYear(), newFirst.getMonth() + 1, 0);
-  startInp.value = toInputDate(newFirst);
+  const current = new Date(document.getElementById("startDate").value);
+  const newFirst = new Date(current.getFullYear(), current.getMonth() + offset, 1);
+  const newLast = new Date(newFirst.getFullYear(), newFirst.getMonth() + 1, 0);
+  document.getElementById("startDate").value = toInputDate(newFirst);
   document.getElementById("endDate").value = toInputDate(newLast);
 }
 
-// 查詢事件綁定
+// 查詢事件
 document.querySelectorAll("button[id^='queryMonth']").forEach(btn => {
   btn.onclick = () => sendQuery(btn.innerText.replace(/[^\u4e00-\u9fa5]/g, ''));
 });
@@ -153,7 +163,9 @@ function renderResult(command, json) {
   let adminUser = "Betty Yi";
   let rows = (currentUser === adminUser) ? json.rows : (json.rows || []).filter(r => r[3] === currentUser);
 
-  // 1. 處理主統計表格與「灰底白線」總額區塊
+  const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
+  const colIdx = keyMap[command];
+
   if (command === "明細") {
     mainHtml += `<h5>📊 查詢明細 (點擊標題排序)</h5><table id="mainTable"><thead><tr><th>日期</th><th>店家</th><th class="numeric">金額</th><th>付款</th><th>分類</th></tr></thead><tbody>`;
     rows.forEach(r => {
@@ -163,8 +175,6 @@ function renderResult(command, json) {
     const total = rows.reduce((s, r) => s + Number(r[5] || 0), 0);
     mainHtml += `<div class="total">💰 總額：${total.toLocaleString()} 元 | 📝 筆數：${rows.length} 筆</div>`;
   } else {
-    const keyMap = { "分類":6, "付款":7, "店家":8 };
-    const colIdx = keyMap[command];
     let counts = {};
     rows.forEach(r => { let v = r[colIdx] || "未分類"; counts[v] = (counts[v] || 0) + Number(r[5] || 0); });
     let labels = Object.keys(counts);
@@ -175,23 +185,21 @@ function renderResult(command, json) {
     labels.forEach((l, i) => {
       mainHtml += `<tr><td>${l}</td><td class="numeric">${values[i].toLocaleString()}</td><td class="numeric">${((values[i]/totalSum)*100).toFixed(1)}%</td></tr>`;
     });
-    mainHtml += `</tbody></table>`;
-    mainHtml += `<div class="total">💰 ${command}總額：${totalSum.toLocaleString()} 元 | 📝 筆數：${rows.length} 筆</div>`;
+    mainHtml += `</tbody></table><div class="total">💰 ${command}總額：${totalSum.toLocaleString()} 元 | 📝 筆數：${rows.length} 筆</div>`;
     renderChart("pie", labels, values);
   }
   document.getElementById("queryResult").innerHTML = mainHtml;
   makeTableSortable(document.getElementById("mainTable"));
 
-  // 2. 處理 6 個月表格 (底部灰底白線)
-  const sixKey = { "分類":"categories_6m", "付款":"payments_6m", "店家":"stores_6m" }[command];
+  // 6 個月統計表
+  const sixKey = { "分類":"categories_6m", "付款":"payments_6m", "店家":"stores_6m", "幣別":"exchanges_6m", "記帳者":"users_6m" }[command];
   if (json.months_6m && json[sixKey]) {
     const months = json.months_6m;
     const dataMap = json[sixKey];
     let monthlySums = new Array(months.length).fill(0);
     let grandTotal = 0;
 
-    let sixHtml = `<h5>📅 最近 6 個月${command}統計 (點擊標題排序)</h5>`;
-    sixHtml += `<table id="table6m"><thead><tr><th>${command}</th>`;
+    let sixHtml = `<h5>📅 最近 6 個月${command}統計 (點擊標題排序)</h5><table id="table6m"><thead><tr><th>${command}</th>`;
     months.forEach(m => sixHtml += `<th>${m}</th>`);
     sixHtml += `<th>總額</th></tr></thead><tbody>`;
 
@@ -209,12 +217,10 @@ function renderResult(command, json) {
     sixHtml += `</tbody><tfoot><tr><td>每月總計</td>`;
     monthlySums.forEach(sum => sixHtml += `<td class="numeric">${sum.toLocaleString()}</td>`);
     sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td></tr></tfoot></table>`;
-
     document.getElementById("sixMonthArea").innerHTML = sixHtml;
     makeTableSortable(document.getElementById("table6m"));
     renderCategoryTrend(months, dataMap);
   }
-  
   document.getElementById("exportArea").style.display = "block";
 }
 
@@ -228,8 +234,8 @@ function makeTableSortable(table) {
       const isAsc = th.dataset.order !== "asc";
       th.dataset.order = isAsc ? "asc" : "desc";
       rows.sort((a, b) => {
-        let v1 = a.cells[i].innerText.replace(/,/g, '');
-        let v2 = b.cells[i].innerText.replace(/,/g, '');
+        let v1 = a.cells[i].innerText.replace(/,/g, '').replace('%','');
+        let v2 = b.cells[i].innerText.replace(/,/g, '').replace('%','');
         return isAsc ? (parseFloat(v1) - parseFloat(v2) || v1.localeCompare(v2)) : (parseFloat(v2) - parseFloat(v1) || v2.localeCompare(v1));
       });
       rows.forEach(r => tbody.appendChild(r));
@@ -254,10 +260,9 @@ function renderCategoryTrend(months, map) {
   trendChartInstance = new Chart(ctx, { type: "line", data: { labels: months, datasets } });
 }
 
-// --- 匯出功能 ---
 document.getElementById("exportCsvBtn").onclick = () => {
   const table = document.getElementById("mainTable");
-  let csv = "\ufeff"; // BOM
+  let csv = "\ufeff";
   for (let row of table.rows) {
     let rowData = [];
     for (let cell of row.cells) rowData.push('"' + cell.innerText + '"');
@@ -266,13 +271,11 @@ document.getElementById("exportCsvBtn").onclick = () => {
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = `支出統計_${new Date().getTime()}.csv`;
+  link.download = `統計_${new Date().getTime()}.csv`;
   link.click();
 };
 
-document.getElementById("exportPdfBtn").onclick = () => {
-  window.print(); // 使用瀏覽器內建列印功能輸出為 PDF
-};
+document.getElementById("exportPdfBtn").onclick = () => window.print();
 </script>
 </body>
 </html>
