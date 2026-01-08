@@ -226,8 +226,77 @@ function renderResult(command, json) {
 }
 
 function makeTableSortable(table, currentCommand) { if (!table) return; const headers = table.querySelectorAll("thead th"); headers.forEach((th, i) => { th.addEventListener("click", () => { const tbody = table.querySelector("tbody"); const rows = Array.from(tbody.querySelectorAll("tr")); const isAsc = th.dataset.order !== "asc"; th.dataset.order = isAsc ? "asc" : "desc"; const colTitle = th.innerText.replace(/[▲▼]/g, '').trim(); rows.sort((a, b) => { let v1 = a.cells[i].innerText.replace(/,/g, '').replace('%',''); let v2 = b.cells[i].innerText.replace(/,/g, '').replace('%',''); const orderList = orderMaps[colTitle] || (colTitle === currentCommand ? orderMaps[currentCommand] : null); if (orderList && orderList.length > 0) { let idx1 = orderList.indexOf(v1); let idx2 = orderList.indexOf(v2); idx1 = idx1 === -1 ? 999 : idx1; idx2 = idx2 === -1 ? 999 : idx2; return isAsc ? idx1 - idx2 : idx2 - idx1; } if (!isNaN(parseFloat(v1)) && !isNaN(parseFloat(v2))) return isAsc ? parseFloat(v1) - parseFloat(v2) : parseFloat(v2) - parseFloat(v1); return isAsc ? v1.localeCompare(v2) : v2.localeCompare(v1); }); rows.forEach(r => tbody.appendChild(r)); headers.forEach(h => h.innerText = h.innerText.replace(/[▲▼]/g, '')); th.innerText += isAsc ? " ▲" : " ▼"; }); }); }
-function renderChart(type, labels, values) { const ctx = document.getElementById("chartCanvas").getContext("2d"); chartInstance = new Chart(ctx, { type, data: { labels, datasets: [{ data: values, backgroundColor: labels.map((_,i)=>`hsl(${i*360/labels.length},70%,60%)`) }] }, options: { plugins: { legend: { labels: { font: { size: 22 } } } } } }); }
-function renderCategoryTrend(months, map) { const ctx = document.getElementById("categoryTrendCanvas").getContext("2d"); const datasets = Object.keys(map).map((k, i) => ({ label: k, data: months.map(m => map[k][m] || 0), borderColor: `hsl(${i*360/Object.keys(map).length},70%,50%)`, tension: 0.2 })); trendChartInstance = new Chart(ctx, { type: "line", data: { labels: months, datasets } }); }
+function renderChart(type, labels, values) {
+  const ctx = document.getElementById("chartCanvas").getContext("2d");
+  chartInstance = new Chart(ctx, {
+    type,
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: labels.map((_, i) => `hsl(${i * 360 / labels.length}, 70%, 60%)`)
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          labels: {
+            font: {
+              size: 28, // 加大圖例字體
+              weight: 'bold'
+            },
+            color: '#333'
+          }
+        },
+        tooltip: {
+          bodyFont: {
+            size: 24 // 加大滑鼠移上去時顯示的資料值字體
+          },
+          titleFont: {
+            size: 26,
+            weight: 'bold'
+          }
+        }
+      }
+    }
+  });
+}
+function renderCategoryTrend(months, map) {
+  const ctx = document.getElementById("categoryTrendCanvas").getContext("2d");
+  const datasets = Object.keys(map).map((k, i) => ({
+    label: k,
+    data: months.map(m => map[k][m] || 0),
+    borderColor: `hsl(${i * 360 / Object.keys(map).length}, 70%, 50%)`,
+    tension: 0.2,
+    pointRadius: 6 // 讓點大一點，方便看數值
+  }));
+
+  trendChartInstance = new Chart(ctx, {
+    type: "line",
+    data: { labels: months, datasets },
+    options: {
+      plugins: {
+        legend: {
+          labels: {
+            font: { size: 24, weight: 'bold' } // 加大上方圖例
+          }
+        },
+        tooltip: {
+          bodyFont: { size: 22 } // 加大提示框文字
+        }
+      },
+      scales: {
+        x: {
+          ticks: { font: { size: 20, weight: 'bold' } } // 加大X軸月份字體
+        },
+        y: {
+          ticks: { font: { size: 20, weight: 'bold' } } // 加大Y軸金額字體
+        }
+      }
+    }
+  });
+}
 
 function getExportFilename(type) {
   const now = new Date();
@@ -331,4 +400,5 @@ document.getElementById("exportPdfBtn").onclick = () => {
 </script>
 </body>
 </html>
+
 
