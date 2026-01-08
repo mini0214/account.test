@@ -312,7 +312,7 @@ document.getElementById("exportPdfBtn").onclick = () => {
   // 2. 生成要求的檔名格式
   const now = new Date();
   const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}-${String(now.getSeconds()).padStart(2,'0')}`;
-  const pdfFileName = `非匯不可PDF_選擇${currentCommandName}統計_${ts}`;
+  const pdfFileName = `非匯不可PDF_${currentCommandName}統計_${ts}`;
   
   // 3. 暫時修改網頁標題 (這會變成 PDF 的預設存檔名稱)
   document.title = pdfFileName;
