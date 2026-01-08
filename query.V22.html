@@ -304,7 +304,27 @@ document.getElementById("exportCsvBtn").onclick = () => {
   link.download = `${getExportFilename('CSV')}.csv`; link.click();
 };
 
-document.getElementById("exportPdfBtn").onclick = () => window.print();
+// 修正後的 PDF 匯出按鈕：動態設定網頁標題以修改 PDF 預設檔名
+document.getElementById("exportPdfBtn").onclick = () => {
+  // 1. 備份原始標題
+  const originalTitle = document.title;
+  
+  // 2. 生成要求的檔名格式
+  const now = new Date();
+  const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}-${String(now.getSeconds()).padStart(2,'0')}`;
+  const pdfFileName = `非匯不可PDF_選擇${currentCommandName}統計_${ts}`;
+  
+  // 3. 暫時修改網頁標題 (這會變成 PDF 的預設存檔名稱)
+  document.title = pdfFileName;
+  
+  // 4. 觸發列印
+  window.print();
+  
+  // 5. 還原原始標題，避免網頁標籤顯示變得很長
+  setTimeout(() => {
+    document.title = originalTitle;
+  }, 1000);
+};
 </script>
 </body>
 </html>
