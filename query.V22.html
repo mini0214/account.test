@@ -121,7 +121,6 @@ function setDefaultDateRange() {
 }
 function toInputDate(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
 
-// 日期切換
 function changeMonth(offset) {
   const current = new Date(document.getElementById("startDate").value);
   const newFirst = new Date(current.getFullYear(), current.getMonth() + offset, 1);
@@ -140,10 +139,9 @@ document.getElementById("lastYearBtn").onclick = () => {
   document.getElementById("startDate").value = `${y}-01-01`; document.getElementById("endDate").value = `${y}-12-31`;
 };
 
-// 查詢按鈕點擊
 document.querySelectorAll("button[id^='queryMonth']").forEach(btn => {
   btn.onclick = () => {
-    currentFullLabel = btn.innerText; // 記錄帶圖示的完整標籤
+    currentFullLabel = btn.innerText; 
     currentCommandName = btn.innerText.replace(/[^\u4e00-\u9fa5]/g, '');
     sendQuery(currentCommandName);
   };
@@ -189,8 +187,11 @@ function renderResult(command, json) {
     mainHtml += `<h5>${currentFullLabel}分析統計</h5><table id="mainTable"><thead><tr><th>${command}</th><th class="numeric">金額</th><th class="numeric">佔比</th></tr></thead><tbody>`;
     labels.forEach((l, i) => { mainHtml += `<tr><td>${l}</td><td class="numeric">${values[i].toLocaleString()}</td><td class="numeric">${((values[i]/totalSum)*100).toFixed(1)}%</td></tr>`; });
     mainHtml += `</tbody></table>`;
+    
+    // --- 修正：這裡的筆數指的是「分類項目的數量」 ---
     globalStats.total = totalSum;
-    globalStats.count = rows.length;
+    globalStats.count = labels.length; 
+
     mainHtml += `<div class="total">💰 ${command}總額：${globalStats.total.toLocaleString()} 元 | 📝 筆數：${globalStats.count} 筆</div>`;
     renderChart("pie", labels, values);
   }
@@ -221,12 +222,9 @@ function renderResult(command, json) {
   document.getElementById("exportArea").style.display = "block";
 }
 
-// 排序與圖表邏輯 (省略)
 function makeTableSortable(table, currentCommand) { if (!table) return; const headers = table.querySelectorAll("thead th"); headers.forEach((th, i) => { th.addEventListener("click", () => { const tbody = table.querySelector("tbody"); const rows = Array.from(tbody.querySelectorAll("tr")); const isAsc = th.dataset.order !== "asc"; th.dataset.order = isAsc ? "asc" : "desc"; const colTitle = th.innerText.replace(/[▲▼]/g, '').trim(); rows.sort((a, b) => { let v1 = a.cells[i].innerText.replace(/,/g, '').replace('%',''); let v2 = b.cells[i].innerText.replace(/,/g, '').replace('%',''); const orderList = orderMaps[colTitle] || (colTitle === currentCommand ? orderMaps[currentCommand] : null); if (orderList && orderList.length > 0) { let idx1 = orderList.indexOf(v1); let idx2 = orderList.indexOf(v2); idx1 = idx1 === -1 ? 999 : idx1; idx2 = idx2 === -1 ? 999 : idx2; return isAsc ? idx1 - idx2 : idx2 - idx1; } if (!isNaN(parseFloat(v1)) && !isNaN(parseFloat(v2))) return isAsc ? parseFloat(v1) - parseFloat(v2) : parseFloat(v2) - parseFloat(v1); return isAsc ? v1.localeCompare(v2) : v2.localeCompare(v1); }); rows.forEach(r => tbody.appendChild(r)); headers.forEach(h => h.innerText = h.innerText.replace(/[▲▼]/g, '')); th.innerText += isAsc ? " ▲" : " ▼"; }); }); }
 function renderChart(type, labels, values) { const ctx = document.getElementById("chartCanvas").getContext("2d"); chartInstance = new Chart(ctx, { type, data: { labels, datasets: [{ data: values, backgroundColor: labels.map((_,i)=>`hsl(${i*360/labels.length},70%,60%)`) }] }, options: { plugins: { legend: { labels: { font: { size: 22 } } } } } }); }
 function renderCategoryTrend(months, map) { const ctx = document.getElementById("categoryTrendCanvas").getContext("2d"); const datasets = Object.keys(map).map((k, i) => ({ label: k, data: months.map(m => map[k][m] || 0), borderColor: `hsl(${i*360/Object.keys(map).length},70%,50%)`, tension: 0.2 })); trendChartInstance = new Chart(ctx, { type: "line", data: { labels: months, datasets } }); }
-
-// --- 強化版匯出功能 ---
 
 function getExportFilename(type) {
   const now = new Date();
@@ -241,21 +239,6 @@ function getExportHeader() {
     ["🔍 零用金支出統計報表"],
     [`日期區間：${start} ~ ${end}`],
     [`匯出時間：${new Date().toLocaleString()}`],
-    [`${currentFullLabel}統計`], // 此處帶入如 "💳 付款統計"
-    []
-  ];
-}
-
-// --- 修正後的匯出相關函數 ---
-
-function getExportHeader() {
-  const start = document.getElementById("startDate").value;
-  const end = document.getElementById("endDate").value;
-  // 這裡使用 currentCommandName (純文字) 而非 currentFullLabel (帶圖示)
-  return [
-    ["🔍 零用金支出統計報表"],
-    [`日期區間：${start} ~ ${end}`],
-    [`匯出時間：${new Date().toLocaleString()}`],
     [`選擇${currentCommandName}統計`], 
     []
   ];
@@ -266,15 +249,10 @@ function getTableData(tableId, isMain = false) {
   if (!table) return null;
   const data = [];
   const tbody = table.querySelector("tbody");
-  
-  // 獲取標題列
   const headers = [];
-  for (let cell of table.querySelector("thead").rows[0].cells) {
-    headers.push(cell.innerText.replace(/[▲▼]/g, '').trim());
-  }
+  for (let cell of table.querySelector("thead").rows[0].cells) headers.push(cell.innerText.replace(/[▲▼]/g, '').trim());
   data.push(headers);
   
-  // 獲取資料內容
   const rows = Array.from(tbody.rows);
   rows.forEach(row => {
     const rowData = [];
@@ -282,13 +260,10 @@ function getTableData(tableId, isMain = false) {
     data.push(rowData);
   });
   
-  // --- 修正筆數邏輯 ---
   if (isMain) {
-    // 這裡計算的是 tbody 裡的行數，即「選定類別的數量」
-    const categoryCount = rows.length; 
-    
+    // 這裡直接取 globalStats.count (已在 renderResult 修正為項目數)
     data.push([`當期${currentCommandName}統計總額`, globalStats.total.toLocaleString()]);
-    data.push([`當期${currentCommandName}統計筆數`, categoryCount]); // 顯示項目數量
+    data.push([`當期${currentCommandName}統計筆數`, globalStats.count]);
   }
   
   const tfoot = table.querySelector("tfoot");
@@ -302,58 +277,34 @@ function getTableData(tableId, isMain = false) {
   return data;
 }
 
-// 修正後的 Excel 匯出按鈕
 document.getElementById("exportExcelBtn").onclick = () => {
   const header = getExportHeader();
   const mainData = getTableData("mainTable", true);
   const sixMonthData = getTableData("table6m");
-
   let allRows = [...header];
-  if (mainData) { 
-    allRows.push([`[ 當期${currentCommandName}統計 ]`]); 
-    allRows = allRows.concat(mainData); 
-  }
-  if (sixMonthData) { 
-    // 六個月統計前保留一個空行做區隔
-    allRows.push([], [`[ 最近 6 個月${currentCommandName}趨勢統計 ]`]); 
-    allRows = allRows.concat(sixMonthData); 
-  }
-
+  if (mainData) { allRows.push([`[ 當期${currentCommandName}統計 ]`]); allRows = allRows.concat(mainData); }
+  if (sixMonthData) { allRows.push([], [`[ 最近 6 個月${currentCommandName}趨勢統計 ]`]); allRows = allRows.concat(sixMonthData); }
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(allRows);
-
-  // 工作表名稱顯示為：付款統計 (或依選擇變動)
   XLSX.utils.book_append_sheet(wb, ws, `${currentCommandName}統計`); 
-  
   XLSX.writeFile(wb, `${getExportFilename('EXCEL')}.xlsx`);
 };
 
-// CSV 匯出邏輯也同步更新 (會調用已修正的 getExportHeader 與 getTableData)
 document.getElementById("exportCsvBtn").onclick = () => {
   let content = "\ufeff";
   const header = getExportHeader();
   const mainData = getTableData("mainTable", true);
   const sixMonthData = getTableData("table6m");
   let allRows = [...header];
-  if (mainData) { 
-    allRows.push([`[ 當前${currentCommandName}統計 ]`]); 
-    allRows = allRows.concat(mainData); 
-  }
-  if (sixMonthData) { 
-    allRows.push([], [`[ 最近 6 個月${currentCommandName}趨勢統計 ]`]); 
-    allRows = allRows.concat(sixMonthData); 
-  }
+  if (mainData) { allRows.push([`[ 當前${currentCommandName}統計 ]`]); allRows = allRows.concat(mainData); }
+  if (sixMonthData) { allRows.push([], [`[ 最近 6 個月${currentCommandName}趨勢統計 ]`]); allRows = allRows.concat(sixMonthData); }
   content += allRows.map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
   const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = `${getExportFilename('CSV')}.csv`;
-  link.click();
+  const link = document.createElement("a"); link.href = URL.createObjectURL(blob);
+  link.download = `${getExportFilename('CSV')}.csv`; link.click();
 };
 
 document.getElementById("exportPdfBtn").onclick = () => window.print();
 </script>
 </body>
 </html>
-
-
