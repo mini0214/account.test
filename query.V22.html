@@ -242,53 +242,105 @@ function getExportHeader() {
   ];
 }
 
+// --- 修正後的匯出相關函數 ---
+
+function getExportHeader() {
+  const start = document.getElementById("startDate").value;
+  const end = document.getElementById("endDate").value;
+  // 這裡使用 currentCommandName (純文字) 而非 currentFullLabel (帶圖示)
+  return [
+    ["🔍 零用金支出統計報表"],
+    [`日期區間：${start} ~ ${end}`],
+    [`匯出時間：${new Date().toLocaleString()}`],
+    [`${currentCommandName}統計`], 
+    []
+  ];
+}
+
 function getTableData(tableId, isMain = false) {
   const table = document.getElementById(tableId);
   if (!table) return null;
   const data = [];
+  
+  // 獲取標題列
   const headers = [];
-  for (let cell of table.querySelector("thead").rows[0].cells) headers.push(cell.innerText.replace(/[▲▼]/g, '').trim());
+  for (let cell of table.querySelector("thead").rows[0].cells) {
+    headers.push(cell.innerText.replace(/[▲▼]/g, '').trim());
+  }
   data.push(headers);
+  
+  // 獲取資料內容
   for (let row of table.querySelector("tbody").rows) {
     const rowData = [];
     for (let cell of row.cells) rowData.push(cell.innerText);
     data.push(rowData);
   }
+  
+  // 如果是主表，直接接續總額與筆數，不增加額外空行
   if (isMain) {
-    data.push([]);
     data.push([`當期${currentCommandName}統計總額`, globalStats.total.toLocaleString()]);
     data.push([`當期${currentCommandName}統計筆數`, globalStats.count]);
   }
+  
+  // 獲取結尾列 (如 6 個月統計的每月總計)
   const tfoot = table.querySelector("tfoot");
-  if (tfoot) { for (let row of tfoot.rows) { const rowData = []; for (let cell of row.cells) rowData.push(cell.innerText); data.push(rowData); } }
+  if (tfoot) { 
+    for (let row of tfoot.rows) { 
+      const rowData = []; 
+      for (let cell of row.cells) rowData.push(cell.innerText); 
+      data.push(rowData); 
+    } 
+  }
   return data;
 }
 
+// 修正後的 Excel 匯出按鈕
+document.getElementById("exportExcelBtn").onclick = () => {
+  const header = getExportHeader();
+  const mainData = getTableData("mainTable", true);
+  const sixMonthData = getTableData("table6m");
+
+  let allRows = [...header];
+  if (mainData) { 
+    allRows.push([`[ 當前${currentCommandName}統計 ]`]); 
+    allRows = allRows.concat(mainData); 
+  }
+  if (sixMonthData) { 
+    // 六個月統計前保留一個空行做區隔
+    allRows.push([], [`[ 最近 6 個月${currentCommandName}趨勢統計 ]`]); 
+    allRows = allRows.concat(sixMonthData); 
+  }
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(allRows);
+
+  // 工作表名稱顯示為：付款統計 (或依選擇變動)
+  XLSX.utils.book_append_sheet(wb, ws, `${currentCommandName}統計`); 
+  
+  XLSX.writeFile(wb, `${getExportFilename('EXCEL')}.xlsx`);
+};
+
+// CSV 匯出邏輯也同步更新 (會調用已修正的 getExportHeader 與 getTableData)
 document.getElementById("exportCsvBtn").onclick = () => {
   let content = "\ufeff";
   const header = getExportHeader();
   const mainData = getTableData("mainTable", true);
   const sixMonthData = getTableData("table6m");
   let allRows = [...header];
-  if (mainData) { allRows.push([`[ 當前${currentCommandName}統計 ]`]); allRows = allRows.concat(mainData); }
-  if (sixMonthData) { allRows.push([], [`[ 最近 6 個月${currentCommandName}趨勢統計 ]`]); allRows = allRows.concat(sixMonthData); }
+  if (mainData) { 
+    allRows.push([`[ 當前${currentCommandName}統計 ]`]); 
+    allRows = allRows.concat(mainData); 
+  }
+  if (sixMonthData) { 
+    allRows.push([], [`[ 最近 6 個月${currentCommandName}趨勢統計 ]`]); 
+    allRows = allRows.concat(sixMonthData); 
+  }
   content += allRows.map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
   const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
-  const link = document.createElement("a"); link.href = URL.createObjectURL(blob);
-  link.download = `${getExportFilename('CSV')}.csv`; link.click();
-};
-
-document.getElementById("exportExcelBtn").onclick = () => {
-  const header = getExportHeader();
-  const mainData = getTableData("mainTable", true);
-  const sixMonthData = getTableData("table6m");
-  let allRows = [...header];
-  if (mainData) { allRows.push([`[ 當前${currentCommandName}統計 ]`]); allRows = allRows.concat(mainData); }
-  if (sixMonthData) { allRows.push([], [`[ 最近 6 個月${currentCommandName}趨勢統計 ]`]); allRows = allRows.concat(sixMonthData); }
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet(allRows);
-  XLSX.utils.book_append_sheet(wb, ws, "支出報表");
-  XLSX.writeFile(wb, `${getExportFilename('EXCEL')}.xlsx`);
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `${getExportFilename('CSV')}.csv`;
+  link.click();
 };
 
 document.getElementById("exportPdfBtn").onclick = () => window.print();
