@@ -11,7 +11,7 @@
   <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
   <!-- PDF -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  < src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></>
 
   
   <style>
@@ -333,6 +333,35 @@ const sixMonthConfig = {
     dataKey: "users_6m"
   }
 };
+
+  * ⭐ 產生「近 6 個月數字表格」
+  function renderSixMonthTable(title, months, dataMap) {
+  if (!months || !dataMap) return "";
+
+  let html = `<h5>${title}</h5>`;
+  html += `<table>`;
+  html += `<tr>
+    <th>項目</th>
+    ${months.map(m => `<th>${m}</th>`).join("")}
+    <th>合計</th>
+  </tr>`;
+
+  Object.keys(dataMap).forEach(key => {
+    let rowTotal = 0;
+    html += `<tr><td>${key}</td>`;
+
+    months.forEach(m => {
+      const val = Number(dataMap[key][m] || 0);
+      rowTotal += val;
+      html += `<td class="numeric">${val.toLocaleString()}</td>`;
+    });
+
+    html += `<td class="numeric"><b>${rowTotal.toLocaleString()}</b></td></tr>`;
+  });
+
+  html += `</table>`;
+  return html;
+}
   
 // 顯示結果表格與圖表
 function renderResult(command, json) {
@@ -1226,6 +1255,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
