@@ -450,16 +450,13 @@ function renderResult(command, json) {
       // ⭐ 近 6 個月「分類趨勢圖」
       if (command === "付款" && json.months_6m && json.payments_6m) {
           const months = json.months_6m;
-          const paymentsMap = json.payments_6m; // { "信用卡": { "2025-08": 1234, ... }, ... }
+          const paymentsMap = json.payments_6m;
       
           let tableHtml = `<h5>📅 最近 6 個月數字表</h5>`;
           tableHtml += `<table id="table6m"><tr><th>付款方式</th>`;
-      
-          // 月份標題
           months.forEach(m => tableHtml += `<th>${m}</th>`);
           tableHtml += `<th>總額</th></tr>`;
       
-          // 每個付款方式
           Object.keys(paymentsMap).forEach(pay => {
               tableHtml += `<tr><td>${pay}</td>`;
               let total = 0;
@@ -470,16 +467,18 @@ function renderResult(command, json) {
               });
               tableHtml += `<td class="numeric">${total.toLocaleString()}</td></tr>`;
           });
-      
           tableHtml += `</table>`;
       
-          // ✅ 插入到 queryResult 裡面（在統計表與趨勢圖之間）
-          document.getElementById("queryResult").innerHTML += tableHtml;
+          // ⭐ 6 個月長條圖
+          let trendCanvasHtml = `<canvas id="categoryTrendCanvas"></canvas>`;
+          html += tableHtml + trendCanvasHtml;
       
-          // ✅ 讓表格可以排序
-          const table6m = document.getElementById("table6m");
-          if (table6m) makeTableSortable(table6m);
+          // 生成圖表
+          renderCategoryTrend(months, paymentsMap);
       }
+      
+      // 最後再更新一次 queryResult
+      document.getElementById("queryResult").innerHTML = html;
       
       if (command === "分類" && json.months_6m && json.categories_6m) {
         renderCategoryTrend(json.months_6m, json.categories_6m);
@@ -1192,6 +1191,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
