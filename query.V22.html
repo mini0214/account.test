@@ -469,30 +469,18 @@ function renderResult(command, json) {
               });
               tableHtml += `<td class="numeric">${total.toLocaleString()}</td></tr>`;
           });
-
-          // ✅ 新增每月總額列
-          tableHtml += `<tr><td>每月總額</td>`;
-          months.forEach(m => {
-              let monthTotal = 0;
-              Object.values(paymentsMap).forEach(payMap => {
-                  monthTotal += payMap[m] || 0;
-              });
-              tableHtml += `<td class="numeric">${monthTotal.toLocaleString()}</td>`;
-          });
-          // 月份總額的總和（選擇性）
-          let grandTotal = 0;
-          Object.values(paymentsMap).forEach(payMap => {
-              grandTotal += Object.values(payMap).reduce((a,b)=>a+b,0);
-          });
-          tableHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td></tr>`;
-      
           tableHtml += `</table>`;
       
-          document.getElementById("queryResult").innerHTML += tableHtml;
+          // ⭐ 6 個月長條圖
+          let trendCanvasHtml = `<canvas id="categoryTrendCanvas"></canvas>`;
+          html += tableHtml + trendCanvasHtml;
       
-          const table6m = document.getElementById("table6m");
-          if (table6m) makeTableSortable(table6m);
+          // 生成圖表
+          renderCategoryTrend(months, paymentsMap);
       }
+      
+      // 最後再更新一次 queryResult
+      document.getElementById("queryResult").innerHTML = html;
       
       if (command === "分類" && json.months_6m && json.categories_6m) {
         renderCategoryTrend(json.months_6m, json.categories_6m);
@@ -1205,6 +1193,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
