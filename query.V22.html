@@ -22,9 +22,13 @@
     th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
     th { background-color: #eee; cursor: pointer; white-space: nowrap; }
     
-    .total, tfoot { background-color: #888 !important; color: white !important; font-weight: bold; }
-    .total { font-size: 36px; margin: 20px 0; text-align: center; border: 3px solid white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    tfoot td { border: 1px solid white !important; }
+    .total, tfoot { background-color: #eee !important; color: #000 !important; font-weight: bold; }
+    .total { 
+      font-size: 36px; margin: 20px 0; text-align: center; 
+      border: 1px solid #ddd; padding: 20px; border-radius: 12px; 
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+    }
+    tfoot td { border: 1px solid #ddd !important; color: #000 !important; }
 
     .numeric { text-align: right; }
     canvas { display: block; margin: 30px auto; width: 900px; height: 600px; }
@@ -351,4 +355,5 @@ document.getElementById("exportPdfBtn").onclick = () => window.print();
 </script>
 </body>
 </html>
+
 
