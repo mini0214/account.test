@@ -429,7 +429,7 @@ function renderResult(command, json) {
       html += `<h5>${sec.title}</h5>`;
       html += `<table id="dataTable">
                  <tr>
-                   <th>${sec.cmd==="店家"?"店家":sec.cmd==="付款"?"付款方式":sec.cmd==="幣別"?"幣別":sec.cmd==="記帳者"?"記帳者":"分類方式"}</th>
+                   <th>${sec.cmd==="店家"?"店家":sec.cmd==="付款"?"付款":sec.cmd==="幣別"?"幣別":sec.cmd==="記帳者"?"記帳者":"分類"}</th>
                    <th class="numeric">金額</th>
                    <th class="numeric">佔比</th>
                  </tr>`;
@@ -1163,6 +1163,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
