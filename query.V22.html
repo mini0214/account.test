@@ -469,6 +469,14 @@ function renderResult(command, json) {
               });
               tableHtml += `<td class="numeric">${total.toLocaleString()}</td></tr>`;
           });
+        
+          // 總總額
+          let grandTotal = 0;
+          Object.values(paymentsMap).forEach(payMap => {
+              grandTotal += Object.values(payMap).reduce((a,b)=>a+b,0);
+          });
+          tableHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td></tr>`;
+        
           tableHtml += `</table>`;
       
           // ⭐ 6 個月長條圖
@@ -1193,6 +1201,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
