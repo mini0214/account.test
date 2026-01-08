@@ -449,6 +449,14 @@ function renderResult(command, json) {
 
       // ⭐ 近 6 個月「分類趨勢圖」
       if (command === "付款" && json.months_6m && json.payments_6m) {
+        // ⭐ 先顯示 6 個月數字表格
+        html += renderSixMonthTable(
+          "📅 近 6 個月付款方式統計",
+          json.months_6m,
+          json.payments_6m
+        );
+      
+        // ⭐ 再顯示趨勢圖
         renderCategoryTrend(json.months_6m, json.payments_6m);
       }      
       
@@ -1163,6 +1171,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
