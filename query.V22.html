@@ -458,6 +458,11 @@ function renderResult(command, json) {
           months.forEach(m => tableHtml += `<th>${m}</th>`);
           tableHtml += `<th>總額</th></tr>`;
 
+          // 用來計算每月總額
+          let monthlyTotals = {};
+          months.forEach(m => monthlyTotals[m] = 0);
+          let grandTotal = 0;
+
           // 每個付款方式
           Object.keys(paymentsMap).forEach(pay => {
               tableHtml += `<tr><td>${pay}</td>`;
@@ -467,16 +472,15 @@ function renderResult(command, json) {
                   total += val;
                   tableHtml += `<td class="numeric">${val.toLocaleString()}</td>`;
               });
+              grandTotal += total;
               tableHtml += `<td class="numeric">${total.toLocaleString()}</td></tr>`;
           });
         
-          // 總總額
-          let grandTotal = 0;
-          Object.values(paymentsMap).forEach(payMap => {
-              grandTotal += Object.values(payMap).reduce((a,b)=>a+b,0);
-          });
-          tableHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td></tr>`;
-        
+          // 加上每月總額
+          tableHtml += `<tr><td><strong>每月總額</strong></td>`;
+          months.forEach(m => tableHtml += `<td class="numeric"><strong>${monthlyTotals[m].toLocaleString()}</strong></td>`);
+          tableHtml += `<td class="numeric"><strong>${grandTotal.toLocaleString()}</strong></td></tr>`;
+      
           tableHtml += `</table>`;
       
           // ⭐ 6 個月長條圖
@@ -1201,6 +1205,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
