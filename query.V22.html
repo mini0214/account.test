@@ -452,7 +452,7 @@ function renderResult(command, json) {
           const months = json.months_6m;
           const paymentsMap = json.payments_6m;
       
-          let tableHtml = `<h5>📅 最近 6 個月統計表</h5>`;
+          let tableHtml = `<h5>💳 最近 6 個月統計表</h5>`;
           tableHtml += `<table id="table6m"><tr><th>付款</th>`;
           // 月份標題
           months.forEach(m => tableHtml += `<th>${m}</th>`);
@@ -463,7 +463,7 @@ function renderResult(command, json) {
           months.forEach(m => monthlyTotals[m] = 0);
           let grandTotal = 0;
 
-          // 每個付款方式
+          // 每個方式
           Object.keys(paymentsMap).forEach(pay => {
               tableHtml += `<tr><td>${pay}</td>`;
               let total = 0;
@@ -495,7 +495,7 @@ function renderResult(command, json) {
           const months = json.months_6m;
           const categoriesMap = json.categories_6m;
       
-          let tableHtml = `<h5>📅 最近 6 個月統計表</h5>`;
+          let tableHtml = `<h5>📂 最近 6 個月統計表</h5>`;
           tableHtml += `<table id="table6m"><tr><th>分類</th>`;
           // 月份標題
           months.forEach(m => tableHtml += `<th>${m}</th>`);
@@ -506,7 +506,7 @@ function renderResult(command, json) {
           months.forEach(m => monthlyTotals[m] = 0);
           let grandTotal = 0;
 
-          // 每個付款方式
+          // 每個方式
           Object.keys(categoriesMap).forEach(pay => {
               tableHtml += `<tr><td>${pay}</td>`;
               let total = 0;
@@ -535,15 +535,132 @@ function renderResult(command, json) {
       }
 
       if (command === "店家" && json.months_6m && json.stores_6m) {
-        renderCategoryTrend(json.months_6m, json.stores_6m);
+          const months = json.months_6m;
+          const storesMap = json.stores_6m;
+      
+          let tableHtml = `<h5>📋 最近 6 個月統計表</h5>`;
+          tableHtml += `<table id="table6m"><tr><th>店家</th>`;
+          // 月份標題
+          months.forEach(m => tableHtml += `<th>${m}</th>`);
+          tableHtml += `<th>總額</th></tr>`;
+
+          // 用來計算每月總額
+          let monthlyTotals = {};
+          months.forEach(m => monthlyTotals[m] = 0);
+          let grandTotal = 0;
+
+          // 每個方式
+          Object.keys(storesMap).forEach(pay => {
+              tableHtml += `<tr><td>${pay}</td>`;
+              let total = 0;
+              months.forEach(m => {
+                  const val = storesMap[pay][m] || 0;
+                  total += val;
+                  tableHtml += `<td class="numeric">${val.toLocaleString()}</td>`;
+              });
+              grandTotal += total;
+              tableHtml += `<td class="numeric">${total.toLocaleString()}</td></tr>`;
+          });
+        
+          // 加上每月總額
+          tableHtml += `<tr><td><strong>每月總額</strong></td>`;
+          months.forEach(m => tableHtml += `<td class="numeric"><strong>${monthlyTotals[m].toLocaleString()}</strong></td>`);
+          tableHtml += `<td class="numeric"><strong>${grandTotal.toLocaleString()}</strong></td></tr>`;
+      
+          tableHtml += `</table>`;
+      
+          // ⭐ 6 個月長條圖
+          let trendCanvasHtml = `<canvas id="categoryTrendCanvas"></canvas>`;
+          html += tableHtml + trendCanvasHtml;
+      
+          // 生成圖表
+          renderCategoryTrend(months, storesMap);
       }
 
       if (command === "幣別" && json.months_6m && json.exchanges_6m) {
-        renderCategoryTrend(json.months_6m, json.exchanges_6m);
+          const months = json.months_6m;
+          const exchangesMap = json.exchanges_6m;
+      
+          let tableHtml = `<h5>💰 最近 6 個月統計表</h5>`;
+          tableHtml += `<table id="table6m"><tr><th>幣別</th>`;
+          // 月份標題
+          months.forEach(m => tableHtml += `<th>${m}</th>`);
+          tableHtml += `<th>總額</th></tr>`;
+
+          // 用來計算每月總額
+          let monthlyTotals = {};
+          months.forEach(m => monthlyTotals[m] = 0);
+          let grandTotal = 0;
+
+          // 每個方式
+          Object.keys(exchangesMap).forEach(pay => {
+              tableHtml += `<tr><td>${pay}</td>`;
+              let total = 0;
+              months.forEach(m => {
+                  const val = exchangesMap[pay][m] || 0;
+                  total += val;
+                  tableHtml += `<td class="numeric">${val.toLocaleString()}</td>`;
+              });
+              grandTotal += total;
+              tableHtml += `<td class="numeric">${total.toLocaleString()}</td></tr>`;
+          });
+        
+          // 加上每月總額
+          tableHtml += `<tr><td><strong>每月總額</strong></td>`;
+          months.forEach(m => tableHtml += `<td class="numeric"><strong>${monthlyTotals[m].toLocaleString()}</strong></td>`);
+          tableHtml += `<td class="numeric"><strong>${grandTotal.toLocaleString()}</strong></td></tr>`;
+      
+          tableHtml += `</table>`;
+      
+          // ⭐ 6 個月長條圖
+          let trendCanvasHtml = `<canvas id="categoryTrendCanvas"></canvas>`;
+          html += tableHtml + trendCanvasHtml;
+      
+          // 生成圖表
+          renderCategoryTrend(months, exchangesMap);
       }
 
       if (command === "記帳者" && json.months_6m && json.users_6m) {
-        renderCategoryTrend(json.months_6m, json.users_6m);
+          const months = json.months_6m;
+          const usersMap = json.users_6m;
+      
+          let tableHtml = `<h5>👤 最近 6 個月統計表</h5>`;
+          tableHtml += `<table id="table6m"><tr><th>記帳者</th>`;
+          // 月份標題
+          months.forEach(m => tableHtml += `<th>${m}</th>`);
+          tableHtml += `<th>總額</th></tr>`;
+
+          // 用來計算每月總額
+          let monthlyTotals = {};
+          months.forEach(m => monthlyTotals[m] = 0);
+          let grandTotal = 0;
+
+          // 每個方式
+          Object.keys(usersMap).forEach(pay => {
+              tableHtml += `<tr><td>${pay}</td>`;
+              let total = 0;
+              months.forEach(m => {
+                  const val = usersMap[pay][m] || 0;
+                  total += val;
+                  tableHtml += `<td class="numeric">${val.toLocaleString()}</td>`;
+              });
+              grandTotal += total;
+              tableHtml += `<td class="numeric">${total.toLocaleString()}</td></tr>`;
+          });
+        
+          // 加上每月總額
+          tableHtml += `<tr><td><strong>每月總額</strong></td>`;
+          months.forEach(m => tableHtml += `<td class="numeric"><strong>${monthlyTotals[m].toLocaleString()}</strong></td>`);
+          tableHtml += `<td class="numeric"><strong>${grandTotal.toLocaleString()}</strong></td></tr>`;
+      
+          tableHtml += `</table>`;
+      
+          // ⭐ 6 個月長條圖
+          let trendCanvasHtml = `<canvas id="categoryTrendCanvas"></canvas>`;
+          html += tableHtml + trendCanvasHtml;
+      
+          // 生成圖表
+          renderCategoryTrend(months, usersMap);
       }
             
       // 最後再更新一次 queryResult
@@ -1244,6 +1361,7 @@ initApp();
 </script>
 </body>
 </html>
+
 
 
 
