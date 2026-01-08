@@ -20,9 +20,9 @@
     h5 { font-size: 32px; margin: 40px 0 10px 0; text-align: center; font-weight: bold; }
     table { font-size: 22px; border-collapse: collapse; width: 100%; margin-top: 15px; background: white; }
     th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
-    th { background-color: #eee; cursor: pointer; white-space: nowrap; }
+    th { background-color: #eee; cursor: pointer; white-space: nowrap; position: relative; }
+    th:hover { background-color: #ddd; }
     
-    /* 灰底白線樣式 */
     .total, tfoot { background-color: #888 !important; color: white !important; font-weight: bold; }
     .total {
       font-size: 36px; margin: 20px 0; text-align: center; 
@@ -35,9 +35,7 @@
     canvas { display: block; margin: 30px auto; width: 900px; height: 600px; }
     #loading { font-size: 40px; text-align: center; color: #0056b3; font-weight: bold; margin: 30px; }
     
-    @media print {
-      button, .date-inputs, h3 { display: none !important; }
-    }
+    @media print { button, .date-inputs, h3 { display: none !important; } }
   </style>
 </head>
 <body>
@@ -62,7 +60,7 @@
   <button id="queryMonthUserBtn">👤 記帳者</button>
 </div>
 
-<div id="loading" style="display:none;">⏳ 處理中，請稍候...</div>
+<div id="loading" style="display:none;">⏳ 正在套用權重排序中...</div>
 
 <div id="queryResult"></div>
 <canvas id="chartCanvas"></canvas>
@@ -78,6 +76,8 @@
 <script>
 let API_URL = ""; let VERSION = "V"; let LIFF_IDq = ""; let currentUser = null; 
 let chartInstance = null; let trendChartInstance = null;
+let orderMaps = { "付款": [], "分類": [], "幣別": [], "記帳者": [] }; // 存儲後台權重順序
+
 const SETTINGS_URL = "https://script.google.com/macros/s/AKfycby2-1JvsriAfskOJXHyMB8HASeuMs7V-mJOQneD73Q_dJN56NhbWH0Dj8Ldu0LcfxMe/exec";
 
 async function initApp(){
@@ -88,6 +88,10 @@ async function initApp(){
     VERSION = json.data.D10.trim();
     LIFF_IDq = json.data.D12.trim();
     document.getElementById("version").textContent = VERSION;
+    
+    // 同步抓取後台「清單」定義的順序
+    fetchOrderLists();
+
     await liff.init({ liffId: LIFF_IDq });
     if (!liff.isLoggedIn()) liff.login();
     const profile = await liff.getProfile();
@@ -96,6 +100,19 @@ async function initApp(){
   } catch (e) { console.error(e); }
 }
 initApp();
+
+async function fetchOrderLists() {
+  try {
+    const res = await fetch(API_URL + "?type=query&command=清單");
+    const json = await res.json();
+    if (json.list) {
+      orderMaps["付款"] = (json.list.payment || []).map(item => item.name);
+      orderMaps["分類"] = (json.list.type || []).map(item => item.name);
+      orderMaps["幣別"] = (json.list.currency || []).map(item => item.name);
+      orderMaps["記帳者"] = (json.list.user || []).map(item => item.name);
+    }
+  } catch (e) { console.log("無法獲取權重清單，將採用一般排序"); }
+}
 
 function setDefaultDateRange() {
   const now = new Date();
@@ -107,7 +124,7 @@ function toInputDate(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-// 日期切換
+// 日期控制邏輯
 document.getElementById("prevMonthBtn").onclick = () => changeMonth(-1);
 document.getElementById("nextMonthBtn").onclick = () => changeMonth(1);
 document.getElementById("thisYearBtn").onclick = () => {
@@ -129,7 +146,6 @@ function changeMonth(offset) {
   document.getElementById("endDate").value = toInputDate(newLast);
 }
 
-// 查詢與渲染
 document.querySelectorAll("button[id^='queryMonth']").forEach(btn => {
   btn.onclick = () => sendQuery(btn.innerText.replace(/[^\u4e00-\u9fa5]/g, ''));
 });
@@ -160,8 +176,9 @@ function renderResult(command, json) {
   const adminUser = "Betty Yi";
   let rows = (currentUser === adminUser) ? json.rows : (json.rows || []).filter(r => r[3] === currentUser);
 
+  // 1. 渲染主統計表 (包含 12 欄位明細)
   if (command === "明細") {
-    mainHtml += `<h5>📊 查詢明細 (點擊標題排序)</h5><table id="mainTable"><thead><tr>
+    mainHtml += `<h5>📊 查詢明細 (依後台順序排序)</h5><table id="mainTable"><thead><tr>
       <th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th>
     </tr></thead><tbody>`;
     rows.forEach(r => {
@@ -180,7 +197,7 @@ function renderResult(command, json) {
     const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
     const idx = keyMap[command];
     let counts = {};
-    rows.forEach(r => { let v = r[idx] || "未分類"; counts[v] = (counts[v] || 0) + Number(r[5] || 0); });
+    rows.forEach(r => { let v = r[idx] || "其他"; counts[v] = (counts[v] || 0) + Number(r[5] || 0); });
     let labels = Object.keys(counts);
     let values = Object.values(counts);
     let totalSum = values.reduce((a, b) => a + b, 0);
@@ -193,9 +210,9 @@ function renderResult(command, json) {
     renderChart("pie", labels, values);
   }
   document.getElementById("queryResult").innerHTML = mainHtml;
-  makeTableSortable(document.getElementById("mainTable"));
+  makeTableSortable(document.getElementById("mainTable"), command);
 
-  // 6 個月表格
+  // 2. 6 個月表格渲染
   const sixKey = { "分類":"categories_6m", "付款":"payments_6m", "店家":"stores_6m", "幣別":"exchanges_6m", "記帳者":"users_6m" }[command];
   if (json.months_6m && json[sixKey]) {
     const months = json.months_6m;
@@ -203,7 +220,7 @@ function renderResult(command, json) {
     let monthlySums = new Array(months.length).fill(0);
     let grandTotal = 0;
 
-    let sixHtml = `<h5>📅 最近 6 個月${command}統計 (點擊標題排序)</h5><table id="table6m"><thead><tr><th>${command}</th>`;
+    let sixHtml = `<h5>📅 最近 6 個月${command}統計 (含自自定義排序)</h5><table id="table6m"><thead><tr><th>${command}</th>`;
     months.forEach(m => sixHtml += `<th>${m}</th>`);
     sixHtml += `<th>總額</th></tr></thead><tbody>`;
 
@@ -222,13 +239,14 @@ function renderResult(command, json) {
     monthlySums.forEach(sum => sixHtml += `<td class="numeric">${sum.toLocaleString()}</td>`);
     sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td></tr></tfoot></table>`;
     document.getElementById("sixMonthArea").innerHTML = sixHtml;
-    makeTableSortable(document.getElementById("table6m"));
+    makeTableSortable(document.getElementById("table6m"), command);
     renderCategoryTrend(months, dataMap);
   }
   document.getElementById("exportArea").style.display = "block";
 }
 
-function makeTableSortable(table) {
+// --- 進階排序邏輯：包含權重檢查 ---
+function makeTableSortable(table, currentCommand) {
   if (!table) return;
   const headers = table.querySelectorAll("thead th");
   headers.forEach((th, i) => {
@@ -237,12 +255,37 @@ function makeTableSortable(table) {
       const rows = Array.from(tbody.querySelectorAll("tr"));
       const isAsc = th.dataset.order !== "asc";
       th.dataset.order = isAsc ? "asc" : "desc";
+      
+      const colTitle = th.innerText.replace(/[▲▼]/g, '').trim();
+
       rows.sort((a, b) => {
         let v1 = a.cells[i].innerText.replace(/,/g, '').replace('%','');
         let v2 = b.cells[i].innerText.replace(/,/g, '').replace('%','');
-        return isAsc ? (parseFloat(v1) - parseFloat(v2) || v1.localeCompare(v2)) : (parseFloat(v2) - parseFloat(v1) || v2.localeCompare(v1));
+
+        // 1. 檢查是否為「有權重定義」的欄位 (付款方式、分類、幣別、記帳者)
+        const orderList = orderMaps[colTitle] || (colTitle === currentCommand ? orderMaps[currentCommand] : null);
+        
+        if (orderList && orderList.length > 0) {
+          let idx1 = orderList.indexOf(v1);
+          let idx2 = orderList.indexOf(v2);
+          // 若不在清單中，放到最後面
+          idx1 = idx1 === -1 ? 999 : idx1;
+          idx2 = idx2 === -1 ? 999 : idx2;
+          return isAsc ? idx1 - idx2 : idx2 - idx1;
+        }
+
+        // 2. 一般數值排序
+        if (!isNaN(parseFloat(v1)) && !isNaN(parseFloat(v2))) {
+          return isAsc ? parseFloat(v1) - parseFloat(v2) : parseFloat(v2) - parseFloat(v1);
+        }
+
+        // 3. 一般文字排序
+        return isAsc ? v1.localeCompare(v2) : v2.localeCompare(v1);
       });
+
       rows.forEach(r => tbody.appendChild(r));
+      headers.forEach(h => h.innerText = h.innerText.replace(/[▲▼]/g, ''));
+      th.innerText += isAsc ? " ▲" : " ▼";
     });
   });
 }
@@ -264,7 +307,7 @@ function renderCategoryTrend(months, map) {
   trendChartInstance = new Chart(ctx, { type: "line", data: { labels: months, datasets } });
 }
 
-// --- 匯出功能區 ---
+// 匯出功能
 document.getElementById("exportCsvBtn").onclick = () => {
   const table = document.getElementById("mainTable");
   let csv = "\ufeff";
