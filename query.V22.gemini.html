@@ -214,7 +214,7 @@ function renderResult(command, json) {
     
     globalStats.total = totalSum;
     globalStats.count = labels.length; 
-    mainHtml += `<div class="total">💰 ${command}總額：${globalStats.total.toLocaleString()} 元 | 📝 項目數：${globalStats.count} 項</div>`;
+    mainHtml += `<div class="total">📌 ${command}總額：${globalStats.total.toLocaleString()} 元 | 📝 項目數：${globalStats.count} 項</div>`;
     renderChart("pie", labels, values);
 
     // 非明細模式才顯示 6 個月資料
@@ -442,29 +442,45 @@ document.getElementById("exportCsvBtn").onclick = () => {
 };
 
 // --- 修正後的 PDF 匯出功能 ---
-document.getElementById("exportPdfBtn").onclick = () => {
+document.getElementById("exportPdfBtn").onclick = async () => {
   const originalTitle = document.title;
   
-  // 生成您要求的格式: 2026-01-09-17-25-03
+  // 1. 生成精確的日期時間格式: 2026-01-09-17-25-03
   const now = new Date();
-  const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}-${String(now.getSeconds()).padStart(2,'0')}`;
+  const Y = now.getFullYear();
+  const M = String(now.getMonth() + 1).padStart(2, '0');
+  const D = String(now.getDate()).padStart(2, '0');
+  const h = String(now.getHours()).padStart(2, '0');
+  const m = String(now.getMinutes()).padStart(2, '0');
+  const s = String(now.getSeconds()).padStart(2, '0');
+  const ts = `${Y}-${M}-${D}-${h}-${m}-${s}`;
   
-  // 設定 PDF 檔名（瀏覽器列印時預設會抓取 title）
-  document.title = `非匯不可PDF_${currentCommandName}統計_${ts}`;
+  // 2. 強制更新網頁標題
+  const newTitle = `非匯不可PDF_${currentCommandName}統計_${ts}`;
+  document.title = newTitle;
   
-  window.print();
-  
-  // 列印視窗關閉後還原網頁標題
-  setTimeout(() => { document.title = originalTitle; }, 1000);
+  // 3. 稍微延遲 250ms，確保標題已經寫入 DOM 再喚起列印視窗
+  setTimeout(() => {
+    window.print();
+    // 4. 列印視窗開啟後，稍候還原原始標題
+    setTimeout(() => { 
+      document.title = originalTitle; 
+    }, 2000);
+  }, 250);
 };
 
 // --- 同步修正通用檔名生成函式 (供 CSV/Excel 使用) ---
 function getExportFilename(type) {
   const now = new Date();
-  const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}-${String(now.getSeconds()).padStart(2,'0')}`;
+  const Y = now.getFullYear();
+  const M = String(now.getMonth() + 1).padStart(2, '0');
+  const D = String(now.getDate()).padStart(2, '0');
+  const h = String(now.getHours()).padStart(2, '0');
+  const m = String(now.getMinutes()).padStart(2, '0');
+  const s = String(now.getSeconds()).padStart(2, '0');
+  const ts = `${Y}-${M}-${D}-${h}-${m}-${s}`;
   return `非匯不可${type}_${currentCommandName}統計_${ts}`;
 }
 </script>
 </body>
 </html>
-
