@@ -356,7 +356,7 @@ function getExportFilename(type) {
 function getExportHeader() {
   const start = document.getElementById("startDate").value;
   const end = document.getElementById("endDate").value;
-  return [["🔍 零用金支出統計報表"], [`匯出時間：${new Date().toLocaleString()}`], [`日期區間：${start} ~ ${end}`],  [`統計報表：選擇${currentCommandName}統計`], []];
+  return [["🔍 非匯不可統計報表"], [`匯出時間：${new Date().toLocaleString()}`], [`日期區間：${start} ~ ${end}`],  [`統計報表：選擇${currentCommandName}統計`], []];
 }
 
 function getTableData(tableId, isMain = false) {
@@ -417,5 +417,6 @@ document.getElementById("exportPdfBtn").onclick = () => {
 </script>
 </body>
 </html>
+
 
 
