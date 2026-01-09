@@ -18,7 +18,7 @@
     .excel-btn { background-color: #1d6f42; }
 
     .slogan  { font-size: 36px; text-align: center; margin: 30px 0 10px 0; color: #333; font-weight: bold; }
-    h5 { font-size: 32px; margin: 0; padding: 0; }
+    h5 { font-size: 32px; margin: 20px 0 10px 0; padding: 0; }
     table { font-size: 28px; border-collapse: collapse; width: 100%; margin-top: 15px; background: white; }
     th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
     th { background-color: #eee; cursor: pointer; white-space: nowrap; }
@@ -32,7 +32,7 @@
     tfoot td { border: 1px solid #ddd !important; color: #000 !important; }
 
     .numeric { text-align: right; }
-    canvas { display: block; margin: 30px auto; width: 900px; height: 600px; }
+    canvas { display: block; margin: 30px auto; width: 900px; height: 600px; background: white; border: 1px solid #eee; }
     #loading { font-size: 32px; text-align: center; font-weight: bold; margin: 20px; }
     
     @media print { button, .date-inputs, h3 { display: none !important; } }
@@ -78,14 +78,13 @@
 <script>
 let API_URL = ""; let VERSION = "V"; let LIFF_IDq = ""; let currentUser = null; 
 let chartInstance = null; let trendChartInstance = null;
-let currentFullLabel = ""; // 存儲如 "📊 明細"
-let currentCommandName = ""; // 存儲如 "明細"
+let currentFullLabel = ""; 
+let currentCommandName = ""; 
 let globalStats = { total: 0, count: 0 };
 let orderMaps = { "付款": [], "分類": [], "幣別": [], "記帳者": [] };
 
 const SETTINGS_URL = "https://script.google.com/macros/s/AKfycby2-1JvsriAfskOJXHyMB8HASeuMs7V-mJOQneD73Q_dJN56NhbWH0Dj8Ldu0LcfxMe/exec";
 
-// 初始化與清單獲取
 async function initApp(){
   try {
     const res = await fetch(SETTINGS_URL + "?type=query&command=設定");
@@ -171,6 +170,7 @@ function renderResult(command, json) {
   const adminUser = "Betty Yi";
   let rows = (currentUser === adminUser) ? json.rows : (json.rows || []).filter(r => r[3] === currentUser);
 
+  // --- 第一部分：處理當期資料表格與首個圖表 ---
   if (command === "明細") {
     mainHtml += `<h5>${currentFullLabel}查詢;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th></tr></thead><tbody>`;
     rows.forEach(r => { mainHtml += `<tr><td>${r[3]}</td><td>${new Date(r[4]).toLocaleDateString()}</td><td>${r[8]}</td><td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td>${r[13]||1}</td><td class="numeric">${(Number(r[5])||0).toLocaleString()}</td><td>${r[7]}</td><td>${r[6]}</td><td>${r[9]||''}</td><td>${r[10]||''}</td><td>${r[14]}</td></tr>`; });
@@ -179,7 +179,7 @@ function renderResult(command, json) {
     globalStats.count = rows.length;
     mainHtml += `<div class="total">📌 支出總額：${globalStats.total.toLocaleString()} 元 | 📝 筆數：${globalStats.count} 筆</div>`;
 
-    // 明細圖表：處理每日金額與匯率
+    // 明細模式：畫每日趨勢圖
     const dailyData = {};
     rows.forEach(r => {
       const d = new Date(r[4]).toLocaleDateString();
@@ -188,7 +188,6 @@ function renderResult(command, json) {
     });
     const sortedDates = Object.keys(dailyData).sort((a,b)=>new Date(a)-new Date(b));
     renderDetailChart(sortedDates, sortedDates.map(d=>dailyData[d].sum), sortedDates.map(d=>dailyData[d].ex));
-
   } else {
     const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
     const idx = keyMap[command];
@@ -210,7 +209,8 @@ function renderResult(command, json) {
   document.getElementById("queryResult").innerHTML = mainHtml;
   makeTableSortable(document.getElementById("mainTable"), command);
 
-  // 6 個月統計區域 (明細模式預設抓分類數據)
+  // --- 第二部分：處理 6 個月統計資料 (不論明細或分類都要顯示) ---
+  // 明細按鈕時，自動關聯到 categories_6m (分類) 資料
   const sixKey = (command === "明細") ? "categories_6m" : { "分類":"categories_6m", "付款":"payments_6m", "店家":"stores_6m", "幣別":"exchanges_6m", "記帳者":"users_6m" }[command];
   
   if (json.months_6m && json[sixKey]) {
@@ -218,45 +218,34 @@ function renderResult(command, json) {
     const dataMap = json[sixKey];
     let monthlySums = new Array(months.length).fill(0);
     let grandTotal = 0;
+    
+    // 使用您的原始需求：動態標題
     let sixHtml = `<h5>📅 最近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>項目</th>`;
     months.forEach(m => sixHtml += `<th>${m}</th>`);
     sixHtml += `<th>總額</th></tr></thead><tbody>`;
+    
     Object.keys(dataMap).forEach(item => {
-      let rSum = 0; sixHtml += `<tr><td>${item}</td>`;
-      months.forEach((m, i) => { let val = dataMap[item][m] || 0; rSum += val; monthlySums[i] += val; sixHtml += `<td class="numeric">${val.toLocaleString()}</td>`; });
-      grandTotal += rSum; sixHtml += `<td class="numeric"><strong>${rSum.toLocaleString()}</strong></td></tr>`;
+      let rSum = 0; 
+      sixHtml += `<tr><td>${item}</td>`;
+      months.forEach((m, i) => { 
+        let val = dataMap[item][m] || 0; 
+        rSum += val; 
+        monthlySums[i] += val; 
+        sixHtml += `<td class="numeric">${val.toLocaleString()}</td>`; 
+      });
+      grandTotal += rSum; 
+      sixHtml += `<td class="numeric"><strong>${rSum.toLocaleString()}</strong></td></tr>`;
     });
+    
     sixHtml += `</tbody><tfoot><tr><td>每月總計</td>`;
     monthlySums.forEach(sum => sixHtml += `<td class="numeric">${sum.toLocaleString()}</td>`);
     sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td></tr></tfoot></table>`;
+    
     document.getElementById("sixMonthArea").innerHTML = sixHtml;
     makeTableSortable(document.getElementById("table6m"), command);
     renderCategoryTrend(months, dataMap);
   }
   document.getElementById("exportArea").style.display = "block";
-}
-
-function makeTableSortable(table, currentCommand) { if (!table) return; const headers = table.querySelectorAll("thead th"); headers.forEach((th, i) => { th.addEventListener("click", () => { const tbody = table.querySelector("tbody"); const rows = Array.from(tbody.querySelectorAll("tr")); const isAsc = th.dataset.order !== "asc"; th.dataset.order = isAsc ? "asc" : "desc"; const colTitle = th.innerText.replace(/[▲▼]/g, '').trim(); rows.sort((a, b) => { let v1 = a.cells[i].innerText.replace(/,/g, '').replace('%',''); let v2 = b.cells[i].innerText.replace(/,/g, '').replace('%',''); const orderList = orderMaps[colTitle] || (colTitle === currentCommand ? orderMaps[currentCommand] : null); if (orderList && orderList.length > 0) { let idx1 = orderList.indexOf(v1); let idx2 = orderList.indexOf(v2); idx1 = idx1 === -1 ? 999 : idx1; idx2 = idx2 === -1 ? 999 : idx2; return isAsc ? idx1 - idx2 : idx2 - idx1; } if (!isNaN(parseFloat(v1)) && !isNaN(parseFloat(v2))) return isAsc ? parseFloat(v1) - parseFloat(v2) : parseFloat(v2) - parseFloat(v1); return isAsc ? v1.localeCompare(v2) : v2.localeCompare(v1); }); rows.forEach(r => tbody.appendChild(r)); headers.forEach(h => h.innerText = h.innerText.replace(/[▲▼]/g, '')); th.innerText += isAsc ? " ▲" : " ▼"; }); }); }
-
-function renderChart(type, labels, values) {
-  const ctx = document.getElementById("chartCanvas").getContext("2d");
-  chartInstance = new Chart(ctx, {
-    type,
-    data: {
-      labels,
-      datasets: [{
-        data: values,
-        backgroundColor: labels.map((_, i) => `hsl(${i * 360 / labels.length}, 70%, 60%)`)
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { labels: { font: { size: 28, weight: 'bold' }, color: '#333' } },
-        tooltip: { bodyFont: { size: 24 }, titleFont: { size: 26, weight: 'bold' } }
-      }
-    }
-  });
 }
 
 function renderDetailChart(labels, sums, rates) {
@@ -277,6 +266,27 @@ function renderDetailChart(labels, sums, rates) {
         y1: { type: 'linear', position: 'right', title: { display: true, text: '匯率', font: {size:20} }, grid: { drawOnChartArea: false } }
       },
       plugins: { legend: { labels: { font: { size: 24, weight: 'bold' } } } }
+    }
+  });
+}
+
+function renderChart(type, labels, values) {
+  const ctx = document.getElementById("chartCanvas").getContext("2d");
+  chartInstance = new Chart(ctx, {
+    type,
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: labels.map((_, i) => `hsl(${i * 360 / labels.length}, 70%, 60%)`)
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { font: { size: 28, weight: 'bold' }, color: '#333' } },
+        tooltip: { bodyFont: { size: 24 }, titleFont: { size: 26, weight: 'bold' } }
+      }
     }
   });
 }
@@ -306,6 +316,37 @@ function renderCategoryTrend(months, map) {
   });
 }
 
+// 排序功能
+function makeTableSortable(table, currentCommand) { 
+  if (!table) return; 
+  const headers = table.querySelectorAll("thead th"); 
+  headers.forEach((th, i) => { 
+    th.addEventListener("click", () => { 
+      const tbody = table.querySelector("tbody"); 
+      const rows = Array.from(tbody.querySelectorAll("tr")); 
+      const isAsc = th.dataset.order !== "asc"; 
+      th.dataset.order = isAsc ? "asc" : "desc"; 
+      const colTitle = th.innerText.replace(/[▲▼]/g, '').trim(); 
+      rows.sort((a, b) => { 
+        let v1 = a.cells[i].innerText.replace(/,/g, '').replace('%',''); 
+        let v2 = b.cells[i].innerText.replace(/,/g, '').replace('%',''); 
+        const orderList = orderMaps[colTitle] || (colTitle === currentCommand ? orderMaps[currentCommand] : null); 
+        if (orderList && orderList.length > 0) { 
+          let idx1 = orderList.indexOf(v1); let idx2 = orderList.indexOf(v2); 
+          idx1 = idx1 === -1 ? 999 : idx1; idx2 = idx2 === -1 ? 999 : idx2; 
+          return isAsc ? idx1 - idx2 : idx2 - idx1; 
+        } 
+        if (!isNaN(parseFloat(v1)) && !isNaN(parseFloat(v2))) return isAsc ? parseFloat(v1) - parseFloat(v2) : parseFloat(v2) - parseFloat(v1); 
+        return isAsc ? v1.localeCompare(v2) : v2.localeCompare(v1); 
+      }); 
+      rows.forEach(r => tbody.appendChild(r)); 
+      headers.forEach(h => h.innerText = h.innerText.replace(/[▲▼]/g, '')); 
+      th.innerText += isAsc ? " ▲" : " ▼"; 
+    }); 
+  }); 
+}
+
+// 匯出功能
 function getExportFilename(type) {
   const now = new Date();
   const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}-${String(now.getSeconds()).padStart(2,'0')}`;
@@ -315,13 +356,7 @@ function getExportFilename(type) {
 function getExportHeader() {
   const start = document.getElementById("startDate").value;
   const end = document.getElementById("endDate").value;
-  return [
-    ["🔍 零用金支出統計報表"],
-    [`日期區間：${start} ~ ${end}`],
-    [`匯出時間：${new Date().toLocaleString()}`],
-    [`選擇${currentCommandName}統計`], 
-    []
-  ];
+  return [["🔍 零用金支出統計報表"], [`日期區間：${start} ~ ${end}`], [`匯出時間：${new Date().toLocaleString()}`], [`選擇${currentCommandName}統計`], []];
 }
 
 function getTableData(tableId, isMain = false) {
@@ -332,15 +367,14 @@ function getTableData(tableId, isMain = false) {
   const headers = [];
   for (let cell of table.querySelector("thead").rows[0].cells) headers.push(cell.innerText.replace(/[▲▼]/g, '').trim());
   data.push(headers);
-  const rows = Array.from(tbody.rows);
-  rows.forEach(row => {
+  Array.from(tbody.rows).forEach(row => {
     const rowData = [];
     for (let cell of row.cells) rowData.push(cell.innerText);
     data.push(rowData);
   });
   if (isMain) {
     data.push([`當期${currentCommandName}統計總額`, globalStats.total.toLocaleString()]);
-    data.push([`當期${currentCommandName}統計數量`, globalStats.count]);
+    data.push([`當期${currentCommandName}統計筆數`, globalStats.count]);
   }
   const tfoot = table.querySelector("tfoot");
   if (tfoot) { for (let row of tfoot.rows) { const rowData = []; for (let cell of row.cells) rowData.push(cell.innerText); data.push(rowData); } }
@@ -376,9 +410,7 @@ document.getElementById("exportCsvBtn").onclick = () => {
 
 document.getElementById("exportPdfBtn").onclick = () => {
   const originalTitle = document.title;
-  const now = new Date();
-  const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}-${String(now.getSeconds()).padStart(2,'0')}`;
-  document.title = `非匯不可PDF_${currentCommandName}統計_${ts}`;
+  document.title = `非匯不可PDF_${currentCommandName}統計_${new Date().getTime()}`;
   window.print();
   setTimeout(() => { document.title = originalTitle; }, 1000);
 };
