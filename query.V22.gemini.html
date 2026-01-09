@@ -16,15 +16,25 @@
     .green-btn { background-color: #28a745; }
     .pdf-btn { background-color: #d9534f; }
     .excel-btn { background-color: #1d6f42; }
+
     .slogan { font-size: 36px; text-align: center; margin: 30px 0 10px 0; color: #333; font-weight: bold; }
     h5 { font-size: 32px; margin: 25px 0 10px 0; padding: 0; }
     table { font-size: 28px; border-collapse: collapse; width: 100%; margin-top: 15px; background: white; }
     th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
     th { background-color: #eee; cursor: pointer; white-space: nowrap; }
+    
     .total, tfoot { background-color: #eee !important; color: #000 !important; font-weight: bold; }
-    .total { font-size: 36px; margin: 20px 0; text-align: center; border: 1px solid #ddd; padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .total { 
+      font-size: 36px; margin: 20px 0; text-align: center; 
+      border: 1px solid #ddd; padding: 20px; border-radius: 12px; 
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+    }
     .numeric { text-align: right; }
-    canvas { display: block; margin: 30px auto; width: 900px !important; height: 600px !important; background: white; border: 1px solid #eee; }
+
+    /* 修正圖表變形：移除固定高寬強制設定，交由 JS 控制比例 */
+    .chart-container { width: 95%; margin: 30px auto; background: white; border: 1px solid #eee; padding: 10px; }
+    canvas { width: 100% !important; height: auto !important; }
+
     #loading { font-size: 32px; text-align: center; font-weight: bold; margin: 20px; }
     @media print { button, .date-inputs, h3 { display: none !important; } }
   </style>
@@ -56,9 +66,16 @@
 <div id="loading" style="display:none;">⏳ 正在載入中,請稍侯...</div>
 
 <div id="queryResult"></div>
-<canvas id="chartCanvas"></canvas>
+
+<div class="chart-container">
+  <canvas id="chartCanvas"></canvas>
+</div>
+
 <div id="sixMonthArea"></div>
-<canvas id="categoryTrendCanvas"></canvas>
+
+<div class="chart-container" id="trendContainer" style="display:none;">
+  <canvas id="categoryTrendCanvas"></canvas>
+</div>
 
 <div id="exportArea" style="text-align:center; margin-top:40px; display:none; padding-bottom: 100px;">
   <button id="exportCsvBtn" class="green-btn">📤 匯出 CSV</button>
@@ -142,7 +159,7 @@ async function sendQuery(command) {
   document.getElementById("loading").style.display = "block";
   document.getElementById("queryResult").innerHTML = "";
   document.getElementById("sixMonthArea").innerHTML = "";
-  document.getElementById("categoryTrendCanvas").style.display = "none";
+  document.getElementById("trendContainer").style.display = "none";
   if(chartInstance) chartInstance.destroy();
   if(trendChartInstance) trendChartInstance.destroy();
 
@@ -160,7 +177,6 @@ function renderResult(command, json) {
   const adminUser = "Betty Yi";
   let rows = (currentUser === adminUser) ? json.rows : (json.rows || []).filter(r => r[3] === currentUser);
 
-  // --- 1. 明細處理 ---
   if (command === "明細") {
     mainHtml += `<h5>📊 明細查詢;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th></tr></thead><tbody>`;
     rows.forEach(r => { mainHtml += `<tr><td>${r[3]}</td><td>${new Date(r[4]).toLocaleDateString()}</td><td>${r[8]}</td><td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td>${r[13]||1}</td><td class="numeric">${(Number(r[5])||0).toLocaleString()}</td><td>${r[7]}</td><td>${r[6]}</td><td>${r[9]||''}</td><td>${r[10]||''}</td><td>${r[14]}</td></tr>`; });
@@ -178,12 +194,7 @@ function renderResult(command, json) {
     const sortedDates = Object.keys(dailyData).sort((a,b)=>new Date(a)-new Date(b));
     renderDetailChart(sortedDates, sortedDates.map(d=>dailyData[d].sum), sortedDates.map(d=>dailyData[d].ex));
     
-    // 明細不顯示 6 個月
-    document.getElementById("sixMonthArea").innerHTML = "";
-    document.getElementById("categoryTrendCanvas").style.display = "none";
-
   } else {
-    // --- 2. 其他分類統計 ---
     const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
     const idx = keyMap[command];
     let counts = {};
@@ -201,7 +212,6 @@ function renderResult(command, json) {
     mainHtml += `<div class="total">💰 ${command}總額：${globalStats.total.toLocaleString()} 元 | 📝 項目數：${globalStats.count} 項</div>`;
     renderChart("pie", labels, values);
 
-    // 處理 6 個月資料
     const sixKey = { "分類":"categories_6m", "付款":"payments_6m", "店家":"stores_6m", "幣別":"exchanges_6m", "記帳者":"users_6m" }[command];
     if (json.months_6m && json[sixKey]) {
       const months = json.months_6m;
@@ -221,7 +231,7 @@ function renderResult(command, json) {
       sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td></tr></tfoot></table>`;
       document.getElementById("sixMonthArea").innerHTML = sixHtml;
       makeTableSortable(document.getElementById("table6m"), command);
-      document.getElementById("categoryTrendCanvas").style.display = "block";
+      document.getElementById("trendContainer").style.display = "block";
       renderCategoryTrend(months, dataMap);
     }
   }
@@ -243,6 +253,8 @@ function renderDetailChart(labels, sums, rates) {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: true, // 保持比例不變形
+      aspectRatio: 2, // 寬度是高度的兩倍
       scales: {
         y: { type: 'linear', position: 'left', title: { display: true, text: '金額', font: {size:20} } },
         y1: { type: 'linear', position: 'right', title: { display: true, text: '匯率', font: {size:20} }, grid: { drawOnChartArea: false } }
@@ -265,9 +277,10 @@ function renderChart(type, labels, values) {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: true,
+      aspectRatio: 1.5,
       plugins: {
-        legend: { labels: { font: { size: 28, weight: 'bold' } } },
-        tooltip: { bodyFont: { size: 24 } }
+        legend: { labels: { font: { size: 28, weight: 'bold' } } }
       }
     }
   });
@@ -277,15 +290,17 @@ function renderCategoryTrend(months, map) {
   const ctx = document.getElementById("categoryTrendCanvas").getContext("2d");
   const datasets = Object.keys(map).map((k, i) => {
     const color = `hsl(${i * 360 / Object.keys(map).length}, 70%, 50%)`;
-    const bgColor = `hsla(${i * 360 / Object.keys(map).length}, 70%, 50%, 0.3)`; // 設置透明度背景
+    const bgColor = `hsla(${i * 360 / Object.keys(map).length}, 70%, 50%, 0.3)`;
     return {
       label: k,
       data: months.map(m => map[k][m] || 0),
       borderColor: color,
-      backgroundColor: bgColor, // 滿版填色背景
-      fill: true, // 開啟滿版填色
+      backgroundColor: bgColor,
+      fill: true,
       tension: 0.3,
-      pointRadius: 6
+      pointRadius: 6,
+      // 修正圖例顯示：讓 1111/付款等圖示變為滿版圓點
+      pointStyle: 'circle'
     };
   });
   trendChartInstance = new Chart(ctx, {
@@ -293,8 +308,16 @@ function renderCategoryTrend(months, map) {
     data: { labels: months, datasets },
     options: {
       responsive: true,
+      maintainAspectRatio: true, // 重要：防止變形
+      aspectRatio: 1.8, 
       plugins: {
-        legend: { labels: { font: { size: 24, weight: 'bold' } } }
+        legend: { 
+          labels: { 
+            font: { size: 24, weight: 'bold' },
+            usePointStyle: true, // 讓圖例顯示滿版形狀
+            boxWidth: 20
+          } 
+        }
       },
       scales: {
         x: { ticks: { font: { size: 20, weight: 'bold' } } },
@@ -333,7 +356,7 @@ function makeTableSortable(table, currentCommand) {
   });
 }
 
-// 匯出相關略 (保持原樣即可)
+// 匯出功能略
 document.getElementById("exportExcelBtn").onclick = () => {
   const header = [["🔍 零用金統計報表"], [`日期：${document.getElementById("startDate").value} ~ ${document.getElementById("endDate").value}`], []];
   const mainData = getTableData("mainTable", true);
@@ -346,7 +369,6 @@ document.getElementById("exportExcelBtn").onclick = () => {
   XLSX.utils.book_append_sheet(wb, ws, "統計報表");
   XLSX.writeFile(wb, `${getExportFilename('EXCEL')}.xlsx`);
 };
-
 function getTableData(tableId, isMain = false) {
   const table = document.getElementById(tableId);
   if (!table) return null;
@@ -363,11 +385,7 @@ function getTableData(tableId, isMain = false) {
   if (tfoot) { for (let row of tfoot.rows) { const rowData = []; for (let cell of row.cells) rowData.push(cell.innerText); data.push(rowData); } }
   return data;
 }
-
-function getExportFilename(type) {
-  return `非匯不可_${currentCommandName}_${new Date().getTime()}`;
-}
-
+function getExportFilename(type) { return `非匯不可_${currentCommandName}_${new Date().getTime()}`; }
 document.getElementById("exportCsvBtn").onclick = () => {
   let content = "\ufeff";
   const mainData = getTableData("mainTable", true);
@@ -376,9 +394,7 @@ document.getElementById("exportCsvBtn").onclick = () => {
   const link = document.createElement("a"); link.href = URL.createObjectURL(blob);
   link.download = `${getExportFilename('CSV')}.csv`; link.click();
 };
-
 document.getElementById("exportPdfBtn").onclick = () => { window.print(); };
-
 </script>
 </body>
 </html>
