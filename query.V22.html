@@ -153,7 +153,7 @@ function renderResult(command, json) {
   if(trendChartInstance) trendChartInstance.destroy();
 
   const adminUser = "Betty Yi";
-  // 管理者看全部，非管理者只看自己
+  // 管理者權限過濾
   let rows = (currentUser === adminUser) ? json.rows : (json.rows || []).filter(r => r[3] === currentUser);
 
   if (command === "明細") {
@@ -180,7 +180,7 @@ function renderResult(command, json) {
     const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
     const idx = keyMap[command];
     
-    // 1. 計算當前區間統計 (含 未歸類)
+    // 1. 當前統計 + 強制處理「未歸類」
     let counts = {};
     const sLimit = new Date(document.getElementById("startDate").value);
     const eLimit = new Date(document.getElementById("endDate").value + " 23:59:59");
@@ -188,7 +188,7 @@ function renderResult(command, json) {
     rows.forEach(r => {
       let rDate = new Date(r[4]);
       if (rDate >= sLimit && rDate <= eLimit) {
-        let v = String(r[idx] || "").trim() === "" ? "未歸類" : r[idx];
+        let v = (String(r[idx] || "").trim() === "" || r[idx] === null) ? "未歸類" : r[idx];
         counts[v] = (counts[v] || 0) + Number(r[5] || 0);
       }
     });
@@ -206,18 +206,19 @@ function renderResult(command, json) {
     document.getElementById("queryResult").innerHTML = mainHtml;
     renderChart("pie", labels, values);
 
-    // 2. 核心修正：根據過濾後的 rows 計算最近 6 個月統計
+    // 2. 6個月統計 + 強制處理「未歸類」+ 補零校準
     if (json.months_6m) {
       const months = json.months_6m;
       let cleanDataMap = {};
       
       rows.forEach(r => {
+        if (!r[4]) return;
         let date = new Date(r[4]);
-        // 統一格式為 YYYY/MM 與 json.months_6m 匹配
+        // 強制補零以匹配 YYYY/MM 格式 (重要：解決全 0 問題)
         let mStr = `${date.getFullYear()}/${String(date.getMonth()+1).padStart(2,'0')}`;
         
         if (months.includes(mStr)) {
-          let key = String(r[idx] || "").trim() === "" ? "未歸類" : r[idx];
+          let key = (String(r[idx] || "").trim() === "" || r[idx] === null) ? "未歸類" : r[idx];
           if (!cleanDataMap[key]) cleanDataMap[key] = {};
           cleanDataMap[key][mStr] = (cleanDataMap[key][mStr] || 0) + Number(r[5] || 0);
         }
@@ -263,16 +264,13 @@ function makeTableSortable(table, currentCommand) {
       const rows = Array.from(tbody.querySelectorAll("tr")); 
       const isAsc = th.dataset.order !== "asc"; 
       th.dataset.order = isAsc ? "asc" : "desc"; 
-      
       const colTitle = th.innerText.replace(/[▲▼]/g, '').trim(); 
-      // 支援 6 個月表格的「項目」欄位對應正確的 orderMaps
       const lookupTitle = (colTitle === "項目") ? currentCommand : colTitle;
       const orderList = orderMaps[lookupTitle];
 
       rows.sort((a, b) => { 
         let v1 = a.cells[i].innerText.replace(/,/g, '').replace('%',''); 
         let v2 = b.cells[i].innerText.replace(/,/g, '').replace('%',''); 
-        
         if (orderList && orderList.length > 0) { 
           let idx1 = orderList.indexOf(v1); let idx2 = orderList.indexOf(v2); 
           idx1 = idx1 === -1 ? 999 : idx1; idx2 = idx2 === -1 ? 999 : idx2; 
@@ -330,54 +328,6 @@ function renderCategoryTrend(months, map) {
   trendChartInstance = new Chart(ctx, { type: "line", data: { labels: months, datasets }, options: { responsive: true, animation: false } });
 }
 
-document.getElementById("exportExcelBtn").onclick = () => {
-  const wb = XLSX.utils.book_new();
-  const mainData = getTableData("mainTable", true);
-  const sixMonthData = getTableData("table6m");
-  let allRows = [...getExportHeader()];
-  if (mainData) allRows = allRows.concat([[`[ 當期統計 ]`]], mainData);
-  if (sixMonthData) allRows = allRows.concat([[], [`[ 6個月趨勢 ]`]], sixMonthData);
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(allRows), "統計");
-  XLSX.writeFile(wb, `${getExportFilename('EXCEL')}.xlsx`);
-};
-
 function getExportFilename(type) {
   const d = new Date();
-  const ts = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}-${d.getHours()}-${d.getMinutes()}`;
-  return `非匯不可${type}_${currentCommandName}_${ts}`;
-}
-
-function getExportHeader() {
-  return [["🔍 非匯不可統計報表"], [`匯出時間：${new Date().toLocaleString()}`], []];
-}
-
-function getTableData(id, isMain) {
-  const table = document.getElementById(id); if (!table) return null;
-  const data = [];
-  data.push(Array.from(table.querySelectorAll("thead th")).map(th => th.innerText.replace(/[▲▼]/g, '').trim()));
-  Array.from(table.querySelectorAll("tbody tr")).forEach(tr => data.push(Array.from(tr.cells).map(td => td.innerText)));
-  if (isMain) data.push([`總額`, globalStats.total.toLocaleString()], [`項目數`, globalStats.count]);
-  return data;
-}
-
-document.getElementById("exportCsvBtn").onclick = () => {
-  let content = "\ufeff" + getTableData("mainTable", true).map(r => r.join(",")).join("\n");
-  const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
-  const link = document.createElement("a"); link.href = URL.createObjectURL(blob);
-  link.download = `${getExportFilename('CSV')}.csv`; link.click();
-};
-
-document.getElementById("exportPdfBtn").onclick = () => { window.print(); };
-document.getElementById("prevMonthBtn").onclick = () => changeMonth(-1);
-document.getElementById("nextMonthBtn").onclick = () => changeMonth(1);
-document.getElementById("thisYearBtn").onclick = () => {
-  const y = new Date().getFullYear();
-  document.getElementById("startDate").value = `${y}-01-01`; document.getElementById("endDate").value = `${y}-12-31`;
-};
-document.getElementById("lastYearBtn").onclick = () => {
-  const y = new Date().getFullYear() - 1;
-  document.getElementById("startDate").value = `${y}-01-01`; document.getElementById("endDate").value = `${y}-12-31`;
-};
-</script>
-</body>
-</html>
+  return `非匯不可${
