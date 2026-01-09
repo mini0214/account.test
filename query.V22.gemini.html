@@ -182,7 +182,7 @@ function renderResult(command, json) {
     const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
     const idx = keyMap[command];
     let counts = {};
-    rows.forEach(r => { let v = r[idx] || "未分類"; counts[v] = (counts[v] || 0) + Number(r[5] || 0); });
+    rows.forEach(r => { let v = r[idx] || "未歸類"; counts[v] = (counts[v] || 0) + Number(r[5] || 0); });
     let labels = Object.keys(counts);
     let values = Object.values(counts);
     let totalSum = values.reduce((a, b) => a + b, 0);
@@ -400,6 +400,7 @@ document.getElementById("exportPdfBtn").onclick = () => {
 </script>
 </body>
 </html>
+
 
 
 
