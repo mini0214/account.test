@@ -173,7 +173,7 @@ function renderResult(command, json) {
 
   if (command === "明細") {
     mainHtml += `<h5>${currentFullLabel}查詢;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th></tr></thead><tbody>`;
-    rows.forEach(r => { mainHtml += `<tr><td>${r[3]}</td><td>${new Date(r[4]).toLocaleDateString()}</td><td>${r[8]}</td><td class="numeric">${(Number(r[12])||0).toLocaleString()}</td><td class="numeric">${(Number(r[5])||0).toLocaleString()}</td><td>${r[13]||1}</td><td class="numeric">${(Number(r[11])||0).toLocaleString()}</td><td>${r[7]}</td><td>${r[6]}</td><td>${r[9]||''}</td><td>${r[10]||''}</td><td>${r[14]}</td></tr>`; });
+    rows.forEach(r => { mainHtml += `<tr><td>${r[3]}</td><td>${new Date(r[4]).toLocaleDateString()}</td><td>${r[8]}</td><td class="numeric">${(Number(r[11])||0).toLocaleString()}</td><td class="numeric">${(Number(r[12])||0).toLocaleString()}</td><td>${r[13]||1}</td><td class="numeric">${(Number(r[5])||0).toLocaleString()}</td><td>${r[7]}</td><td>${r[6]}</td><td>${r[9]||''}</td><td>${r[10]||''}</td><td>${r[14]}</td></tr>`; });
     mainHtml += `</tbody></table>`;
     globalStats.total = rows.reduce((s, r) => s + Number(r[5] || 0), 0);
     globalStats.count = rows.length;
@@ -400,6 +400,7 @@ document.getElementById("exportPdfBtn").onclick = () => {
 </script>
 </body>
 </html>
+
 
 
 
