@@ -76,7 +76,7 @@ let API_URL = ""; let VERSION = "V"; let LIFF_IDq = ""; let currentUser = null;
 let chartInstance = null; let trendChartInstance = null;
 let currentFullLabel = ""; let currentCommandName = ""; 
 let globalStats = { total: 0, count: 0 };
-let orderMaps = { "付款": [], "分類": [], "幣別": [], "記帳者": [], "店家": [] };
+let orderMaps = { "付款": [], "分類": [], "幣別": [], "記帳者": [] };
 
 const SETTINGS_URL = "https://script.google.com/macros/s/AKfycby2-1JvsriAfskOJXHyMB8HASeuMs7V-mJOQneD73Q_dJN56NhbWH0Dj8Ldu0LcfxMe/exec";
 
@@ -107,7 +107,6 @@ async function fetchOrderLists() {
       orderMaps["分類"] = (json.list.type || []).map(item => item.name);
       orderMaps["幣別"] = (json.list.currency || []).map(item => item.name);
       orderMaps["記帳者"] = (json.list.user || []).map(item => item.name);
-      // 店家通常清單較長，若有特定排序可在此加入
     }
   } catch (e) {}
 }
@@ -166,14 +165,13 @@ async function sendQuery(command) {
 function renderResult(command, json) {
   let mainHtml = "";
   const adminUser = "Betty Yi";
-  // --- 權限過濾：非管理者只能看自己的資料 ---
+  // --- 管理者判斷過濾 ---
   let rows = (currentUser === adminUser) ? json.rows : (json.rows || []).filter(r => r[3] === currentUser);
 
   if (command === "明細") {
     mainHtml += `<h5>${currentFullLabel}查詢;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th></tr></thead><tbody>`;
     rows.forEach(r => { 
-        let storeName = r[8] || "未歸類";
-        mainHtml += `<tr><td>${r[3]}</td><td>${new Date(r[4]).toLocaleDateString()}</td><td>${storeName}</td><td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td>${r[13]||1}</td><td class="numeric">${(Number(r[5])||0).toLocaleString()}</td><td>${r[7]}</td><td>${r[6]}</td><td>${r[9]||''}</td><td>${r[10]||''}</td><td>${r[14]}</td></tr>`; 
+        mainHtml += `<tr><td>${r[3]}</td><td>${new Date(r[4]).toLocaleDateString()}</td><td>${r[8]||''}</td><td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td>${r[13]||1}</td><td class="numeric">${(Number(r[5])||0).toLocaleString()}</td><td>${r[7]}</td><td>${r[6]}</td><td>${r[9]||''}</td><td>${r[10]||''}</td><td>${r[14]}</td></tr>`; 
     });
     mainHtml += `</tbody></table>`;
     globalStats.total = rows.reduce((s, r) => s + Number(r[5] || 0), 0);
@@ -194,7 +192,7 @@ function renderResult(command, json) {
     const idx = keyMap[command];
     let counts = {};
     
-    // 統計當期資料，並補上「未歸類」
+    // 統計分析：將空白店家歸類為「未歸類」
     rows.forEach(r => { 
       let v = String(r[idx] || "").trim() === "" ? "未歸類" : r[idx]; 
       counts[v] = (counts[v] || 0) + Number(r[5] || 0); 
@@ -213,16 +211,16 @@ function renderResult(command, json) {
     mainHtml += `<div class="total">📌 ${command}總額：${globalStats.total.toLocaleString()} 元 | 📝 項目數：${globalStats.count} 項</div>`;
     renderChart("pie", labels, values);
 
-    // 處理 6 個月統計資料
+    // 處理 6 個月資料
     const sixKey = { "分類":"categories_6m", "付款":"payments_6m", "店家":"stores_6m", "幣別":"exchanges_6m", "記帳者":"users_6m" }[command];
     if (json.months_6m && json[sixKey]) {
       const months = json.months_6m;
       let rawDataMap = json[sixKey];
       let cleanDataMap = {};
 
-      // 關鍵修正：將 API 回傳的資料 key 進行「未歸類」合併處理
+      // 6個月表格合併「未歸類」邏輯
       Object.keys(rawDataMap).forEach(key => {
-          let newKey = String(key).trim() === "" || key === "null" ? "未歸類" : key;
+          let newKey = (String(key).trim() === "" || key === "null") ? "未歸類" : key;
           if(!cleanDataMap[newKey]) cleanDataMap[newKey] = {};
           months.forEach(m => {
               cleanDataMap[newKey][m] = (cleanDataMap[newKey][m] || 0) + (rawDataMap[key][m] || 0);
@@ -254,6 +252,7 @@ function renderResult(command, json) {
       sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td></tr></tfoot></table>`;
       
       document.getElementById("sixMonthArea").innerHTML = sixHtml;
+      // 確保 6 個月統計表也能排序
       makeTableSortable(document.getElementById("table6m"), command);
       document.getElementById("trendContainer").style.display = "block";
       renderCategoryTrend(months, cleanDataMap);
@@ -264,7 +263,7 @@ function renderResult(command, json) {
   document.getElementById("exportArea").style.display = "block";
 }
 
-// 排序功能：加入 orderMaps (other 值) 的比對
+// 統一排序功能：支援 Other 相關值排序
 function makeTableSortable(table, currentCommand) { 
   if (!table) return; 
   const headers = table.querySelectorAll("thead th"); 
@@ -275,27 +274,25 @@ function makeTableSortable(table, currentCommand) {
       const isAsc = th.dataset.order !== "asc"; 
       th.dataset.order = isAsc ? "asc" : "desc"; 
       
-      // 取得當前欄位名稱，用來尋找是否有對應的 orderMap
+      // 判斷該欄位是否有預設排序 (Other)
       const colTitle = th.innerText.replace(/[▲▼]/g, '').trim(); 
-      const orderList = orderMaps[colTitle];
+      // 在 6 個月表格中，第一欄標題是「項目」，需對應當前的 command (分類/付款等)
+      const lookupTitle = (colTitle === "項目") ? currentCommand : colTitle;
+      const orderList = orderMaps[lookupTitle];
 
       rows.sort((a, b) => { 
         let v1 = a.cells[i].innerText.replace(/,/g, '').replace('%',''); 
         let v2 = b.cells[i].innerText.replace(/,/g, '').replace('%',''); 
         
-        // 如果有定義好的排序清單 (Other 相關值)
         if (orderList && orderList.length > 0) { 
           let idx1 = orderList.indexOf(v1); 
           let idx2 = orderList.indexOf(v2); 
-          // 未在清單中的放在最後
           idx1 = idx1 === -1 ? 999 : idx1; 
           idx2 = idx2 === -1 ? 999 : idx2; 
           if(idx1 !== idx2) return isAsc ? idx1 - idx2 : idx2 - idx1;
         } 
         
-        // 數字排序
         if (!isNaN(parseFloat(v1)) && !isNaN(parseFloat(v2))) return isAsc ? parseFloat(v1) - parseFloat(v2) : parseFloat(v2) - parseFloat(v1); 
-        // 一般文字排序
         return isAsc ? v1.localeCompare(v2) : v2.localeCompare(v1); 
       }); 
       rows.forEach(r => tbody.appendChild(r)); 
@@ -305,7 +302,6 @@ function makeTableSortable(table, currentCommand) {
   }); 
 }
 
-// 圖表繪製函式維持原狀 (renderDetailChart, renderChart, renderCategoryTrend)
 function renderDetailChart(labels, sums, rates) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
   chartInstance = new Chart(ctx, {
@@ -391,7 +387,7 @@ function renderCategoryTrend(months, map) {
   });
 }
 
-// 匯出功能與檔案名處理 (維持原修正後的邏輯)
+// 檔案名稱與匯出邏輯 (不變)
 function getExportFilename(type) {
   const now = new Date();
   const Y = now.getFullYear();
