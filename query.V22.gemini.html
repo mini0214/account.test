@@ -441,12 +441,30 @@ document.getElementById("exportCsvBtn").onclick = () => {
   link.download = `${getExportFilename('CSV')}.csv`; link.click();
 };
 
+// --- 修正後的 PDF 匯出功能 ---
 document.getElementById("exportPdfBtn").onclick = () => {
   const originalTitle = document.title;
-  document.title = `非匯不可PDF_${currentCommandName}統計_${new Date().getTime()}`;
+  
+  // 生成您要求的格式: 2026-01-09-17-25-03
+  const now = new Date();
+  const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}-${String(now.getSeconds()).padStart(2,'0')}`;
+  
+  // 設定 PDF 檔名（瀏覽器列印時預設會抓取 title）
+  document.title = `非匯不可PDF_${currentCommandName}統計_${ts}`;
+  
   window.print();
+  
+  // 列印視窗關閉後還原網頁標題
   setTimeout(() => { document.title = originalTitle; }, 1000);
 };
+
+// --- 同步修正通用檔名生成函式 (供 CSV/Excel 使用) ---
+function getExportFilename(type) {
+  const now = new Date();
+  const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}-${String(now.getSeconds()).padStart(2,'0')}`;
+  return `非匯不可${type}_${currentCommandName}統計_${ts}`;
+}
 </script>
 </body>
 </html>
+
