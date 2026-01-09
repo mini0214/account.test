@@ -32,9 +32,13 @@
     tfoot td { border: 1px solid #ddd !important; color: #000 !important; }
 
     .numeric { text-align: right; }
+    
+    /* 容器控制比例，防止變形 */
     .chart-container { width: 95%; margin: 30px auto; background: white; border: 1px solid #eee; padding: 10px; }
     canvas { width: 100% !important; height: auto !important; display: block; }
+    
     #loading { font-size: 32px; text-align: center; font-weight: bold; margin: 20px; }
+    
     @media print { button, .date-inputs, h3 { display: none !important; } }
   </style>
 </head>
@@ -85,7 +89,8 @@
 <script>
 let API_URL = ""; let VERSION = "V"; let LIFF_IDq = ""; let currentUser = null; 
 let chartInstance = null; let trendChartInstance = null;
-let currentFullLabel = ""; let currentCommandName = ""; 
+let currentFullLabel = ""; 
+let currentCommandName = ""; 
 let globalStats = { total: 0, count: 0 };
 let orderMaps = { "付款": [], "分類": [], "幣別": [], "記帳者": [] };
 
@@ -175,23 +180,18 @@ async function sendQuery(command) {
 function renderResult(command, json) {
   let mainHtml = "";
   const adminUser = "Betty Yi";
-  // --- 權限判斷：管理者看全部，一般用戶看自己 ---
-  let allRows = json.rows || [];
-  let filteredRows = (currentUser === adminUser) ? allRows : allRows.filter(r => r[3] === currentUser);
+  let rows = (currentUser === adminUser) ? json.rows : (json.rows || []).filter(r => r[3] === currentUser);
 
   if (command === "明細") {
     mainHtml += `<h5>${currentFullLabel}查詢;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th></tr></thead><tbody>`;
-    filteredRows.forEach(r => { 
-      let storeName = (r[8] && r[8].toString().trim() !== "") ? r[8] : "未歸類";
-      mainHtml += `<tr><td>${r[3]}</td><td>${new Date(r[4]).toLocaleDateString()}</td><td>${storeName}</td><td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td>${r[13]||1}</td><td class="numeric">${(Number(r[5])||0).toLocaleString()}</td><td>${r[7]}</td><td>${r[6]}</td><td>${r[9]||''}</td><td>${r[10]||''}</td><td>${r[14]}</td></tr>`; 
-    });
+    rows.forEach(r => { mainHtml += `<tr><td>${r[3]}</td><td>${new Date(r[4]).toLocaleDateString()}</td><td>${r[8]}</td><td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td>${r[13]||1}</td><td class="numeric">${(Number(r[5])||0).toLocaleString()}</td><td>${r[7]}</td><td>${r[6]}</td><td>${r[9]||''}</td><td>${r[10]||''}</td><td>${r[14]}</td></tr>`; });
     mainHtml += `</tbody></table>`;
-    globalStats.total = filteredRows.reduce((s, r) => s + Number(r[5] || 0), 0);
-    globalStats.count = filteredRows.length;
+    globalStats.total = rows.reduce((s, r) => s + Number(r[5] || 0), 0);
+    globalStats.count = rows.length;
     mainHtml += `<div class="total">📌 支出總額：${globalStats.total.toLocaleString()} 元 | 📝 筆數：${globalStats.count} 筆</div>`;
 
     const dailyData = {};
-    filteredRows.forEach(r => {
+    rows.forEach(r => {
       const d = new Date(r[4]).toLocaleDateString();
       if(!dailyData[d]) dailyData[d] = { sum: 0, ex: Number(r[13]||1) };
       dailyData[d].sum += Number(r[5]||0);
@@ -203,14 +203,7 @@ function renderResult(command, json) {
     const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
     const idx = keyMap[command];
     let counts = {};
-    
-    // 統計目前表格：處理「未歸類」
-    filteredRows.forEach(r => { 
-        let rawV = r[idx];
-        let v = (rawV === null || rawV === undefined || rawV.toString().trim() === "") ? "未歸類" : rawV;
-        counts[v] = (counts[v] || 0) + Number(r[5] || 0); 
-    });
-    
+    rows.forEach(r => { let v = r[idx] || "未歸類"; counts[v] = (counts[v] || 0) + Number(r[5] || 0); });
     let labels = Object.keys(counts);
     let values = Object.values(counts);
     let totalSum = values.reduce((a, b) => a + b, 0);
@@ -224,38 +217,19 @@ function renderResult(command, json) {
     mainHtml += `<div class="total">📌 ${command}總額：${globalStats.total.toLocaleString()} 元 | 📝 項目數：${globalStats.count} 項</div>`;
     renderChart("pie", labels, values);
 
-    // --- 6 個月資料連動權限與「未歸類」處理 ---
-    if (json.months_6m) {
+    // 非明細模式才顯示 6 個月資料
+    const sixKey = { "分類":"categories_6m", "付款":"payments_6m", "店家":"stores_6m", "幣別":"exchanges_6m", "記帳者":"users_6m" }[command];
+    if (json.months_6m && json[sixKey]) {
       const months = json.months_6m;
-      let dataMap = {};
-
-      // 從 filteredRows (已依權限過濾) 重新計算 6 個月資料
-      filteredRows.forEach(r => {
-          let rawItem = r[idx];
-          let itemKey = (rawItem === null || rawItem === undefined || rawItem.toString().trim() === "") ? "未歸類" : rawItem;
-          const date = new Date(r[4]);
-          const mLabel = `${date.getFullYear()}/${String(date.getMonth()+1).padStart(2,'0')}`;
-          if (!dataMap[itemKey]) dataMap[itemKey] = {};
-          dataMap[itemKey][mLabel] = (dataMap[itemKey][mLabel] || 0) + Number(r[5] || 0);
-      });
-
+      const dataMap = json[sixKey];
       let monthlySums = new Array(months.length).fill(0);
       let grandTotal = 0;
+      
       let sixHtml = `<h5>📅 最近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>項目</th>`;
       months.forEach(m => sixHtml += `<th>${m}</th>`);
       sixHtml += `<th>總額</th></tr></thead><tbody>`;
       
-      // 排序項目：參考 orderMaps
-      const sortedItems = Object.keys(dataMap).sort((a,b) => {
-        const orderList = orderMaps[command] || [];
-        if (orderList.length > 0) {
-           let i1 = orderList.indexOf(a); let i2 = orderList.indexOf(b);
-           return (i1===-1?999:i1) - (i2===-1?999:i2);
-        }
-        return a.localeCompare(b);
-      });
-
-      sortedItems.forEach(item => {
+      Object.keys(dataMap).forEach(item => {
         let rSum = 0; 
         sixHtml += `<tr><td>${item}</td>`;
         months.forEach((m, i) => { 
@@ -283,39 +257,8 @@ function renderResult(command, json) {
   document.getElementById("exportArea").style.display = "block";
 }
 
-function makeTableSortable(table, currentCommand) { 
-  if (!table) return; 
-  const headers = table.querySelectorAll("thead th"); 
-  headers.forEach((th, i) => { 
-    th.addEventListener("click", () => { 
-      const tbody = table.querySelector("tbody"); 
-      const rows = Array.from(tbody.querySelectorAll("tr")); 
-      const isAsc = th.dataset.order !== "asc"; 
-      th.dataset.order = isAsc ? "asc" : "desc"; 
-      const colTitle = th.innerText.replace(/[▲▼]/g, '').trim(); 
-      rows.sort((a, b) => { 
-        let v1 = a.cells[i].innerText.replace(/,/g, '').replace('%','').trim(); 
-        let v2 = b.cells[i].innerText.replace(/,/g, '').replace('%','').trim(); 
-        const orderList = orderMaps[colTitle] || (i === 0 ? orderMaps[currentCommand] : null); 
-        if (orderList && orderList.length > 0 && isNaN(parseFloat(v1.replace(/,/g,'')))) { 
-          let idx1 = orderList.indexOf(v1); let idx2 = orderList.indexOf(v2); 
-          idx1 = idx1 === -1 ? 999 : idx1; idx2 = idx2 === -1 ? 999 : idx2; 
-          return isAsc ? idx1 - idx2 : idx2 - idx1; 
-        } 
-        const n1 = parseFloat(v1); const n2 = parseFloat(v2);
-        if (!isNaN(n1) && !isNaN(n2)) return isAsc ? n1 - n2 : n2 - n1; 
-        return isAsc ? v1.localeCompare(v2) : v2.localeCompare(v1); 
-      }); 
-      rows.forEach(r => tbody.appendChild(r)); 
-      headers.forEach(h => h.innerText = h.innerText.replace(/[▲▼]/g, '')); 
-      th.innerText += isAsc ? " ▲" : " ▼"; 
-    }); 
-  }); 
-}
-
 function renderDetailChart(labels, sums, rates) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
-  if(chartInstance) chartInstance.destroy();
   chartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -326,7 +269,10 @@ function renderDetailChart(labels, sums, rates) {
       ]
     },
     options: {
-      responsive: true, maintainAspectRatio: true, aspectRatio: 2, animation: false,
+      responsive: true,
+      maintainAspectRatio: true,
+      aspectRatio: 2,
+      animation: false, // 關閉動畫減少抖動
       scales: {
         y: { type: 'linear', position: 'left', title: { display: true, text: '金額', font: {size:20} } },
         y1: { type: 'linear', position: 'right', title: { display: true, text: '匯率', font: {size:20}, color: "red" }, grid: { drawOnChartArea: false } }
@@ -338,15 +284,20 @@ function renderDetailChart(labels, sums, rates) {
 
 function renderChart(type, labels, values) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
-  if(chartInstance) chartInstance.destroy();
   chartInstance = new Chart(ctx, {
     type,
     data: {
       labels,
-      datasets: [{ data: values, backgroundColor: labels.map((_, i) => `hsl(${i * 360 / labels.length}, 70%, 60%)`) }]
+      datasets: [{
+        data: values,
+        backgroundColor: labels.map((_, i) => `hsl(${i * 360 / labels.length}, 70%, 60%)`)
+      }]
     },
     options: {
-      responsive: true, maintainAspectRatio: true, aspectRatio: 1.5, animation: false,
+      responsive: true,
+      maintainAspectRatio: true,
+      aspectRatio: 1.5,
+      animation: false,
       plugins: {
         legend: { labels: { font: { size: 28, weight: 'bold' }, color: '#333' } },
         tooltip: { bodyFont: { size: 24 }, titleFont: { size: 26, weight: 'bold' } }
@@ -357,22 +308,40 @@ function renderChart(type, labels, values) {
 
 function renderCategoryTrend(months, map) {
   const ctx = document.getElementById("categoryTrendCanvas").getContext("2d");
-  if(trendChartInstance) trendChartInstance.destroy();
   const datasets = Object.keys(map).map((k, i) => {
     const color = `hsl(${i * 360 / Object.keys(map).length}, 70%, 50%)`;
     return {
-      label: k, data: months.map(m => map[k][m] || 0), borderColor: color, backgroundColor: color,
-      fill: false, tension: 0.1, pointRadius: 6, pointStyle: 'circle'
+      label: k,
+      data: months.map(m => map[k][m] || 0),
+      borderColor: color,
+      backgroundColor: color, // 圖例點顏色
+      fill: false, // 改為線條，不要滿版
+      tension: 0.1, // 線條稍微平滑但不誇張
+      pointRadius: 6,
+      pointStyle: 'circle'
     };
   });
   trendChartInstance = new Chart(ctx, {
     type: "line",
     data: { labels: months, datasets },
     options: {
-      responsive: true, maintainAspectRatio: true, aspectRatio: 1.8, animation: false,
+      responsive: true,
+      maintainAspectRatio: true,
+      aspectRatio: 1.8,
+      animation: false, // 防止數字在游標移動時抖動
       plugins: {
-        legend: { labels: { font: { size: 24, weight: 'bold' }, usePointStyle: true, boxWidth: 20 } },
-        tooltip: { bodyFont: { size: 22 }, intersect: false, mode: 'index' }
+        legend: { 
+          labels: { 
+            font: { size: 24, weight: 'bold' },
+            usePointStyle: true, // 圓點圖例
+            boxWidth: 20
+          } 
+        },
+        tooltip: { 
+          bodyFont: { size: 22 },
+          intersect: false, // 游標靠近即顯示，不需精準重疊點
+          mode: 'index'
+        }
       },
       scales: {
         x: { ticks: { font: { size: 20, weight: 'bold' } } },
@@ -382,47 +351,135 @@ function renderCategoryTrend(months, map) {
   });
 }
 
+function makeTableSortable(table, currentCommand) { 
+  if (!table) return; 
+  const headers = table.querySelectorAll("thead th"); 
+  headers.forEach((th, i) => { 
+    th.addEventListener("click", () => { 
+      const tbody = table.querySelector("tbody"); 
+      const rows = Array.from(tbody.querySelectorAll("tr")); 
+      const isAsc = th.dataset.order !== "asc"; 
+      th.dataset.order = isAsc ? "asc" : "desc"; 
+      const colTitle = th.innerText.replace(/[▲▼]/g, '').trim(); 
+      rows.sort((a, b) => { 
+        let v1 = a.cells[i].innerText.replace(/,/g, '').replace('%',''); 
+        let v2 = b.cells[i].innerText.replace(/,/g, '').replace('%',''); 
+        const orderList = orderMaps[colTitle] || (colTitle === currentCommand ? orderMaps[currentCommand] : null); 
+        if (orderList && orderList.length > 0) { 
+          let idx1 = orderList.indexOf(v1); let idx2 = orderList.indexOf(v2); 
+          idx1 = idx1 === -1 ? 999 : idx1; idx2 = idx2 === -1 ? 999 : idx2; 
+          return isAsc ? idx1 - idx2 : idx2 - idx1; 
+        } 
+        if (!isNaN(parseFloat(v1)) && !isNaN(parseFloat(v2))) return isAsc ? parseFloat(v1) - parseFloat(v2) : parseFloat(v2) - parseFloat(v1); 
+        return isAsc ? v1.localeCompare(v2) : v2.localeCompare(v1); 
+      }); 
+      rows.forEach(r => tbody.appendChild(r)); 
+      headers.forEach(h => h.innerText = h.innerText.replace(/[▲▼]/g, '')); 
+      th.innerText += isAsc ? " ▲" : " ▼"; 
+    }); 
+  }); 
+}
+
 function getExportFilename(type) {
   const now = new Date();
   const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}-${String(now.getSeconds()).padStart(2,'0')}`;
   return `非匯不可${type}_${currentCommandName}統計_${ts}`;
 }
 
+function getExportHeader() {
+  const start = document.getElementById("startDate").value;
+  const end = document.getElementById("endDate").value;
+  return [["🔍 非匯不可統計報表"], [`匯出時間：${new Date().toLocaleString()}`], [`日期區間：${start} ~ ${end}`],  [`統計報表：選擇${currentCommandName}統計`], []];
+}
+
+function getTableData(tableId, isMain = false) {
+  const table = document.getElementById(tableId);
+  if (!table) return null;
+  const data = [];
+  const tbody = table.querySelector("tbody");
+  const headers = [];
+  for (let cell of table.querySelector("thead").rows[0].cells) headers.push(cell.innerText.replace(/[▲▼]/g, '').trim());
+  data.push(headers);
+  Array.from(tbody.rows).forEach(row => {
+    const rowData = [];
+    for (let cell of row.cells) rowData.push(cell.innerText);
+    data.push(rowData);
+  });
+  if (isMain) {
+    data.push([`當期${currentCommandName}統計總額`, globalStats.total.toLocaleString()]);
+    data.push([`當期${currentCommandName}統計筆數`, globalStats.count]);
+  }
+  const tfoot = table.querySelector("tfoot");
+  if (tfoot) { for (let row of tfoot.rows) { const rowData = []; for (let cell of row.cells) rowData.push(cell.innerText); data.push(rowData); } }
+  return data;
+}
+
 document.getElementById("exportExcelBtn").onclick = () => {
+  const header = getExportHeader();
+  const mainData = getTableData("mainTable", true);
+  const sixMonthData = getTableData("table6m");
+  let allRows = [...header];
+  if (mainData) { allRows.push([`[ 當期${currentCommandName}統計 ]`]); allRows = allRows.concat(mainData); }
+  if (sixMonthData) { allRows.push([], [`[ 最近 6 個月${currentCommandName}趨勢統計 ]`]); allRows = allRows.concat(sixMonthData); }
   const wb = XLSX.utils.book_new();
-  const mainData = getTableData("mainTable");
-  const sixData = getTableData("table6m");
-  let rows = [["非匯不可統計報表"], []];
-  if(mainData) rows = rows.concat(mainData, [[]]);
-  if(sixData) rows = rows.concat([["最近 6 個月趨勢"]], sixData);
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-  XLSX.utils.book_append_sheet(wb, ws, "Data");
+  const ws = XLSX.utils.aoa_to_sheet(allRows);
+  XLSX.utils.book_append_sheet(wb, ws, `${currentCommandName}統計`); 
   XLSX.writeFile(wb, `${getExportFilename('EXCEL')}.xlsx`);
 };
 
 document.getElementById("exportCsvBtn").onclick = () => {
   let content = "\ufeff";
-  const mainData = getTableData("mainTable");
-  if(mainData) content += mainData.map(r => r.join(",")).join("\n") + "\n\n";
+  const header = getExportHeader();
+  const mainData = getTableData("mainTable", true);
+  const sixMonthData = getTableData("table6m");
+  let allRows = [...header];
+  if (mainData) { allRows.push([`[ 當前${currentCommandName}統計 ]`]); allRows = allRows.concat(mainData); }
+  if (sixMonthData) { allRows.push([], [`[ 最近 6 個月${currentCommandName}趨勢統計 ]`]); allRows = allRows.concat(sixMonthData); }
+  content += allRows.map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
   const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
   const link = document.createElement("a"); link.href = URL.createObjectURL(blob);
   link.download = `${getExportFilename('CSV')}.csv`; link.click();
 };
 
-document.getElementById("exportPdfBtn").onclick = () => {
+// --- 修正後的 PDF 匯出功能 ---
+document.getElementById("exportPdfBtn").onclick = async () => {
   const originalTitle = document.title;
-  document.title = getExportFilename('PDF');
-  window.print();
-  setTimeout(() => { document.title = originalTitle; }, 1000);
+  
+  // 1. 生成精確的日期時間格式: 2026-01-09-17-25-03
+  const now = new Date();
+  const Y = now.getFullYear();
+  const M = String(now.getMonth() + 1).padStart(2, '0');
+  const D = String(now.getDate()).padStart(2, '0');
+  const h = String(now.getHours()).padStart(2, '0');
+  const m = String(now.getMinutes()).padStart(2, '0');
+  const s = String(now.getSeconds()).padStart(2, '0');
+  const ts = `${Y}-${M}-${D}-${h}-${m}-${s}`;
+  
+  // 2. 強制更新網頁標題
+  const newTitle = `非匯不可PDF_${currentCommandName}統計_${ts}`;
+  document.title = newTitle;
+  
+  // 3. 稍微延遲 250ms，確保標題已經寫入 DOM 再喚起列印視窗
+  setTimeout(() => {
+    window.print();
+    // 4. 列印視窗開啟後，稍候還原原始標題
+    setTimeout(() => { 
+      document.title = originalTitle; 
+    }, 2000);
+  }, 250);
 };
 
-function getTableData(id) {
-  const t = document.getElementById(id); if(!t) return null;
-  const res = [];
-  res.push(Array.from(t.querySelectorAll("thead th")).map(th => th.innerText.replace(/[▲▼]/g,'').trim()));
-  Array.from(t.querySelectorAll("tbody tr")).forEach(tr => res.push(Array.from(tr.cells).map(td => td.innerText)));
-  const f = t.querySelector("tfoot"); if(f) Array.from(f.rows).forEach(tr => res.push(Array.from(tr.cells).map(td => td.innerText)));
-  return res;
+// --- 同步修正通用檔名生成函式 (供 CSV/Excel 使用) ---
+function getExportFilename(type) {
+  const now = new Date();
+  const Y = now.getFullYear();
+  const M = String(now.getMonth() + 1).padStart(2, '0');
+  const D = String(now.getDate()).padStart(2, '0');
+  const h = String(now.getHours()).padStart(2, '0');
+  const m = String(now.getMinutes()).padStart(2, '0');
+  const s = String(now.getSeconds()).padStart(2, '0');
+  const ts = `${Y}-${M}-${D}-${h}-${m}-${s}`;
+  return `非匯不可${type}_${currentCommandName}統計_${ts}`;
 }
 </script>
 </body>
