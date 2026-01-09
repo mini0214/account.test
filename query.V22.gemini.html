@@ -18,8 +18,8 @@
     .excel-btn { background-color: #1d6f42; }
 
     .slogan  { font-size: 36px; text-align: center; margin: 30px 0 10px 0; color: #333; font-weight: bold; }
-    h5 { font-size: 32px; margin: 40px 0 10px 0; text-align: center; font-weight: bold; }
-    table { font-size: 22px; border-collapse: collapse; width: 100%; margin-top: 15px; background: white; }
+    h5 { font-size: 32px; margin: 0; padding: 0; }
+    table { font-size: 28px; border-collapse: collapse; width: 100%; margin-top: 15px; background: white; }
     th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
     th { background-color: #eee; cursor: pointer; white-space: nowrap; }
     
@@ -187,7 +187,7 @@ function renderResult(command, json) {
     let values = Object.values(counts);
     let totalSum = values.reduce((a, b) => a + b, 0);
 
-    mainHtml += `<h5>${currentFullLabel}分析統計</h5><table id="mainTable"><thead><tr><th>${command}</th><th class="numeric">金額</th><th class="numeric">佔比</th></tr></thead><tbody>`;
+    mainHtml += `<h5>${currentFullLabel}分析統計;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>${command}</th><th class="numeric">金額</th><th class="numeric">佔比</th></tr></thead><tbody>`;
     labels.forEach((l, i) => { mainHtml += `<tr><td>${l}</td><td class="numeric">${values[i].toLocaleString()}</td><td class="numeric">${((values[i]/totalSum)*100).toFixed(1)}%</td></tr>`; });
     mainHtml += `</tbody></table>`;
     
@@ -400,6 +400,7 @@ document.getElementById("exportPdfBtn").onclick = () => {
 </script>
 </body>
 </html>
+
 
 
 
