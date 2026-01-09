@@ -180,14 +180,11 @@ async function sendQuery(command) {
 function renderResult(command, json) {
   let mainHtml = "";
   const adminUser = "Betty Yi";
-  // 1. 權限與資料初始化：管理者看全部，一般人看自己
   let rows = (currentUser === adminUser) ? json.rows : (json.rows || []).filter(r => r[3] === currentUser);
 
   if (command === "明細") {
     mainHtml += `<h5>${currentFullLabel}查詢;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th></tr></thead><tbody>`;
-    rows.forEach(r => { 
-      mainHtml += `<tr><td>${r[3]}</td><td>${new Date(r[4]).toLocaleDateString()}</td><td>${r[8]||''}</td><td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td>${r[13]||1}</td><td class="numeric">${(Number(r[5])||0).toLocaleString()}</td><td>${r[7]}</td><td>${r[6]}</td><td>${r[9]||''}</td><td>${r[10]||''}</td><td>${r[14]}</td></tr>`; 
-    });
+    rows.forEach(r => { mainHtml += `<tr><td>${r[3]}</td><td>${new Date(r[4]).toLocaleDateString()}</td><td>${r[8]}</td><td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td>${r[13]||1}</td><td class="numeric">${(Number(r[5])||0).toLocaleString()}</td><td>${r[7]}</td><td>${r[6]}</td><td>${r[9]||''}</td><td>${r[10]||''}</td><td>${r[14]}</td></tr>`; });
     mainHtml += `</tbody></table>`;
     globalStats.total = rows.reduce((s, r) => s + Number(r[5] || 0), 0);
     globalStats.count = rows.length;
@@ -205,13 +202,8 @@ function renderResult(command, json) {
   } else {
     const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
     const idx = keyMap[command];
-    
-    // 2. 當期統計：處理「未歸類」
     let counts = {};
-    rows.forEach(r => { 
-      let v = (String(r[idx] || "").trim()) || "未歸類"; 
-      counts[v] = (counts[v] || 0) + Number(r[5] || 0); 
-    });
+    rows.forEach(r => { let v = r[idx] || "未填寫"; counts[v] = (counts[v] || 0) + Number(r[5] || 0); });
     let labels = Object.keys(counts);
     let values = Object.values(counts);
     let totalSum = values.reduce((a, b) => a + b, 0);
@@ -225,36 +217,23 @@ function renderResult(command, json) {
     mainHtml += `<div class="total">📌 ${command}總額：${globalStats.total.toLocaleString()} 元 | 📝 項目數：${globalStats.count} 項</div>`;
     renderChart("pie", labels, values);
 
-    // 3. 最近 6 個月統計：即時重算以確保「未歸類」被包含且數據正確
-    if (json.months_6m) {
+    // 非明細模式才顯示 6 個月資料
+    const sixKey = { "分類":"categories_6m", "付款":"payments_6m", "店家":"stores_6m", "幣別":"exchanges_6m", "記帳者":"users_6m" }[command];
+    if (json.months_6m && json[sixKey]) {
       const months = json.months_6m;
-      let clean6mMap = {};
-
-      // 從原始 rows 中重新彙整 6 個月的數據，確保管理者權限與未歸類標籤一致
-      rows.forEach(r => {
-        if(!r[4]) return;
-        let d = new Date(r[4]);
-        let mStr = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2, '0')}`;
-        
-        if (months.includes(mStr)) {
-          let itemKey = (String(r[idx] || "").trim()) || "未歸類";
-          if (!clean6mMap[itemKey]) clean6mMap[itemKey] = {};
-          clean6mMap[itemKey][mStr] = (clean6mMap[itemKey][mStr] || 0) + Number(r[5] || 0);
-        }
-      });
-
+      const dataMap = json[sixKey];
       let monthlySums = new Array(months.length).fill(0);
       let grandTotal = 0;
       
-      let sixHtml = `<h5>📅 近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>項目</th>`;
+      let sixHtml = `<h5>📅 近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
       months.forEach(m => sixHtml += `<th>${m}</th>`);
       sixHtml += `<th>總額</th></tr></thead><tbody>`;
       
-      Object.keys(clean6mMap).forEach(item => {
+      Object.keys(dataMap).forEach(item => {
         let rSum = 0; 
         sixHtml += `<tr><td>${item}</td>`;
         months.forEach((m, i) => { 
-          let val = clean6mMap[item][m] || 0; 
+          let val = dataMap[item][m] || 0; 
           rSum += val; 
           monthlySums[i] += val; 
           sixHtml += `<td class="numeric">${val.toLocaleString()}</td>`; 
@@ -270,7 +249,7 @@ function renderResult(command, json) {
       document.getElementById("sixMonthArea").innerHTML = sixHtml;
       makeTableSortable(document.getElementById("table6m"), command);
       document.getElementById("trendContainer").style.display = "block";
-      renderCategoryTrend(months, clean6mMap);
+      renderCategoryTrend(months, dataMap);
     }
   }
   document.getElementById("queryResult").innerHTML = mainHtml;
@@ -505,5 +484,3 @@ function getExportFilename(type) {
 </script>
 </body>
 </html>
-
-
