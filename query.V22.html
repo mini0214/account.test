@@ -153,11 +153,10 @@ function renderResult(command, json) {
   if(trendChartInstance) trendChartInstance.destroy();
 
   const adminUser = "Betty Yi";
-  // 重要：過濾登錄者資料 (rows 是包含 6 個月原始資料的全集)
+  // 管理者看全部，非管理者只看自己
   let rows = (currentUser === adminUser) ? json.rows : (json.rows || []).filter(r => r[3] === currentUser);
 
   if (command === "明細") {
-    // 明細邏輯：不顯示未歸類
     let mainHtml = `<h5>${currentFullLabel}查詢;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th></tr></thead><tbody>`;
     rows.forEach(r => {
       mainHtml += `<tr><td>${r[3]}</td><td>${new Date(r[4]).toLocaleDateString()}</td><td>${r[8]||''}</td><td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td>${r[13]||1}</td><td class="numeric">${(Number(r[5])||0).toLocaleString()}</td><td>${r[7]}</td><td>${r[6]}</td><td>${r[9]||''}</td><td>${r[10]||''}</td><td>${r[14]}</td></tr>`; 
@@ -178,16 +177,22 @@ function renderResult(command, json) {
     renderDetailChart(sortedDates, sortedDates.map(d=>dailyData[d].sum), sortedDates.map(d=>dailyData[d].ex));
     
   } else {
-    // 分析統計邏輯
     const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
     const idx = keyMap[command];
     
-    // 1. 計算當前範圍統計
+    // 1. 計算當前區間統計 (含 未歸類)
     let counts = {};
+    const sLimit = new Date(document.getElementById("startDate").value);
+    const eLimit = new Date(document.getElementById("endDate").value + " 23:59:59");
+    
     rows.forEach(r => {
-      let v = String(r[idx] || "").trim() === "" ? "未歸類" : r[idx];
-      counts[v] = (counts[v] || 0) + Number(r[5] || 0);
+      let rDate = new Date(r[4]);
+      if (rDate >= sLimit && rDate <= eLimit) {
+        let v = String(r[idx] || "").trim() === "" ? "未歸類" : r[idx];
+        counts[v] = (counts[v] || 0) + Number(r[5] || 0);
+      }
     });
+
     let labels = Object.keys(counts);
     let values = Object.values(counts);
     let totalSum = values.reduce((a, b) => a + b, 0);
@@ -201,14 +206,16 @@ function renderResult(command, json) {
     document.getElementById("queryResult").innerHTML = mainHtml;
     renderChart("pie", labels, values);
 
-    // 2. 計算最近 6 個月統計 (由前端根據過濾後的 rows 即時計算)
+    // 2. 核心修正：根據過濾後的 rows 計算最近 6 個月統計
     if (json.months_6m) {
       const months = json.months_6m;
       let cleanDataMap = {};
       
       rows.forEach(r => {
         let date = new Date(r[4]);
+        // 統一格式為 YYYY/MM 與 json.months_6m 匹配
         let mStr = `${date.getFullYear()}/${String(date.getMonth()+1).padStart(2,'0')}`;
+        
         if (months.includes(mStr)) {
           let key = String(r[idx] || "").trim() === "" ? "未歸類" : r[idx];
           if (!cleanDataMap[key]) cleanDataMap[key] = {};
@@ -218,7 +225,7 @@ function renderResult(command, json) {
 
       let monthlySums = new Array(months.length).fill(0);
       let grandTotal = 0;
-      let sixHtml = `<h5>📅 最近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
+      let sixHtml = `<h5>📅 最近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>項目</th>`;
       months.forEach(m => sixHtml += `<th>${m}</th>`);
       sixHtml += `<th>總額</th></tr></thead><tbody>`;
       
@@ -258,6 +265,7 @@ function makeTableSortable(table, currentCommand) {
       th.dataset.order = isAsc ? "asc" : "desc"; 
       
       const colTitle = th.innerText.replace(/[▲▼]/g, '').trim(); 
+      // 支援 6 個月表格的「項目」欄位對應正確的 orderMaps
       const lookupTitle = (colTitle === "項目") ? currentCommand : colTitle;
       const orderList = orderMaps[lookupTitle];
 
@@ -280,7 +288,6 @@ function makeTableSortable(table, currentCommand) {
   }); 
 }
 
-// 圖表與匯出函式 (維持原邏輯，略) ...
 function renderDetailChart(labels, sums, rates) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
   chartInstance = new Chart(ctx, {
@@ -361,9 +368,16 @@ document.getElementById("exportCsvBtn").onclick = () => {
 };
 
 document.getElementById("exportPdfBtn").onclick = () => { window.print(); };
-
 document.getElementById("prevMonthBtn").onclick = () => changeMonth(-1);
 document.getElementById("nextMonthBtn").onclick = () => changeMonth(1);
+document.getElementById("thisYearBtn").onclick = () => {
+  const y = new Date().getFullYear();
+  document.getElementById("startDate").value = `${y}-01-01`; document.getElementById("endDate").value = `${y}-12-31`;
+};
+document.getElementById("lastYearBtn").onclick = () => {
+  const y = new Date().getFullYear() - 1;
+  document.getElementById("startDate").value = `${y}-01-01`; document.getElementById("endDate").value = `${y}-12-31`;
+};
 </script>
 </body>
 </html>
