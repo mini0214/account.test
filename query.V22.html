@@ -330,4 +330,51 @@ function renderCategoryTrend(months, map) {
 
 function getExportFilename(type) {
   const d = new Date();
-  return `非匯不可${
+  return `非匯不可${type}_${currentCommandName}_${d.getFullYear()}${d.getMonth()+1}${d.getDate()}`;
+}
+
+function getExportHeader() {
+  return [["🔍 非匯不可統計報表"], [`匯出時間：${new Date().toLocaleString()}`], []];
+}
+
+function getTableData(id, isMain) {
+  const table = document.getElementById(id); if (!table) return null;
+  const data = [];
+  data.push(Array.from(table.querySelectorAll("thead th")).map(th => th.innerText.replace(/[▲▼]/g, '').trim()));
+  Array.from(table.querySelectorAll("tbody tr")).forEach(tr => data.push(Array.from(tr.cells).map(td => td.innerText)));
+  if (isMain) data.push([`總額`, globalStats.total.toLocaleString()], [`項目數`, globalStats.count]);
+  return data;
+}
+
+document.getElementById("exportExcelBtn").onclick = () => {
+  const wb = XLSX.utils.book_new();
+  const mainData = getTableData("mainTable", true);
+  const sixMonthData = getTableData("table6m");
+  let allRows = [...getExportHeader()];
+  if (mainData) allRows = allRows.concat([[`[ 當期統計 ]`]], mainData);
+  if (sixMonthData) allRows = allRows.concat([[], [`[ 6個月趨勢 ]`]], sixMonthData);
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(allRows), "統計");
+  XLSX.writeFile(wb, `${getExportFilename('EXCEL')}.xlsx`);
+};
+
+document.getElementById("exportCsvBtn").onclick = () => {
+  let content = "\ufeff" + getTableData("mainTable", true).map(r => r.join(",")).join("\n");
+  const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a"); link.href = URL.createObjectURL(blob);
+  link.download = `${getExportFilename('CSV')}.csv`; link.click();
+};
+
+document.getElementById("exportPdfBtn").onclick = () => { window.print(); };
+document.getElementById("prevMonthBtn").onclick = () => changeMonth(-1);
+document.getElementById("nextMonthBtn").onclick = () => changeMonth(1);
+document.getElementById("thisYearBtn").onclick = () => {
+  const y = new Date().getFullYear();
+  document.getElementById("startDate").value = `${y}-01-01`; document.getElementById("endDate").value = `${y}-12-31`;
+};
+document.getElementById("lastYearBtn").onclick = () => {
+  const y = new Date().getFullYear() - 1;
+  document.getElementById("startDate").value = `${y}-01-01`; document.getElementById("endDate").value = `${y}-12-31`;
+};
+</script>
+</body>
+</html>
