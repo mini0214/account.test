@@ -32,12 +32,9 @@
     tfoot td { border: 1px solid #ddd !important; color: #000 !important; }
 
     .numeric { text-align: right; }
-    
     .chart-container { width: 95%; margin: 30px auto; background: white; border: 1px solid #eee; padding: 10px; }
     canvas { width: 100% !important; height: auto !important; display: block; }
-    
     #loading { font-size: 32px; text-align: center; font-weight: bold; margin: 20px; }
-    
     @media print { button, .date-inputs, h3 { display: none !important; } }
   </style>
 </head>
@@ -88,8 +85,7 @@
 <script>
 let API_URL = ""; let VERSION = "V"; let LIFF_IDq = ""; let currentUser = null; 
 let chartInstance = null; let trendChartInstance = null;
-let currentFullLabel = ""; 
-let currentCommandName = ""; 
+let currentFullLabel = ""; let currentCommandName = ""; 
 let globalStats = { total: 0, count: 0 };
 let orderMaps = { "付款": [], "分類": [], "幣別": [], "記帳者": [] };
 
@@ -179,12 +175,15 @@ async function sendQuery(command) {
 function renderResult(command, json) {
   let mainHtml = "";
   const adminUser = "Betty Yi";
-  // 基礎過濾：所有人只能看自己的明細（除管理者外）
+  // 1. 過濾明細：非管理者只能看自己的
   let filteredRows = (currentUser === adminUser) ? json.rows : (json.rows || []).filter(r => r[3] === currentUser);
 
   if (command === "明細") {
     mainHtml += `<h5>${currentFullLabel}查詢;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th></tr></thead><tbody>`;
-    filteredRows.forEach(r => { mainHtml += `<tr><td>${r[3]}</td><td>${new Date(r[4]).toLocaleDateString()}</td><td>${r[8]}</td><td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td>${r[13]||1}</td><td class="numeric">${(Number(r[5])||0).toLocaleString()}</td><td>${r[7]}</td><td>${r[6]}</td><td>${r[9]||''}</td><td>${r[10]||''}</td><td>${r[14]}</td></tr>`; });
+    filteredRows.forEach(r => { 
+      let storeName = r[8] || "未歸類";
+      mainHtml += `<tr><td>${r[3]}</td><td>${new Date(r[4]).toLocaleDateString()}</td><td>${storeName}</td><td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td>${r[13]||1}</td><td class="numeric">${(Number(r[5])||0).toLocaleString()}</td><td>${r[7]}</td><td>${r[6]}</td><td>${r[9]||''}</td><td>${r[10]||''}</td><td>${r[14]}</td></tr>`; 
+    });
     mainHtml += `</tbody></table>`;
     globalStats.total = filteredRows.reduce((s, r) => s + Number(r[5] || 0), 0);
     globalStats.count = filteredRows.length;
@@ -203,7 +202,13 @@ function renderResult(command, json) {
     const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
     const idx = keyMap[command];
     let counts = {};
-    filteredRows.forEach(r => { let v = r[idx] || "未歸類"; counts[v] = (counts[v] || 0) + Number(r[5] || 0); });
+    
+    // 2. 統計目前表格：處理「未歸類」
+    filteredRows.forEach(r => { 
+        let v = (r[idx] === null || r[idx] === undefined || r[idx].toString().trim() === "") ? "未歸類" : r[idx];
+        counts[v] = (counts[v] || 0) + Number(r[5] || 0); 
+    });
+    
     let labels = Object.keys(counts);
     let values = Object.values(counts);
     let totalSum = values.reduce((a, b) => a + b, 0);
@@ -214,28 +219,24 @@ function renderResult(command, json) {
     
     globalStats.total = totalSum;
     globalStats.count = labels.length; 
-    mainHtml += `<div class="total">💰 ${command}總額：${globalStats.total.toLocaleString()} 元 | 📝 項目數：${globalStats.count} 項</div>`;
+    mainHtml += `<div class="total">📌 ${command}總額：${globalStats.total.toLocaleString()} 元 | 📝 項目數：${globalStats.count} 項</div>`;
     renderChart("pie", labels, values);
 
-    // --- 6 個月資料權限過濾 (依據需求2) ---
+    // 3. 處理 6 個月資料
     const sixKey = { "分類":"categories_6m", "付款":"payments_6m", "店家":"stores_6m", "幣別":"exchanges_6m", "記帳者":"users_6m" }[command];
-    if (json.months_6m && json[sixKey]) {
+    if (json.months_6m) {
       const months = json.months_6m;
-      let dataMap = json[sixKey];
+      let dataMap = {};
 
-      // 如果不是管理者，需要重新計算 6 個月資料，僅包含自己的支出
-      if (currentUser !== adminUser) {
-        const userSpecificMap = {};
-        // 從過濾後的 rows 中重新彙總 6 個月趨勢
-        filteredRows.forEach(r => {
-          const itemKey = r[idx] || "未歸類";
+      // 如果是管理者，原本 json[sixKey] 是正確的，但為了統一處理「未歸類」，這裡一律從 filteredRows 重新彙總
+      // 這也同時解決了非管理者只能看自己的需求
+      filteredRows.forEach(r => {
+          let itemKey = (r[idx] === null || r[idx] === undefined || r[idx].toString().trim() === "") ? "未歸類" : r[idx];
           const date = new Date(r[4]);
           const mLabel = `${date.getFullYear()}/${String(date.getMonth()+1).padStart(2,'0')}`;
-          if (!userSpecificMap[itemKey]) userSpecificMap[itemKey] = {};
-          userSpecificMap[itemKey][mLabel] = (userSpecificMap[itemKey][mLabel] || 0) + Number(r[5]||0);
-        });
-        dataMap = userSpecificMap;
-      }
+          if (!dataMap[itemKey]) dataMap[itemKey] = {};
+          dataMap[itemKey][mLabel] = (dataMap[itemKey][mLabel] || 0) + Number(r[5] || 0);
+      });
 
       let monthlySums = new Array(months.length).fill(0);
       let grandTotal = 0;
@@ -243,7 +244,7 @@ function renderResult(command, json) {
       months.forEach(m => sixHtml += `<th>${m}</th>`);
       sixHtml += `<th>總額</th></tr></thead><tbody>`;
       
-      // 排序項目 (依據需求1: 參考分類排序)
+      // 排序項目：參考 orderMaps
       const sortedItems = Object.keys(dataMap).sort((a,b) => {
         const orderList = orderMaps[command] || [];
         if (orderList.length > 0) {
@@ -290,29 +291,18 @@ function makeTableSortable(table, currentCommand) {
       const rows = Array.from(tbody.querySelectorAll("tr")); 
       const isAsc = th.dataset.order !== "asc"; 
       th.dataset.order = isAsc ? "asc" : "desc"; 
-      
-      // 清除標題雜質以辨識欄位名稱
       const colTitle = th.innerText.replace(/[▲▼]/g, '').trim(); 
-
       rows.sort((a, b) => { 
         let v1 = a.cells[i].innerText.replace(/,/g, '').replace('%','').trim(); 
         let v2 = b.cells[i].innerText.replace(/,/g, '').replace('%','').trim(); 
-
-        // --- 排序邏輯優化: 支援 自定義清單順序 ---
-        // 判斷是否為「項目」或具備順序清單的欄位
         const orderList = orderMaps[colTitle] || (i === 0 ? orderMaps[currentCommand] : null); 
-        
         if (orderList && orderList.length > 0 && isNaN(parseFloat(v1.replace(/,/g,'')))) { 
           let idx1 = orderList.indexOf(v1); let idx2 = orderList.indexOf(v2); 
           idx1 = idx1 === -1 ? 999 : idx1; idx2 = idx2 === -1 ? 999 : idx2; 
           return isAsc ? idx1 - idx2 : idx2 - idx1; 
         } 
-
-        // 數值排序
         const n1 = parseFloat(v1); const n2 = parseFloat(v2);
         if (!isNaN(n1) && !isNaN(n2)) return isAsc ? n1 - n2 : n2 - n1; 
-        
-        // 字串排序
         return isAsc ? v1.localeCompare(v2) : v2.localeCompare(v1); 
       }); 
       rows.forEach(r => tbody.appendChild(r)); 
@@ -322,28 +312,9 @@ function makeTableSortable(table, currentCommand) {
   }); 
 }
 
-// ...其餘 renderChart, export 等函式保持不變...
-// --- PDF 匯出功能 (保持最新時間格式) ---
-document.getElementById("exportPdfBtn").onclick = async () => {
-  const originalTitle = document.title;
-  const now = new Date();
-  const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}-${String(now.getSeconds()).padStart(2,'0')}`;
-  document.title = `非匯不可PDF_${currentCommandName}統計_${ts}`;
-  setTimeout(() => {
-    window.print();
-    setTimeout(() => { document.title = originalTitle; }, 2000);
-  }, 250);
-};
-
-function getExportFilename(type) {
-  const now = new Date();
-  const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}-${String(now.getSeconds()).padStart(2,'0')}`;
-  return `非匯不可${type}_${currentCommandName}統計_${ts}`;
-}
-
-// 補足漏掉的 renderDetailChart 等 UI 函式
 function renderDetailChart(labels, sums, rates) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
+  if(chartInstance) chartInstance.destroy();
   chartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -363,8 +334,10 @@ function renderDetailChart(labels, sums, rates) {
     }
   });
 }
+
 function renderChart(type, labels, values) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
+  if(chartInstance) chartInstance.destroy();
   chartInstance = new Chart(ctx, {
     type,
     data: {
@@ -380,8 +353,10 @@ function renderChart(type, labels, values) {
     }
   });
 }
+
 function renderCategoryTrend(months, map) {
   const ctx = document.getElementById("categoryTrendCanvas").getContext("2d");
+  if(trendChartInstance) trendChartInstance.destroy();
   const datasets = Object.keys(map).map((k, i) => {
     const color = `hsl(${i * 360 / Object.keys(map).length}, 70%, 50%)`;
     return {
@@ -406,42 +381,47 @@ function renderCategoryTrend(months, map) {
   });
 }
 
-// 補齊匯出按鈕邏輯
+function getExportFilename(type) {
+  const now = new Date();
+  const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}-${String(now.getSeconds()).padStart(2,'0')}`;
+  return `非匯不可${type}_${currentCommandName}統計_${ts}`;
+}
+
 document.getElementById("exportExcelBtn").onclick = () => {
-  const header = [["🔍 非匯不可統計報表"], [`匯出時間：${new Date().toLocaleString()}`], []];
-  const mainData = getTableData("mainTable", true);
-  const sixMonthData = getTableData("table6m");
-  let allRows = [...header];
-  if (mainData) allRows = allRows.concat(mainData);
-  if (sixMonthData) allRows = allRows.concat([[], ["最近 6 個月趨勢"]], sixMonthData);
   const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet(allRows);
-  XLSX.utils.book_append_sheet(wb, ws, "統計報表");
+  const mainData = getTableData("mainTable");
+  const sixData = getTableData("table6m");
+  let rows = [["非匯不可統計報表"], []];
+  if(mainData) rows = rows.concat(mainData, [[]]);
+  if(sixData) rows = rows.concat([["最近 6 個月趨勢"]], sixData);
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb, ws, "Data");
   XLSX.writeFile(wb, `${getExportFilename('EXCEL')}.xlsx`);
 };
 
 document.getElementById("exportCsvBtn").onclick = () => {
   let content = "\ufeff";
-  const mainData = getTableData("mainTable", true);
-  const sixMonthData = getTableData("table6m");
-  let allRows = mainData || [];
-  if (sixMonthData) allRows = allRows.concat([[]], sixMonthData);
-  content += allRows.map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+  const mainData = getTableData("mainTable");
+  if(mainData) content += mainData.map(r => r.join(",")).join("\n") + "\n\n";
   const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
   const link = document.createElement("a"); link.href = URL.createObjectURL(blob);
   link.download = `${getExportFilename('CSV')}.csv`; link.click();
 };
 
-function getTableData(tableId, isMain = false) {
-  const table = document.getElementById(tableId);
-  if (!table) return null;
-  const data = [];
-  const headers = Array.from(table.querySelectorAll("thead th")).map(th => th.innerText.replace(/[▲▼]/g, '').trim());
-  data.push(headers);
-  Array.from(table.querySelectorAll("tbody tr")).forEach(tr => {
-    data.push(Array.from(tr.cells).map(td => td.innerText));
-  });
-  return data;
+document.getElementById("exportPdfBtn").onclick = () => {
+  const originalTitle = document.title;
+  document.title = getExportFilename('PDF');
+  window.print();
+  setTimeout(() => { document.title = originalTitle; }, 1000);
+};
+
+function getTableData(id) {
+  const t = document.getElementById(id); if(!t) return null;
+  const res = [];
+  res.push(Array.from(t.querySelectorAll("thead th")).map(th => th.innerText.replace(/[▲▼]/g,'').trim()));
+  Array.from(t.querySelectorAll("tbody tr")).forEach(tr => res.push(Array.from(tr.cells).map(td => td.innerText)));
+  const f = t.querySelector("tfoot"); if(f) Array.from(f.rows).forEach(tr => res.push(Array.from(tr.cells).map(td => td.innerText)));
+  return res;
 }
 </script>
 </body>
