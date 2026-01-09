@@ -18,7 +18,7 @@
     .excel-btn { background-color: #1d6f42; }
 
     .slogan  { font-size: 36px; text-align: center; margin: 30px 0 10px 0; color: #333; font-weight: bold; }
-    h5 { font-size: 32px; margin: 20px 0 10px 0; padding: 0; }
+    h5 { font-size: 32px; margin: 25px 0 10px 0; padding: 0; color: #000; }
     table { font-size: 28px; border-collapse: collapse; width: 100%; margin-top: 15px; background: white; }
     th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
     th { background-color: #eee; cursor: pointer; white-space: nowrap; }
@@ -32,7 +32,7 @@
     tfoot td { border: 1px solid #ddd !important; color: #000 !important; }
 
     .numeric { text-align: right; }
-    canvas { display: block; margin: 30px auto; width: 900px; height: 600px; background: white; border: 1px solid #eee; }
+    canvas { display: block; margin: 30px auto; width: 900px !important; height: 500px !important; background: white; border: 1px solid #eee; }
     #loading { font-size: 32px; text-align: center; font-weight: bold; margin: 20px; }
     
     @media print { button, .date-inputs, h3 { display: none !important; } }
@@ -153,8 +153,8 @@ async function sendQuery(command) {
   document.getElementById("loading").style.display = "block";
   document.getElementById("queryResult").innerHTML = "";
   document.getElementById("sixMonthArea").innerHTML = "";
-  if(chartInstance) chartInstance.destroy();
-  if(trendChartInstance) trendChartInstance.destroy();
+  if(chartInstance) { chartInstance.destroy(); chartInstance = null; }
+  if(trendChartInstance) { trendChartInstance.destroy(); trendChartInstance = null; }
 
   const body = { type: "query", command, version: VERSION, startDate: document.getElementById("startDate").value + " 00:00:00", endDate: document.getElementById("endDate").value + " 23:59:59" };
   try {
@@ -170,7 +170,7 @@ function renderResult(command, json) {
   const adminUser = "Betty Yi";
   let rows = (currentUser === adminUser) ? json.rows : (json.rows || []).filter(r => r[3] === currentUser);
 
-  // --- 第一部分：處理當期資料表格與首個圖表 ---
+  // --- 1. 當期主要結果渲染 ---
   if (command === "明細") {
     mainHtml += `<h5>${currentFullLabel}查詢;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th></tr></thead><tbody>`;
     rows.forEach(r => { mainHtml += `<tr><td>${r[3]}</td><td>${new Date(r[4]).toLocaleDateString()}</td><td>${r[8]}</td><td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td>${r[13]||1}</td><td class="numeric">${(Number(r[5])||0).toLocaleString()}</td><td>${r[7]}</td><td>${r[6]}</td><td>${r[9]||''}</td><td>${r[10]||''}</td><td>${r[14]}</td></tr>`; });
@@ -178,16 +178,16 @@ function renderResult(command, json) {
     globalStats.total = rows.reduce((s, r) => s + Number(r[5] || 0), 0);
     globalStats.count = rows.length;
     mainHtml += `<div class="total">📌 支出總額：${globalStats.total.toLocaleString()} 元 | 📝 筆數：${globalStats.count} 筆</div>`;
-
-    // 明細模式：畫每日趨勢圖
+    
+    // 明細畫出每日支出圖
     const dailyData = {};
     rows.forEach(r => {
       const d = new Date(r[4]).toLocaleDateString();
-      if(!dailyData[d]) dailyData[d] = { sum: 0, ex: Number(r[13]||1) };
-      dailyData[d].sum += Number(r[5]||0);
+      if(!dailyData[d]) dailyData[d] = 0;
+      dailyData[d] += Number(r[5]||0);
     });
     const sortedDates = Object.keys(dailyData).sort((a,b)=>new Date(a)-new Date(b));
-    renderDetailChart(sortedDates, sortedDates.map(d=>dailyData[d].sum), sortedDates.map(d=>dailyData[d].ex));
+    renderChart("bar", sortedDates, sortedDates.map(d=>dailyData[d]), "每日支出金額");
   } else {
     const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
     const idx = keyMap[command];
@@ -195,46 +195,38 @@ function renderResult(command, json) {
     rows.forEach(r => { let v = r[idx] || "未歸類"; counts[v] = (counts[v] || 0) + Number(r[5] || 0); });
     let labels = Object.keys(counts);
     let values = Object.values(counts);
-    let totalSum = values.reduce((a, b) => a + b, 0);
-
     mainHtml += `<h5>${currentFullLabel}分析統計;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>${command}</th><th class="numeric">金額</th><th class="numeric">佔比</th></tr></thead><tbody>`;
-    labels.forEach((l, i) => { mainHtml += `<tr><td>${l}</td><td class="numeric">${values[i].toLocaleString()}</td><td class="numeric">${((values[i]/totalSum)*100).toFixed(1)}%</td></tr>`; });
+    labels.forEach((l, i) => { mainHtml += `<tr><td>${l}</td><td class="numeric">${values[i].toLocaleString()}</td><td class="numeric">${((values[i]/globalStats.total)*100).toFixed(1)}%</td></tr>`; });
     mainHtml += `</tbody></table>`;
-    
-    globalStats.total = totalSum;
-    globalStats.count = labels.length; 
+    globalStats.total = values.reduce((a, b) => a + b, 0);
+    globalStats.count = labels.length;
     mainHtml += `<div class="total">💰 ${command}總額：${globalStats.total.toLocaleString()} 元 | 📝 項目數：${globalStats.count} 項</div>`;
-    renderChart("pie", labels, values);
+    renderChart("pie", labels, values, `${command}占比`);
   }
   document.getElementById("queryResult").innerHTML = mainHtml;
   makeTableSortable(document.getElementById("mainTable"), command);
 
-  // --- 第二部分：處理 6 個月統計資料 (不論明細或分類都要顯示) ---
-  // 明細按鈕時，自動關聯到 categories_6m (分類) 資料
+  // --- 2. 6 個月趨勢區域 (明細模式強制對應分類) ---
   const sixKey = (command === "明細") ? "categories_6m" : { "分類":"categories_6m", "付款":"payments_6m", "店家":"stores_6m", "幣別":"exchanges_6m", "記帳者":"users_6m" }[command];
-  
+
   if (json.months_6m && json[sixKey]) {
     const months = json.months_6m;
     const dataMap = json[sixKey];
     let monthlySums = new Array(months.length).fill(0);
     let grandTotal = 0;
     
-    // 使用您的原始需求：動態標題
     let sixHtml = `<h5>📅 最近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>項目</th>`;
     months.forEach(m => sixHtml += `<th>${m}</th>`);
     sixHtml += `<th>總額</th></tr></thead><tbody>`;
     
     Object.keys(dataMap).forEach(item => {
-      let rSum = 0; 
-      sixHtml += `<tr><td>${item}</td>`;
+      let rSum = 0; sixHtml += `<tr><td>${item}</td>`;
       months.forEach((m, i) => { 
         let val = dataMap[item][m] || 0; 
-        rSum += val; 
-        monthlySums[i] += val; 
+        rSum += val; monthlySums[i] += val; 
         sixHtml += `<td class="numeric">${val.toLocaleString()}</td>`; 
       });
-      grandTotal += rSum; 
-      sixHtml += `<td class="numeric"><strong>${rSum.toLocaleString()}</strong></td></tr>`;
+      grandTotal += rSum; sixHtml += `<td class="numeric"><strong>${rSum.toLocaleString()}</strong></td></tr>`;
     });
     
     sixHtml += `</tbody><tfoot><tr><td>每月總計</td>`;
@@ -243,40 +235,19 @@ function renderResult(command, json) {
     
     document.getElementById("sixMonthArea").innerHTML = sixHtml;
     makeTableSortable(document.getElementById("table6m"), command);
-    renderCategoryTrend(months, dataMap);
+    renderTrendChart(months, dataMap);
   }
   document.getElementById("exportArea").style.display = "block";
 }
 
-function renderDetailChart(labels, sums, rates) {
-  const ctx = document.getElementById("chartCanvas").getContext("2d");
-  chartInstance = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        { label: '支出金額', data: sums, backgroundColor: 'rgba(54, 162, 235, 0.6)', yAxisID: 'y' },
-        { label: '匯率', data: rates, type: 'line', borderColor: '#d9534f', borderWidth: 4, yAxisID: 'y1', pointRadius: 5 }
-      ]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        y: { type: 'linear', position: 'left', title: { display: true, text: '金額', font: {size:20} } },
-        y1: { type: 'linear', position: 'right', title: { display: true, text: '匯率', font: {size:20} }, grid: { drawOnChartArea: false } }
-      },
-      plugins: { legend: { labels: { font: { size: 24, weight: 'bold' } } } }
-    }
-  });
-}
-
-function renderChart(type, labels, values) {
+function renderChart(type, labels, values, title) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
   chartInstance = new Chart(ctx, {
     type,
     data: {
       labels,
       datasets: [{
+        label: title,
         data: values,
         backgroundColor: labels.map((_, i) => `hsl(${i * 360 / labels.length}, 70%, 60%)`)
       }]
@@ -284,21 +255,20 @@ function renderChart(type, labels, values) {
     options: {
       responsive: true,
       plugins: {
-        legend: { labels: { font: { size: 28, weight: 'bold' }, color: '#333' } },
-        tooltip: { bodyFont: { size: 24 }, titleFont: { size: 26, weight: 'bold' } }
+        legend: { labels: { font: { size: 24, weight: 'bold' } } },
+        tooltip: { bodyFont: { size: 22 } }
       }
     }
   });
 }
 
-function renderCategoryTrend(months, map) {
+function renderTrendChart(months, map) {
   const ctx = document.getElementById("categoryTrendCanvas").getContext("2d");
   const datasets = Object.keys(map).map((k, i) => ({
     label: k,
     data: months.map(m => map[k][m] || 0),
     borderColor: `hsl(${i * 360 / Object.keys(map).length}, 70%, 50%)`,
-    tension: 0.2,
-    pointRadius: 6
+    tension: 0.2, pointRadius: 6
   }));
   trendChartInstance = new Chart(ctx, {
     type: "line",
@@ -316,7 +286,6 @@ function renderCategoryTrend(months, map) {
   });
 }
 
-// 排序功能
 function makeTableSortable(table, currentCommand) { 
   if (!table) return; 
   const headers = table.querySelectorAll("thead th"); 
