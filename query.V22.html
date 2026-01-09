@@ -175,13 +175,14 @@ async function sendQuery(command) {
 function renderResult(command, json) {
   let mainHtml = "";
   const adminUser = "Betty Yi";
-  // 1. 過濾明細：非管理者只能看自己的
-  let filteredRows = (currentUser === adminUser) ? json.rows : (json.rows || []).filter(r => r[3] === currentUser);
+  // --- 權限判斷：管理者看全部，一般用戶看自己 ---
+  let allRows = json.rows || [];
+  let filteredRows = (currentUser === adminUser) ? allRows : allRows.filter(r => r[3] === currentUser);
 
   if (command === "明細") {
     mainHtml += `<h5>${currentFullLabel}查詢;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th></tr></thead><tbody>`;
     filteredRows.forEach(r => { 
-      let storeName = r[8] || "未歸類";
+      let storeName = (r[8] && r[8].toString().trim() !== "") ? r[8] : "未歸類";
       mainHtml += `<tr><td>${r[3]}</td><td>${new Date(r[4]).toLocaleDateString()}</td><td>${storeName}</td><td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td>${r[13]||1}</td><td class="numeric">${(Number(r[5])||0).toLocaleString()}</td><td>${r[7]}</td><td>${r[6]}</td><td>${r[9]||''}</td><td>${r[10]||''}</td><td>${r[14]}</td></tr>`; 
     });
     mainHtml += `</tbody></table>`;
@@ -203,9 +204,10 @@ function renderResult(command, json) {
     const idx = keyMap[command];
     let counts = {};
     
-    // 2. 統計目前表格：處理「未歸類」
+    // 統計目前表格：處理「未歸類」
     filteredRows.forEach(r => { 
-        let v = (r[idx] === null || r[idx] === undefined || r[idx].toString().trim() === "") ? "未歸類" : r[idx];
+        let rawV = r[idx];
+        let v = (rawV === null || rawV === undefined || rawV.toString().trim() === "") ? "未歸類" : rawV;
         counts[v] = (counts[v] || 0) + Number(r[5] || 0); 
     });
     
@@ -222,16 +224,15 @@ function renderResult(command, json) {
     mainHtml += `<div class="total">📌 ${command}總額：${globalStats.total.toLocaleString()} 元 | 📝 項目數：${globalStats.count} 項</div>`;
     renderChart("pie", labels, values);
 
-    // 3. 處理 6 個月資料
-    const sixKey = { "分類":"categories_6m", "付款":"payments_6m", "店家":"stores_6m", "幣別":"exchanges_6m", "記帳者":"users_6m" }[command];
+    // --- 6 個月資料連動權限與「未歸類」處理 ---
     if (json.months_6m) {
       const months = json.months_6m;
       let dataMap = {};
 
-      // 如果是管理者，原本 json[sixKey] 是正確的，但為了統一處理「未歸類」，這裡一律從 filteredRows 重新彙總
-      // 這也同時解決了非管理者只能看自己的需求
+      // 從 filteredRows (已依權限過濾) 重新計算 6 個月資料
       filteredRows.forEach(r => {
-          let itemKey = (r[idx] === null || r[idx] === undefined || r[idx].toString().trim() === "") ? "未歸類" : r[idx];
+          let rawItem = r[idx];
+          let itemKey = (rawItem === null || rawItem === undefined || rawItem.toString().trim() === "") ? "未歸類" : rawItem;
           const date = new Date(r[4]);
           const mLabel = `${date.getFullYear()}/${String(date.getMonth()+1).padStart(2,'0')}`;
           if (!dataMap[itemKey]) dataMap[itemKey] = {};
