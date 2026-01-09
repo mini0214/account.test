@@ -78,8 +78,8 @@
 <script>
 let API_URL = ""; let VERSION = "V"; let LIFF_IDq = ""; let currentUser = null; 
 let chartInstance = null; let trendChartInstance = null;
-let currentFullLabel = ""; // 存儲如 "💳 付款"
-let currentCommandName = ""; // 存儲如 "付款"
+let currentFullLabel = ""; // 存儲如 "📊 明細"
+let currentCommandName = ""; // 存儲如 "明細"
 let globalStats = { total: 0, count: 0 };
 let orderMaps = { "付款": [], "分類": [], "幣別": [], "記帳者": [] };
 
@@ -178,6 +178,17 @@ function renderResult(command, json) {
     globalStats.total = rows.reduce((s, r) => s + Number(r[5] || 0), 0);
     globalStats.count = rows.length;
     mainHtml += `<div class="total">📌 支出總額：${globalStats.total.toLocaleString()} 元 | 📝 筆數：${globalStats.count} 筆</div>`;
+
+    // 明細圖表：處理每日金額與匯率
+    const dailyData = {};
+    rows.forEach(r => {
+      const d = new Date(r[4]).toLocaleDateString();
+      if(!dailyData[d]) dailyData[d] = { sum: 0, ex: Number(r[13]||1) };
+      dailyData[d].sum += Number(r[5]||0);
+    });
+    const sortedDates = Object.keys(dailyData).sort((a,b)=>new Date(a)-new Date(b));
+    renderDetailChart(sortedDates, sortedDates.map(d=>dailyData[d].sum), sortedDates.map(d=>dailyData[d].ex));
+
   } else {
     const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
     const idx = keyMap[command];
@@ -191,23 +202,23 @@ function renderResult(command, json) {
     labels.forEach((l, i) => { mainHtml += `<tr><td>${l}</td><td class="numeric">${values[i].toLocaleString()}</td><td class="numeric">${((values[i]/totalSum)*100).toFixed(1)}%</td></tr>`; });
     mainHtml += `</tbody></table>`;
     
-    // --- 修正：這裡的筆數指的是「分類項目的數量」 ---
     globalStats.total = totalSum;
     globalStats.count = labels.length; 
-
-    mainHtml += `<div class="total">💰 ${command}總額：${globalStats.total.toLocaleString()} 元 | 📝 筆數：${globalStats.count} 筆</div>`;
+    mainHtml += `<div class="total">💰 ${command}總額：${globalStats.total.toLocaleString()} 元 | 📝 項目數：${globalStats.count} 項</div>`;
     renderChart("pie", labels, values);
   }
   document.getElementById("queryResult").innerHTML = mainHtml;
   makeTableSortable(document.getElementById("mainTable"), command);
 
-  const sixKey = { "分類":"categories_6m", "付款":"payments_6m", "店家":"stores_6m", "幣別":"exchanges_6m", "記帳者":"users_6m" }[command];
+  // 6 個月統計區域 (明細模式預設抓分類數據)
+  const sixKey = (command === "明細") ? "categories_6m" : { "分類":"categories_6m", "付款":"payments_6m", "店家":"stores_6m", "幣別":"exchanges_6m", "記帳者":"users_6m" }[command];
+  
   if (json.months_6m && json[sixKey]) {
     const months = json.months_6m;
     const dataMap = json[sixKey];
     let monthlySums = new Array(months.length).fill(0);
     let grandTotal = 0;
-    let sixHtml = `<h5>📅 最近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
+    let sixHtml = `<h5>📅 最近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>項目</th>`;
     months.forEach(m => sixHtml += `<th>${m}</th>`);
     sixHtml += `<th>總額</th></tr></thead><tbody>`;
     Object.keys(dataMap).forEach(item => {
@@ -226,6 +237,7 @@ function renderResult(command, json) {
 }
 
 function makeTableSortable(table, currentCommand) { if (!table) return; const headers = table.querySelectorAll("thead th"); headers.forEach((th, i) => { th.addEventListener("click", () => { const tbody = table.querySelector("tbody"); const rows = Array.from(tbody.querySelectorAll("tr")); const isAsc = th.dataset.order !== "asc"; th.dataset.order = isAsc ? "asc" : "desc"; const colTitle = th.innerText.replace(/[▲▼]/g, '').trim(); rows.sort((a, b) => { let v1 = a.cells[i].innerText.replace(/,/g, '').replace('%',''); let v2 = b.cells[i].innerText.replace(/,/g, '').replace('%',''); const orderList = orderMaps[colTitle] || (colTitle === currentCommand ? orderMaps[currentCommand] : null); if (orderList && orderList.length > 0) { let idx1 = orderList.indexOf(v1); let idx2 = orderList.indexOf(v2); idx1 = idx1 === -1 ? 999 : idx1; idx2 = idx2 === -1 ? 999 : idx2; return isAsc ? idx1 - idx2 : idx2 - idx1; } if (!isNaN(parseFloat(v1)) && !isNaN(parseFloat(v2))) return isAsc ? parseFloat(v1) - parseFloat(v2) : parseFloat(v2) - parseFloat(v1); return isAsc ? v1.localeCompare(v2) : v2.localeCompare(v1); }); rows.forEach(r => tbody.appendChild(r)); headers.forEach(h => h.innerText = h.innerText.replace(/[▲▼]/g, '')); th.innerText += isAsc ? " ▲" : " ▼"; }); }); }
+
 function renderChart(type, labels, values) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
   chartInstance = new Chart(ctx, {
@@ -240,28 +252,35 @@ function renderChart(type, labels, values) {
     options: {
       responsive: true,
       plugins: {
-        legend: {
-          labels: {
-            font: {
-              size: 28, // 加大圖例字體
-              weight: 'bold'
-            },
-            color: '#333'
-          }
-        },
-        tooltip: {
-          bodyFont: {
-            size: 24 // 加大滑鼠移上去時顯示的資料值字體
-          },
-          titleFont: {
-            size: 26,
-            weight: 'bold'
-          }
-        }
+        legend: { labels: { font: { size: 28, weight: 'bold' }, color: '#333' } },
+        tooltip: { bodyFont: { size: 24 }, titleFont: { size: 26, weight: 'bold' } }
       }
     }
   });
 }
+
+function renderDetailChart(labels, sums, rates) {
+  const ctx = document.getElementById("chartCanvas").getContext("2d");
+  chartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: '支出金額', data: sums, backgroundColor: 'rgba(54, 162, 235, 0.6)', yAxisID: 'y' },
+        { label: '匯率', data: rates, type: 'line', borderColor: '#d9534f', borderWidth: 4, yAxisID: 'y1', pointRadius: 5 }
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { type: 'linear', position: 'left', title: { display: true, text: '金額', font: {size:20} } },
+        y1: { type: 'linear', position: 'right', title: { display: true, text: '匯率', font: {size:20} }, grid: { drawOnChartArea: false } }
+      },
+      plugins: { legend: { labels: { font: { size: 24, weight: 'bold' } } } }
+    }
+  });
+}
+
 function renderCategoryTrend(months, map) {
   const ctx = document.getElementById("categoryTrendCanvas").getContext("2d");
   const datasets = Object.keys(map).map((k, i) => ({
@@ -269,30 +288,19 @@ function renderCategoryTrend(months, map) {
     data: months.map(m => map[k][m] || 0),
     borderColor: `hsl(${i * 360 / Object.keys(map).length}, 70%, 50%)`,
     tension: 0.2,
-    pointRadius: 6 // 讓點大一點，方便看數值
+    pointRadius: 6
   }));
-
   trendChartInstance = new Chart(ctx, {
     type: "line",
     data: { labels: months, datasets },
     options: {
       plugins: {
-        legend: {
-          labels: {
-            font: { size: 24, weight: 'bold' } // 加大上方圖例
-          }
-        },
-        tooltip: {
-          bodyFont: { size: 22 } // 加大提示框文字
-        }
+        legend: { labels: { font: { size: 24, weight: 'bold' } } },
+        tooltip: { bodyFont: { size: 22 } }
       },
       scales: {
-        x: {
-          ticks: { font: { size: 20, weight: 'bold' } } // 加大X軸月份字體
-        },
-        y: {
-          ticks: { font: { size: 20, weight: 'bold' } } // 加大Y軸金額字體
-        }
+        x: { ticks: { font: { size: 20, weight: 'bold' } } },
+        y: { ticks: { font: { size: 20, weight: 'bold' } } }
       }
     }
   });
@@ -324,28 +332,18 @@ function getTableData(tableId, isMain = false) {
   const headers = [];
   for (let cell of table.querySelector("thead").rows[0].cells) headers.push(cell.innerText.replace(/[▲▼]/g, '').trim());
   data.push(headers);
-  
   const rows = Array.from(tbody.rows);
   rows.forEach(row => {
     const rowData = [];
     for (let cell of row.cells) rowData.push(cell.innerText);
     data.push(rowData);
   });
-  
   if (isMain) {
-    // 這裡直接取 globalStats.count (已在 renderResult 修正為項目數)
     data.push([`當期${currentCommandName}統計總額`, globalStats.total.toLocaleString()]);
-    data.push([`當期${currentCommandName}統計筆數`, globalStats.count]);
+    data.push([`當期${currentCommandName}統計數量`, globalStats.count]);
   }
-  
   const tfoot = table.querySelector("tfoot");
-  if (tfoot) { 
-    for (let row of tfoot.rows) { 
-      const rowData = []; 
-      for (let cell of row.cells) rowData.push(cell.innerText); 
-      data.push(rowData); 
-    } 
-  }
+  if (tfoot) { for (let row of tfoot.rows) { const rowData = []; for (let cell of row.cells) rowData.push(cell.innerText); data.push(rowData); } }
   return data;
 }
 
@@ -376,41 +374,14 @@ document.getElementById("exportCsvBtn").onclick = () => {
   link.download = `${getExportFilename('CSV')}.csv`; link.click();
 };
 
-// 修正後的 PDF 匯出按鈕：動態設定網頁標題以修改 PDF 預設檔名
 document.getElementById("exportPdfBtn").onclick = () => {
-  // 1. 備份原始標題
   const originalTitle = document.title;
-  
-  // 2. 生成要求的檔名格式
   const now = new Date();
   const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}-${String(now.getSeconds()).padStart(2,'0')}`;
-  const pdfFileName = `非匯不可PDF_${currentCommandName}統計_${ts}`;
-  
-  // 3. 暫時修改網頁標題 (這會變成 PDF 的預設存檔名稱)
-  document.title = pdfFileName;
-  
-  // 4. 觸發列印
+  document.title = `非匯不可PDF_${currentCommandName}統計_${ts}`;
   window.print();
-  
-  // 5. 還原原始標題，避免網頁標籤顯示變得很長
-  setTimeout(() => {
-    document.title = originalTitle;
-  }, 1000);
+  setTimeout(() => { document.title = originalTitle; }, 1000);
 };
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
