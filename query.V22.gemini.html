@@ -255,15 +255,15 @@ function renderDetailChart(labels, sums, rates) {
     data: {
       labels,
       datasets: [
-        { label: '支出金額', data: sums, backgroundColor: 'rgba(54, 162, 235, 0.6)', yAxisID: 'y' },
-        { label: '匯率', data: rates, type: 'line', borderColor: '#d9534f', borderWidth: 4, yAxisID: 'y1', pointRadius: 5 }
+        { label: '金額合計', data: sums, backgroundColor: 'rgba(54, 162, 235, 0.6)', yAxisID: 'y' },
+        { label: '每日匯率最大值', data: rates, type: 'line', borderColor: '#d9534f', borderWidth: 4, yAxisID: 'y1', pointRadius: 5 }
       ]
     },
     options: {
       responsive: true,
       scales: {
         y: { type: 'linear', position: 'left', title: { display: true, text: '金額', font: {size:20} } },
-        y1: { type: 'linear', position: 'right', title: { display: true, text: '匯率', font: {size:20} }, grid: { drawOnChartArea: false } }
+        y1: { type: 'linear', position: 'right', title: { display: true, text: '匯率', font: {size:20}, color: "red" }, grid: { drawOnChartArea: false } }
       },
       plugins: { legend: { labels: { font: { size: 24, weight: 'bold' } } } }
     }
@@ -417,3 +417,4 @@ document.getElementById("exportPdfBtn").onclick = () => {
 </script>
 </body>
 </html>
+
