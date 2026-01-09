@@ -17,7 +17,7 @@
     .pdf-btn { background-color: #d9534f; }
     .excel-btn { background-color: #1d6f42; }
 
-    .slogan  { font-size: 36px; text-align: center; margin: 30px 0 10px 0; color: #333; font-weight: bold; }
+    .slogan { font-size: 36px; text-align: center; margin: 30px 0 10px 0; color: #333; font-weight: bold; }
     h5 { font-size: 32px; margin: 20px 0 10px 0; padding: 0; }
     table { font-size: 28px; border-collapse: collapse; width: 100%; margin-top: 15px; background: white; }
     th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
@@ -32,7 +32,11 @@
     tfoot td { border: 1px solid #ddd !important; color: #000 !important; }
 
     .numeric { text-align: right; }
-    canvas { display: block; margin: 30px auto; width: 900px; height: 600px; background: white; border: 1px solid #eee; }
+    
+    /* 修正圖表容器，防止變形 */
+    .chart-container { width: 95%; margin: 30px auto; background: white; border: 1px solid #eee; padding: 10px; }
+    canvas { width: 100% !important; height: auto !important; display: block; }
+    
     #loading { font-size: 32px; text-align: center; font-weight: bold; margin: 20px; }
     
     @media print { button, .date-inputs, h3 { display: none !important; } }
@@ -65,9 +69,16 @@
 <div id="loading" style="display:none;">⏳ 正在載入中,請稍侯...</div>
 
 <div id="queryResult"></div>
-<canvas id="chartCanvas"></canvas>
+
+<div class="chart-container">
+  <canvas id="chartCanvas"></canvas>
+</div>
+
 <div id="sixMonthArea"></div>
-<canvas id="categoryTrendCanvas"></canvas>
+
+<div class="chart-container" id="trendContainer" style="display:none;">
+  <canvas id="categoryTrendCanvas"></canvas>
+</div>
 
 <div id="exportArea" style="text-align:center; margin-top:40px; display:none; padding-bottom: 100px;">
   <button id="exportCsvBtn" class="green-btn">📤 匯出 CSV</button>
@@ -153,6 +164,7 @@ async function sendQuery(command) {
   document.getElementById("loading").style.display = "block";
   document.getElementById("queryResult").innerHTML = "";
   document.getElementById("sixMonthArea").innerHTML = "";
+  document.getElementById("trendContainer").style.display = "none";
   if(chartInstance) chartInstance.destroy();
   if(trendChartInstance) trendChartInstance.destroy();
 
@@ -170,7 +182,6 @@ function renderResult(command, json) {
   const adminUser = "Betty Yi";
   let rows = (currentUser === adminUser) ? json.rows : (json.rows || []).filter(r => r[3] === currentUser);
 
-  // --- 第一部分：處理當期資料表格與首個圖表 ---
   if (command === "明細") {
     mainHtml += `<h5>${currentFullLabel}查詢;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th></tr></thead><tbody>`;
     rows.forEach(r => { mainHtml += `<tr><td>${r[3]}</td><td>${new Date(r[4]).toLocaleDateString()}</td><td>${r[8]}</td><td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td>${r[13]||1}</td><td class="numeric">${(Number(r[5])||0).toLocaleString()}</td><td>${r[7]}</td><td>${r[6]}</td><td>${r[9]||''}</td><td>${r[10]||''}</td><td>${r[14]}</td></tr>`; });
@@ -179,7 +190,6 @@ function renderResult(command, json) {
     globalStats.count = rows.length;
     mainHtml += `<div class="total">📌 支出總額：${globalStats.total.toLocaleString()} 元 | 📝 筆數：${globalStats.count} 筆</div>`;
 
-    // 明細模式：畫每日趨勢圖
     const dailyData = {};
     rows.forEach(r => {
       const d = new Date(r[4]).toLocaleDateString();
@@ -188,6 +198,7 @@ function renderResult(command, json) {
     });
     const sortedDates = Object.keys(dailyData).sort((a,b)=>new Date(a)-new Date(b));
     renderDetailChart(sortedDates, sortedDates.map(d=>dailyData[d].sum), sortedDates.map(d=>dailyData[d].ex));
+    
   } else {
     const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
     const idx = keyMap[command];
@@ -205,46 +216,44 @@ function renderResult(command, json) {
     globalStats.count = labels.length; 
     mainHtml += `<div class="total">💰 ${command}總額：${globalStats.total.toLocaleString()} 元 | 📝 項目數：${globalStats.count} 項</div>`;
     renderChart("pie", labels, values);
+
+    // 非明細模式才顯示 6 個月資料
+    const sixKey = { "分類":"categories_6m", "付款":"payments_6m", "店家":"stores_6m", "幣別":"exchanges_6m", "記帳者":"users_6m" }[command];
+    if (json.months_6m && json[sixKey]) {
+      const months = json.months_6m;
+      const dataMap = json[sixKey];
+      let monthlySums = new Array(months.length).fill(0);
+      let grandTotal = 0;
+      
+      let sixHtml = `<h5>📅 最近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>項目</th>`;
+      months.forEach(m => sixHtml += `<th>${m}</th>`);
+      sixHtml += `<th>總額</th></tr></thead><tbody>`;
+      
+      Object.keys(dataMap).forEach(item => {
+        let rSum = 0; 
+        sixHtml += `<tr><td>${item}</td>`;
+        months.forEach((m, i) => { 
+          let val = dataMap[item][m] || 0; 
+          rSum += val; 
+          monthlySums[i] += val; 
+          sixHtml += `<td class="numeric">${val.toLocaleString()}</td>`; 
+        });
+        grandTotal += rSum; 
+        sixHtml += `<td class="numeric"><strong>${rSum.toLocaleString()}</strong></td></tr>`;
+      });
+      
+      sixHtml += `</tbody><tfoot><tr><td>每月總計</td>`;
+      monthlySums.forEach(sum => sixHtml += `<td class="numeric">${sum.toLocaleString()}</td>`);
+      sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td></tr></tfoot></table>`;
+      
+      document.getElementById("sixMonthArea").innerHTML = sixHtml;
+      makeTableSortable(document.getElementById("table6m"), command);
+      document.getElementById("trendContainer").style.display = "block";
+      renderCategoryTrend(months, dataMap);
+    }
   }
   document.getElementById("queryResult").innerHTML = mainHtml;
   makeTableSortable(document.getElementById("mainTable"), command);
-
-  // --- 第二部分：處理 6 個月統計資料 (不論明細或分類都要顯示) ---
-  // 明細按鈕時，自動關聯到 categories_6m (分類) 資料
-  const sixKey = (command === "明細") ? "categories_6m" : { "分類":"categories_6m", "付款":"payments_6m", "店家":"stores_6m", "幣別":"exchanges_6m", "記帳者":"users_6m" }[command];
-  
-  if (json.months_6m && json[sixKey]) {
-    const months = json.months_6m;
-    const dataMap = json[sixKey];
-    let monthlySums = new Array(months.length).fill(0);
-    let grandTotal = 0;
-    
-    // 使用您的原始需求：動態標題
-    let sixHtml = `<h5>📅 最近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>項目</th>`;
-    months.forEach(m => sixHtml += `<th>${m}</th>`);
-    sixHtml += `<th>總額</th></tr></thead><tbody>`;
-    
-    Object.keys(dataMap).forEach(item => {
-      let rSum = 0; 
-      sixHtml += `<tr><td>${item}</td>`;
-      months.forEach((m, i) => { 
-        let val = dataMap[item][m] || 0; 
-        rSum += val; 
-        monthlySums[i] += val; 
-        sixHtml += `<td class="numeric">${val.toLocaleString()}</td>`; 
-      });
-      grandTotal += rSum; 
-      sixHtml += `<td class="numeric"><strong>${rSum.toLocaleString()}</strong></td></tr>`;
-    });
-    
-    sixHtml += `</tbody><tfoot><tr><td>每月總計</td>`;
-    monthlySums.forEach(sum => sixHtml += `<td class="numeric">${sum.toLocaleString()}</td>`);
-    sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td></tr></tfoot></table>`;
-    
-    document.getElementById("sixMonthArea").innerHTML = sixHtml;
-    makeTableSortable(document.getElementById("table6m"), command);
-    renderCategoryTrend(months, dataMap);
-  }
   document.getElementById("exportArea").style.display = "block";
 }
 
@@ -261,6 +270,8 @@ function renderDetailChart(labels, sums, rates) {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: true,
+      aspectRatio: 2,
       scales: {
         y: { type: 'linear', position: 'left', title: { display: true, text: '金額', font: {size:20} } },
         y1: { type: 'linear', position: 'right', title: { display: true, text: '匯率', font: {size:20}, color: "red" }, grid: { drawOnChartArea: false } }
@@ -283,6 +294,8 @@ function renderChart(type, labels, values) {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: true,
+      aspectRatio: 1.5,
       plugins: {
         legend: { labels: { font: { size: 28, weight: 'bold' }, color: '#333' } },
         tooltip: { bodyFont: { size: 24 }, titleFont: { size: 26, weight: 'bold' } }
@@ -293,19 +306,35 @@ function renderChart(type, labels, values) {
 
 function renderCategoryTrend(months, map) {
   const ctx = document.getElementById("categoryTrendCanvas").getContext("2d");
-  const datasets = Object.keys(map).map((k, i) => ({
-    label: k,
-    data: months.map(m => map[k][m] || 0),
-    borderColor: `hsl(${i * 360 / Object.keys(map).length}, 70%, 50%)`,
-    tension: 0.2,
-    pointRadius: 6
-  }));
+  const datasets = Object.keys(map).map((k, i) => {
+    const color = `hsl(${i * 360 / Object.keys(map).length}, 70%, 50%)`;
+    const bgColor = `hsla(${i * 360 / Object.keys(map).length}, 70%, 50%, 0.3)`;
+    return {
+      label: k,
+      data: months.map(m => map[k][m] || 0),
+      borderColor: color,
+      backgroundColor: bgColor,
+      fill: true, // 滿版填色
+      tension: 0.3,
+      pointRadius: 6,
+      pointStyle: 'circle'
+    };
+  });
   trendChartInstance = new Chart(ctx, {
     type: "line",
     data: { labels: months, datasets },
     options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      aspectRatio: 1.8,
       plugins: {
-        legend: { labels: { font: { size: 24, weight: 'bold' } } },
+        legend: { 
+          labels: { 
+            font: { size: 24, weight: 'bold' },
+            usePointStyle: true, // 讓圖例顯示圓點實心
+            boxWidth: 20
+          } 
+        },
         tooltip: { bodyFont: { size: 22 } }
       },
       scales: {
@@ -316,7 +345,6 @@ function renderCategoryTrend(months, map) {
   });
 }
 
-// 排序功能
 function makeTableSortable(table, currentCommand) { 
   if (!table) return; 
   const headers = table.querySelectorAll("thead th"); 
@@ -346,7 +374,6 @@ function makeTableSortable(table, currentCommand) {
   }); 
 }
 
-// 匯出功能
 function getExportFilename(type) {
   const now = new Date();
   const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}-${String(now.getSeconds()).padStart(2,'0')}`;
@@ -417,6 +444,3 @@ document.getElementById("exportPdfBtn").onclick = () => {
 </script>
 </body>
 </html>
-
-
-
