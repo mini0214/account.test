@@ -33,7 +33,7 @@
 
     .numeric { text-align: right; }
     
-    /* 修正圖表容器，防止變形 */
+    /* 容器控制比例，防止變形 */
     .chart-container { width: 95%; margin: 30px auto; background: white; border: 1px solid #eee; padding: 10px; }
     canvas { width: 100% !important; height: auto !important; display: block; }
     
@@ -272,6 +272,7 @@ function renderDetailChart(labels, sums, rates) {
       responsive: true,
       maintainAspectRatio: true,
       aspectRatio: 2,
+      animation: false, // 關閉動畫減少抖動
       scales: {
         y: { type: 'linear', position: 'left', title: { display: true, text: '金額', font: {size:20} } },
         y1: { type: 'linear', position: 'right', title: { display: true, text: '匯率', font: {size:20}, color: "red" }, grid: { drawOnChartArea: false } }
@@ -296,6 +297,7 @@ function renderChart(type, labels, values) {
       responsive: true,
       maintainAspectRatio: true,
       aspectRatio: 1.5,
+      animation: false,
       plugins: {
         legend: { labels: { font: { size: 28, weight: 'bold' }, color: '#333' } },
         tooltip: { bodyFont: { size: 24 }, titleFont: { size: 26, weight: 'bold' } }
@@ -308,14 +310,13 @@ function renderCategoryTrend(months, map) {
   const ctx = document.getElementById("categoryTrendCanvas").getContext("2d");
   const datasets = Object.keys(map).map((k, i) => {
     const color = `hsl(${i * 360 / Object.keys(map).length}, 70%, 50%)`;
-    const bgColor = `hsla(${i * 360 / Object.keys(map).length}, 70%, 50%, 0.3)`;
     return {
       label: k,
       data: months.map(m => map[k][m] || 0),
       borderColor: color,
-      backgroundColor: bgColor,
-      fill: true, // 滿版填色
-      tension: 0.3,
+      backgroundColor: color, // 圖例點顏色
+      fill: false, // 改為線條，不要滿版
+      tension: 0.1, // 線條稍微平滑但不誇張
       pointRadius: 6,
       pointStyle: 'circle'
     };
@@ -327,15 +328,20 @@ function renderCategoryTrend(months, map) {
       responsive: true,
       maintainAspectRatio: true,
       aspectRatio: 1.8,
+      animation: false, // 防止數字在游標移動時抖動
       plugins: {
         legend: { 
           labels: { 
             font: { size: 24, weight: 'bold' },
-            usePointStyle: true, // 讓圖例顯示圓點實心
+            usePointStyle: true, // 圓點圖例
             boxWidth: 20
           } 
         },
-        tooltip: { bodyFont: { size: 22 } }
+        tooltip: { 
+          bodyFont: { size: 22 },
+          intersect: false, // 游標靠近即顯示，不需精準重疊點
+          mode: 'index'
+        }
       },
       scales: {
         x: { ticks: { font: { size: 20, weight: 'bold' } } },
