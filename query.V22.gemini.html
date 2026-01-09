@@ -177,7 +177,7 @@ function renderResult(command, json) {
     mainHtml += `</tbody></table>`;
     globalStats.total = rows.reduce((s, r) => s + Number(r[5] || 0), 0);
     globalStats.count = rows.length;
-    mainHtml += `<div class="total">💰 支出總額：${globalStats.total.toLocaleString()} 元 | 📝 筆數：${globalStats.count} 筆</div>`;
+    mainHtml += `<div class="total">📌 支出總額：${globalStats.total.toLocaleString()} 元 | 📝 筆數：${globalStats.count} 筆</div>`;
   } else {
     const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
     const idx = keyMap[command];
@@ -400,6 +400,7 @@ document.getElementById("exportPdfBtn").onclick = () => {
 </script>
 </body>
 </html>
+
 
 
 
