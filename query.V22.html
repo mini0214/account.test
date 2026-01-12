@@ -285,7 +285,7 @@ function renderResult(command, json) {
   makeTableSortable(document.getElementById("mainTable"), command);
   document.getElementById("exportArea").style.display = "block";
 }
-
+  
 function renderDetailChart(labels, sums, rates) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
   chartInstance = new Chart(ctx, {
@@ -513,4 +513,5 @@ function getExportFilename(type) {
 </script>
 </body>
 </html>
+
 
