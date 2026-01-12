@@ -178,9 +178,11 @@ async function sendQuery(command) {
 }
 
 // 修改後的 renderResult 函數
-function renderResult(command, json) {
+// 修改後的 renderResult 函數
+async function renderResult(command, json) {
   let mainHtml = "";
   const adminUser = "Betty Yi";
+  // 過濾權限資料
   let rows = (currentUser === adminUser) ? json.rows : (json.rows || []).filter(r => r[3] === currentUser);
 
   if (command === "明細") {
@@ -203,35 +205,36 @@ function renderResult(command, json) {
     renderDetailChart(sortedDates, sortedDates.map(d=>dailyData[d].sum), sortedDates.map(d=>dailyData[d].ex));
     
   } else {
-    // --- 統計模式：強化歸類邏輯 ---
+    // --- 統計模式：核心修正：確保每一筆錢都被歸類 ---
     const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
     const idx = keyMap[command];
     let counts = {};
     
     rows.forEach(r => { 
-      // 1. 取得金額，確保它是數字
+      // 1. 取得金額
       let amt = Number(r[5] || 0);
       
-      // 2. 取得分類名稱，若為空、null、undefined 或空格，統一轉為 "未知"
-      let v = r[idx];
-      if (v === null || v === undefined || String(v).trim() === "") {
-        v = "未知";
-      } else {
-        v = String(v).trim();
-      }
+      // 2. 取得分類名稱，強化判斷：空值、null、只有空格全部歸為 "未知"
+      let val = r[idx];
+      let categoryName = (val !== null && val !== undefined && String(val).trim() !== "") 
+                         ? String(val).trim() 
+                         : "未知";
       
-      // 3. 累加金額
-      counts[v] = (counts[v] || 0) + amt; 
+      // 3. 累計金額到對應分類
+      counts[categoryName] = (counts[categoryName] || 0) + amt; 
     });
     
-    // 取得所有類別（現在一定會包含 "未知"，只要有空項）
+    // 取得分類標籤與數值
     let labels = Object.keys(counts);
     let values = Object.values(counts);
     let totalSum = values.reduce((a, b) => a + b, 0);
 
+    // 產生主統計表格
     mainHtml += `<h5>${currentFullLabel}分析統計;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>${command}</th><th class="numeric">金額</th><th class="numeric">佔比</th></tr></thead><tbody>`;
-    labels.forEach((l, i) => { 
-      mainHtml += `<tr><td>${l}</td><td class="numeric">${values[i].toLocaleString()}</td><td class="numeric">${totalSum !== 0 ? ((values[i]/totalSum)*100).toFixed(1) : 0}%</td></tr>`; 
+    labels.forEach((l) => { 
+      let val = counts[l];
+      let percent = totalSum !== 0 ? ((val / totalSum) * 100).toFixed(1) : 0;
+      mainHtml += `<tr><td>${l}</td><td class="numeric">${val.toLocaleString()}</td><td class="numeric">${percent}%</td></tr>`; 
     });
     mainHtml += `</tbody></table>`;
     
@@ -240,22 +243,25 @@ function renderResult(command, json) {
     mainHtml += `<div class="total">📌 ${command}總額：${globalStats.total.toLocaleString()} 元 | 📝 項目數：${globalStats.count} 項</div>`;
     renderChart("pie", labels, values);
 
-    // --- 近 6 個月統計同步處理 ---
+    // --- 近 6 個月統計同步處理：同樣支援 "未知" 分類 ---
     const sixKey = { "分類":"categories_6m", "付款":"payments_6m", "店家":"stores_6m", "幣別":"exchanges_6m", "記帳者":"users_6m" }[command];
     if (json.months_6m && json[sixKey]) {
       const months = json.months_6m;
       const rawDataMap = json[sixKey];
       const dataMap = {};
       
-      // 修正：將後端傳回的空鍵值合併到 "未知"
+      // 將後端可能傳回的各種空 Key (如 "", "null") 統一轉化為 "未知"
       Object.keys(rawDataMap).forEach(key => {
-        let cleanKey = (key === "" || key === "null" || key === "undefined") ? "未知" : key;
+        let cleanKey = (key === "" || key === "null" || key === "undefined" || key.trim() === "") ? "未知" : key;
+        
         if (!dataMap[cleanKey]) {
-          dataMap[cleanKey] = rawDataMap[key];
+          dataMap[cleanKey] = Array.isArray(rawDataMap[key]) ? [...rawDataMap[key]] : Object.assign({}, rawDataMap[key]);
         } else {
-          // 如果有多個空鍵值，合併金額
+          // 如果原本已有"未知"標籤，則將金額累加進去
           months.forEach(m => {
-            dataMap[cleanKey][m] = (dataMap[cleanKey][m] || 0) + (rawDataMap[key][m] || 0);
+            let currentVal = (dataMap[cleanKey] && dataMap[cleanKey][m]) ? dataMap[cleanKey][m] : 0;
+            let newVal = (rawDataMap[key] && rawDataMap[key][m]) ? rawDataMap[key][m] : 0;
+            dataMap[cleanKey][m] = currentVal + newVal;
           });
         }
       });
@@ -521,4 +527,5 @@ function getExportFilename(type) {
 </script>
 </body>
 </html>
+
 
