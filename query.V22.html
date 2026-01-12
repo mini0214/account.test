@@ -179,7 +179,7 @@ async function sendQuery(command) {
 
 function renderResult(command, json) {
   let mainHtml = "";
-  const adminUser = "Betty Yixx";
+  const adminUser = "Betty Yi";
   
   // 1. 權限過濾：根據登入者決定基礎資料 rows (此時包含 6 個月資料)
   let rows = (currentUser === adminUser) ? (json.rows || []) : (json.rows || []).filter(r => r[3] === currentUser);
@@ -267,7 +267,7 @@ function renderResult(command, json) {
       let monthlySums = new Array(months.length).fill(0);
       let grandTotal = 0;
       
-      let sixHtml = `<h5>📅 近 6 個月${currentCommandName}統計 (依權限過濾)</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
+      let sixHtml = `<h5>📅 近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
       months.forEach(m => sixHtml += `<th>${m}</th>`);
       sixHtml += `<th>總額</th></tr></thead><tbody>`;
       
@@ -526,6 +526,7 @@ function getExportFilename(type) {
 </script>
 </body>
 </html>
+
 
 
 
