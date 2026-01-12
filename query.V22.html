@@ -267,7 +267,7 @@ function renderResult(command, json) {
       let monthlySums = new Array(months.length).fill(0);
       let grandTotal = 0;
       
-      let sixHtml = `<h5>📅 近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
+      let sixHtml = `<h5>📅 依結束日期的近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
       months.forEach(m => sixHtml += `<th>${m}</th>`);
       sixHtml += `<th>總額</th></tr></thead><tbody>`;
       
@@ -526,6 +526,7 @@ function getExportFilename(type) {
 </script>
 </body>
 </html>
+
 
 
 
