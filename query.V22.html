@@ -179,7 +179,7 @@ async function sendQuery(command) {
 
 function renderResult(command, json) {
   let mainHtml = "";
-  const adminUser = "Betty Yi";
+  const adminUser = "Betty Yixx";
   let rows = (currentUser === adminUser) ? json.rows : (json.rows || []).filter(r => r[3] === currentUser);
 
   if (command === "明細") {
@@ -484,3 +484,4 @@ function getExportFilename(type) {
 </script>
 </body>
 </html>
+
