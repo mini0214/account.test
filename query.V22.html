@@ -179,7 +179,7 @@ async function sendQuery(command) {
 
 function renderResult(command, json) {
   let mainHtml = "";
-  const adminUser = "Betty Yi";
+  const adminUser = "Betty Yixx";
   
   // 1. 權限過濾：根據登入者決定基礎資料 rows (此時包含 6 個月資料)
   let rows = (currentUser === adminUser) ? (json.rows || []) : (json.rows || []).filter(r => r[3] === currentUser);
@@ -526,6 +526,7 @@ function getExportFilename(type) {
 </script>
 </body>
 </html>
+
 
 
 
