@@ -240,21 +240,26 @@ function renderResult(command, json) {
     let totalSum = values.reduce((a, b) => a + b, 0);
 
     if (totalSum !== 0) {
-      mainHtml += `<h5>${currentFullLabel}分析統計;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>${command}</th><th class="numeric">金額</th><th class="numeric">佔比</th></tr></thead><tbody>`;
-      labels.forEach((l) => { 
-        mainHtml += `<tr><td>${l}</td><td class="numeric">${counts[l].toLocaleString()}</td><td class="numeric">${((counts[l]/totalSum)*100).toFixed(1)}%</td></tr>`; 
-      });
-      mainHtml += `</tbody></table>`;
-      mainHtml += `<div class="total">📌 ${command}總額：${totalSum.toLocaleString()} 元 | 📝 項目數：${labels.length} 項</div>`;
-      
-      if (chartDiv) chartDiv.style.cssText = "display: block;"; 
-      renderChart("pie", labels, values);
+        // [正常有資料時]
+        // 1. 產生主表 HTML (略)
+        
+        // 2. 確保容器存在並顯示
+        if (chartDiv) {
+            chartDiv.style.cssText = "display: block !important;"; 
+        }
+        renderChart("pie", labels, values);
     } else {
-      // --- 徹底消除空白的關鍵：使用 cssText 強制歸零 ---
-      mainHtml = `<div class="info-box" style="margin: 10px 0; padding: 15px; background: #f8f9fa; border-radius: 5px; color: #666; text-align: center; border: 1px solid #ddd;">ℹ️ 所選區間 (${document.getElementById("startDate").value}) 無統計數據</div>`;
-      if (chartDiv) {
-        chartDiv.style.cssText = "display: none !important; height: 0 !important; margin: 0 !important; padding: 0 !important; border: none !important; box-shadow: none !important;";
-      }
+        // [當月沒資料時]
+        // 1. 顯示精簡的提示字
+        mainHtml = `<div style="text-align:center; padding:20px; color:#666; background:#f9f9f9; border:1px solid #eee; margin:10px 0; border-radius:5px;">
+                      ℹ️ 所選區間 (${document.getElementById("startDate").value}) 無統計數據
+                    </div>`;
+        
+        // 2. 終極手段：強制隱藏並把高度設為 0
+        if (chartDiv) {
+            // 使用 cssText 一口氣覆蓋所有可能導致空白的屬性
+            chartDiv.style.cssText = "display: none !important; height: 0px !important; min-height: 0px !important; margin: 0px !important; padding: 0px !important; border: none !important; box-shadow: none !important;";
+        }
     }
 
     // 3. 📅 近 6 個月趨勢
@@ -515,3 +520,4 @@ function getExportFilename(type) {
 </script>
 </body>
 </html>
+
