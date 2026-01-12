@@ -181,15 +181,16 @@ function renderResult(command, json) {
   let mainHtml = "";
   const adminUser = "Betty Yi";
   
-  // 1. 權限過濾：根據登入者決定基礎資料 rows (此時包含 6 個月資料)
+  // 1. 權限過濾
   let rows = (currentUser === adminUser) ? (json.rows || []) : (json.rows || []).filter(r => r[3] === currentUser);
 
-  // 取得畫面上使用者選取的日期區間，用於主表過濾
   const filterStart = new Date(document.getElementById("startDate").value + " 00:00:00");
   const filterEnd = new Date(document.getElementById("endDate").value + " 23:59:59");
 
+  // 先取得圖表容器引用
+  const chartContainer = document.getElementById("chartContainer");
+
   if (command === "明細") {
-    // 明細模式：僅顯示選擇區間內的資料
     let displayRows = rows.filter(r => {
       const d = new Date(r[4]);
       return d >= filterStart && d <= filterEnd;
@@ -205,21 +206,26 @@ function renderResult(command, json) {
     globalStats.count = displayRows.length;
     mainHtml += `<div class="total">📌 支出總額：${globalStats.total.toLocaleString()} 元 | 📝 筆數：${globalStats.count} 筆</div>`;
 
-    const dailyData = {};
-    displayRows.forEach(r => {
-      const d = new Date(r[4]).toLocaleDateString();
-      if(!dailyData[d]) dailyData[d] = { sum: 0, ex: Number(r[13]||1) };
-      dailyData[d].sum += Number(r[5]||0);
-    });
-    const sortedDates = Object.keys(dailyData).sort((a,b)=>new Date(a)-new Date(b));
-    renderDetailChart(sortedDates, sortedDates.map(d=>dailyData[d].sum), sortedDates.map(d=>dailyData[d].ex));
+    // 明細圖表邏輯：若沒資料就隱藏
+    if (globalStats.total !== 0 && chartContainer) {
+      chartContainer.style.display = "block";
+      const dailyData = {};
+      displayRows.forEach(r => {
+        const d = new Date(r[4]).toLocaleDateString();
+        if(!dailyData[d]) dailyData[d] = { sum: 0, ex: Number(r[13]||1) };
+        dailyData[d].sum += Number(r[5]||0);
+      });
+      const sortedDates = Object.keys(dailyData).sort((a,b)=>new Date(a)-new Date(b));
+      renderDetailChart(sortedDates, sortedDates.map(d=>dailyData[d].sum), sortedDates.map(d=>dailyData[d].ex));
+    } else if (chartContainer) {
+      chartContainer.style.display = "none";
+    }
     
   } else {
-    // 2. 統計模式 (分類/幣別等)
+    // 2. 統計模式
     const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
     const idx = keyMap[command];
     
-    // --- 關鍵修正：計算主表統計時，只抓「選擇區間」內的資料 ---
     let counts = {};
     rows.forEach(r => { 
       const d = new Date(r[4]);
@@ -243,9 +249,16 @@ function renderResult(command, json) {
     globalStats.total = totalSum;
     globalStats.count = labels.length; 
     mainHtml += `<div class="total">📌 ${command}總額：${globalStats.total.toLocaleString()} 元 | 📝 項目數：${globalStats.count} 項</div>`;
-    renderChart("pie", labels, values);
 
-    // 3. 📅 近 6 個月趨勢：使用完整的 rows (不分日期區間，只分權限)
+    // --- 關鍵修正：當月無資料時徹底隱藏圓餅圖容器 ---
+    if (totalSum !== 0 && chartContainer) {
+      chartContainer.style.display = "block";
+      renderChart("pie", labels, values);
+    } else if (chartContainer) {
+      chartContainer.style.display = "none";
+    }
+
+    // 3. 📅 近 6 個月趨勢
     if (json.months_6m) {
       const months = json.months_6m;
       const dataMap = {};
@@ -254,7 +267,6 @@ function renderResult(command, json) {
         let key = (r[idx] && String(r[idx]).trim() !== "") ? String(r[idx]).trim() : "未知";
         const d = new Date(r[4]);
         const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        
         if (months.includes(ym)) {
           if (!dataMap[key]) {
             dataMap[key] = {};
@@ -290,8 +302,15 @@ function renderResult(command, json) {
       
       document.getElementById("sixMonthArea").innerHTML = sixHtml;
       makeTableSortable(document.getElementById("table6m"), command);
-      document.getElementById("trendContainer").style.display = "block";
-      renderCategoryTrend(months, dataMap);
+      
+      // 趨勢圖容器顯示判斷
+      const trendContainer = document.getElementById("trendContainer");
+      if (grandTotal !== 0 && trendContainer) {
+        trendContainer.style.display = "block";
+        renderCategoryTrend(months, dataMap);
+      } else if (trendContainer) {
+        trendContainer.style.display = "none";
+      }
     }
   }
   document.getElementById("queryResult").innerHTML = mainHtml;
@@ -526,8 +545,3 @@ function getExportFilename(type) {
 </script>
 </body>
 </html>
-
-
-
-
-
