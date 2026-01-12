@@ -179,111 +179,84 @@ async function sendQuery(command) {
 
 function renderResult(command, json) {
   let mainHtml = "";
-  const adminUser = "Betty Yi"; 
-  
-  // 1. 權限過濾：決定哪些資料要出現在「明細」和「當月統計」
-  let rows = (currentUser === adminUser) ? (json.rows || []) : (json.rows || []).filter(r => r[3] === currentUser);
+  const adminUser = "Betty Yi";
+  let rows = (currentUser === adminUser) ? json.rows : (json.rows || []).filter(r => r[3] === currentUser);
 
   if (command === "明細") {
-    // ... (明細邏輯維持不變) ...
     mainHtml += `<h5>${currentFullLabel}查詢;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th></tr></thead><tbody>`;
-    rows.forEach(r => { 
-      mainHtml += `<tr><td>${r[3]||'未知'}</td><td>${new Date(r[4]).toLocaleDateString()}</td><td>${r[8]||''}</td><td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td>${r[13]||1}</td><td class="numeric">${(Number(r[5])||0).toLocaleString()}</td><td>${r[7]||''}</td><td>${r[6]||''}</td><td>${r[9]||''}</td><td>${r[10]||''}</td><td>${r[14]||''}</td></tr>`; 
-    });
+    rows.forEach(r => { mainHtml += `<tr><td>${r[3]}</td><td>${new Date(r[4]).toLocaleDateString()}</td><td>${r[8]}</td><td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td>${r[13]||1}</td><td class="numeric">${(Number(r[5])||0).toLocaleString()}</td><td>${r[7]}</td><td>${r[6]}</td><td>${r[9]||''}</td><td>${r[10]||''}</td><td>${r[14]}</td></tr>`; });
     mainHtml += `</tbody></table>`;
     globalStats.total = rows.reduce((s, r) => s + Number(r[5] || 0), 0);
     globalStats.count = rows.length;
     mainHtml += `<div class="total">📌 支出總額：${globalStats.total.toLocaleString()} 元 | 📝 筆數：${globalStats.count} 筆</div>`;
+
+    const dailyData = {};
+    rows.forEach(r => {
+      const d = new Date(r[4]).toLocaleDateString();
+      if(!dailyData[d]) dailyData[d] = { sum: 0, ex: Number(r[13]||1) };
+      dailyData[d].sum += Number(r[5]||0);
+    });
+    const sortedDates = Object.keys(dailyData).sort((a,b)=>new Date(a)-new Date(b));
+    renderDetailChart(sortedDates, sortedDates.map(d=>dailyData[d].sum), sortedDates.map(d=>dailyData[d].ex));
+    
   } else {
-    // 2. 統計模式
     const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
     const idx = keyMap[command];
     let counts = {};
-    
-    // 主表統計：僅計算使用者選定的日期區間
-    rows.forEach(r => { 
-      let amt = Number(r[5] || 0);
-      let v = (r[idx] && String(r[idx]).trim() !== "") ? String(r[idx]).trim() : "未知";
-      counts[v] = (counts[v] || 0) + amt; 
-    });
-    
+    rows.forEach(r => { let v = r[idx] || "未歸類"; counts[v] = (counts[v] || 0) + Number(r[5] || 0); });
     let labels = Object.keys(counts);
     let values = Object.values(counts);
     let totalSum = values.reduce((a, b) => a + b, 0);
 
     mainHtml += `<h5>${currentFullLabel}分析統計;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>${command}</th><th class="numeric">金額</th><th class="numeric">佔比</th></tr></thead><tbody>`;
-    labels.forEach((l) => { 
-      let val = counts[l];
-      mainHtml += `<tr><td>${l}</td><td class="numeric">${val.toLocaleString()}</td><td class="numeric">${totalSum !== 0 ? ((val/totalSum)*100).toFixed(1) : 0}%</td></tr>`; 
-    });
+    labels.forEach((l, i) => { mainHtml += `<tr><td>${l}</td><td class="numeric">${values[i].toLocaleString()}</td><td class="numeric">${((values[i]/totalSum)*100).toFixed(1)}%</td></tr>`; });
     mainHtml += `</tbody></table>`;
+    
     globalStats.total = totalSum;
     globalStats.count = labels.length; 
     mainHtml += `<div class="total">📌 ${command}總額：${globalStats.total.toLocaleString()} 元 | 📝 項目數：${globalStats.count} 項</div>`;
     renderChart("pie", labels, values);
 
-    // 3. 📅 近 6 個月趨勢：【核心修正：根據結束日期動態產生月份列】
-    const endVal = document.getElementById("endDate").value;
-    const endDateObj = endVal ? new Date(endVal) : new Date();
-    
-    // 動態計算最近 6 個月的標籤 (YYYY-MM)
-    const dynamicMonths = [];
-    for (let i = 5; i >= 0; i--) {
-      let d = new Date(endDateObj.getFullYear(), endDateObj.getMonth() - i, 1);
-      dynamicMonths.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
-    }
-
-    const dataMap = {};
-    rows.forEach(r => {
-      if (!r[4]) return;
-      const amt = Number(r[5]) || 0;
-      const d = new Date(r[4]);
-      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    // 非明細模式才顯示 6 個月資料
+    const sixKey = { "分類":"categories_6m", "付款":"payments_6m", "店家":"stores_6m", "幣別":"exchanges_6m", "記帳者":"users_6m" }[command];
+    if (json.months_6m && json[sixKey]) {
+      const months = json.months_6m;
+      const dataMap = json[sixKey];
+      let monthlySums = new Array(months.length).fill(0);
+      let grandTotal = 0;
       
-      if (dynamicMonths.includes(ym)) {
-        let key = (r[idx] && String(r[idx]).trim() !== "") ? String(r[idx]).trim() : "未知";
-        if (!dataMap[key]) {
-          dataMap[key] = {};
-          dynamicMonths.forEach(m => dataMap[key][m] = 0);
-        }
-        dataMap[key][ym] += amt;
-      }
-    });
-
-    let monthlySums = new Array(6).fill(0);
-    let grandTotal = 0;
-    
-    let sixHtml = `<h5>📅 近 6 個月${currentCommandName}統計 (以結束日期為準)</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
-    dynamicMonths.forEach(m => sixHtml += `<th>${m}</th>`);
-    sixHtml += `<th>總額</th></tr></thead><tbody>`;
-    
-    Object.keys(dataMap).forEach(item => {
-      let rSum = 0; 
-      sixHtml += `<tr><td>${item}</td>`;
-      dynamicMonths.forEach((m, i) => { 
-        let val = dataMap[item][m] || 0; 
-        rSum += val; 
-        monthlySums[i] += val; 
-        sixHtml += `<td class="numeric">${val.toLocaleString()}</td>`; 
+      let sixHtml = `<h5>📅 近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
+      months.forEach(m => sixHtml += `<th>${m}</th>`);
+      sixHtml += `<th>總額</th></tr></thead><tbody>`;
+      
+      Object.keys(dataMap).forEach(item => {
+        let rSum = 0; 
+        sixHtml += `<tr><td>${item}</td>`;
+        months.forEach((m, i) => { 
+          let val = dataMap[item][m] || 0; 
+          rSum += val; 
+          monthlySums[i] += val; 
+          sixHtml += `<td class="numeric">${val.toLocaleString()}</td>`; 
+        });
+        grandTotal += rSum; 
+        sixHtml += `<td class="numeric"><strong>${rSum.toLocaleString()}</strong></td></tr>`;
       });
-      grandTotal += rSum; 
-      sixHtml += `<td class="numeric"><strong>${rSum.toLocaleString()}</strong></td></tr>`;
-    });
-    
-    sixHtml += `</tbody><tfoot><tr><td>每月總計</td>`;
-    monthlySums.forEach(sum => sixHtml += `<td class="numeric">${sum.toLocaleString()}</td>`);
-    sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td></tr></tfoot></table>`;
-    
-    document.getElementById("sixMonthArea").innerHTML = sixHtml;
-    makeTableSortable(document.getElementById("table6m"), command);
-    document.getElementById("trendContainer").style.display = "block";
-    renderCategoryTrend(dynamicMonths, dataMap);
+      
+      sixHtml += `</tbody><tfoot><tr><td>每月總計</td>`;
+      monthlySums.forEach(sum => sixHtml += `<td class="numeric">${sum.toLocaleString()}</td>`);
+      sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td></tr></tfoot></table>`;
+      
+      document.getElementById("sixMonthArea").innerHTML = sixHtml;
+      makeTableSortable(document.getElementById("table6m"), command);
+      document.getElementById("trendContainer").style.display = "block";
+      renderCategoryTrend(months, dataMap);
+    }
   }
   document.getElementById("queryResult").innerHTML = mainHtml;
   makeTableSortable(document.getElementById("mainTable"), command);
   document.getElementById("exportArea").style.display = "block";
 }
-  
+
 function renderDetailChart(labels, sums, rates) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
   chartInstance = new Chart(ctx, {
@@ -511,4 +484,3 @@ function getExportFilename(type) {
 </script>
 </body>
 </html>
-
