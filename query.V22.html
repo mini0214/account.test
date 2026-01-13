@@ -377,28 +377,32 @@ function renderResult(command, json) {
 }
 
 // --- 修改功能核心 ---
-
 function editRow(id) {
   const row = lastFetchedRows.find(r => r[15] == id);
   if (!row) { alert("找不到該筆資料"); return; }
 
-  // 確保彈出視窗前下拉選單有值
+  // A. 先執行下拉選單初始化 (確保有 option 可以選)
   refreshSelects();
 
-  // 填入視窗資料
+  // B. 填入資料
   document.getElementById("editId").value = id;
   document.getElementById("displayEditId").innerText = id;
   
-  // 日期處理
   const d = new Date(row[4]);
   document.getElementById("editDate").value = toInputDate(d);
   document.getElementById("editStore").value = row[8] || "";
   document.getElementById("editAmount").value = row[5] || 0;
+  
+  // C. 強制設定選單的值 (注意這裡的 id 要跟 HTML 完全對應)
+  // 分類 (索引 6)
   document.getElementById("editType").value = row[6] || "";
+  // 付款方式 (索引 7)
   document.getElementById("editPay").value = row[7] || "";
+  // 幣別 (索引 14)
+  document.getElementById("editCurr").value = row[14] || "";
+
   document.getElementById("editNote").value = row[9] || "";
   document.getElementById("editMemo").value = row[10] || "";
-  document.getElementById("editCurr").value = row[14] || "";
 
   document.getElementById("editModal").style.display = "block";
 }
@@ -687,4 +691,5 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
 
