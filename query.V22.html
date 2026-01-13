@@ -517,7 +517,7 @@ async function deleteRow(id, dataObj = {}) {
     `💳 付款：${dataObj.pay || ''}\n` +
     `📂 分類：${dataObj.type || ''}\n` +
     `🏷️ 附註：${dataObj.note || ''}\n` +
-    `📝 備註：${dataObj.memo || ''}\n` +;
+    `📝 備註：${dataObj.memo || ''}\n` ;
 
   if (confirm(confirmMsg)) {
     document.getElementById("loading").style.display = "block";
@@ -656,4 +656,5 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
 
