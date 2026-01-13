@@ -181,22 +181,24 @@ function renderResult(command, json) {
   let mainHtml = "";
   const adminUser = "Betty Yi";
   
-  // 1. 基本資料取得
+  // 1. 資料初始化與容器取得
   let rows = (currentUser === adminUser) ? (json.rows || []) : (json.rows || []).filter(r => r[3] === currentUser);
   const filterStart = new Date(document.getElementById("startDate").value + " 00:00:00");
   const filterEnd = new Date(document.getElementById("endDate").value + " 23:59:59");
   
   const sixMonthArea = document.getElementById("sixMonthArea");
   const trendContainer = document.getElementById("trendContainer");
-  const allChartContainers = document.querySelectorAll(".chart-container");
-  const mainChartContainer = allChartContainers[0];
+  const mainChartContainer = document.querySelectorAll(".chart-container")[0];
 
-  // 初始化：預設隱藏 6 個月相關區域
+  // 確保容器狀態重設
   if (sixMonthArea) sixMonthArea.innerHTML = "";
   if (trendContainer) trendContainer.style.display = "none";
 
+  // 取得當前顯示名稱 (例如: 分類)
+  const displayName = command || "分類"; 
+
+  // --- [ 第一部分：當月主表 ] ---
   if (command === "明細") {
-    // --- 明細模式 ---
     let displayRows = rows.filter(r => {
       const d = new Date(r[4]);
       return d >= filterStart && d <= filterEnd;
@@ -204,14 +206,12 @@ function renderResult(command, json) {
 
     if (displayRows.length > 0) {
       if (mainChartContainer) mainChartContainer.style.display = "block";
-      mainHtml += `<h5>${currentFullLabel}查詢;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th></tr></thead><tbody>`;
+      mainHtml += `<h5>${displayName}查詢;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th></tr></thead><tbody>`;
       displayRows.forEach(r => { 
         mainHtml += `<tr><td>${r[3]||''}</td><td>${new Date(r[4]).toLocaleDateString()}</td><td>${r[8]||''}</td><td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td>${r[13]||1}</td><td class="numeric">${(Number(r[5])||0).toLocaleString()}</td><td>${r[7]||''}</td><td>${r[6]||''}</td><td>${r[9]||''}</td><td>${r[10]||''}</td><td>${r[14]||''}</td></tr>`; 
       });
-      mainHtml += `</tbody></table>`;
-      globalStats.total = displayRows.reduce((s, r) => s + Number(r[5] || 0), 0);
-      globalStats.count = displayRows.length;
-      mainHtml += `<div class="total">📌 支出總額：${globalStats.total.toLocaleString()} 元 | 📝 筆數：${globalStats.count} 筆</div>`;
+      mainHtml += `</tbody></table><div class="total">📌 支出總額：${displayRows.reduce((s, r) => s + Number(r[5] || 0), 0).toLocaleString()} 元</div>`;
+      
       const dailyData = {};
       displayRows.forEach(r => {
         const d = new Date(r[4]).toLocaleDateString();
@@ -221,13 +221,12 @@ function renderResult(command, json) {
       const sortedDates = Object.keys(dailyData).sort((a,b)=>new Date(a)-new Date(b));
       renderDetailChart(sortedDates, sortedDates.map(d=>dailyData[d].sum), sortedDates.map(d=>dailyData[d].ex));
     } else {
-      if (mainChartContainer) mainChartContainer.style.display = "none";
       mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">ℹ️ 所選區間無明細資料</div>`;
     }
   } else {
-    // --- 統計模式 (分類/幣別等) ---
+    // 統計模式
     const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
-    const idx = keyMap[command];
+    const idx = keyMap[displayName];
     let counts = {};
     rows.forEach(r => { 
       const d = new Date(r[4]);
@@ -242,28 +241,26 @@ function renderResult(command, json) {
 
     if (totalSum !== 0) {
       if (mainChartContainer) mainChartContainer.style.display = "block";
-      mainHtml += `<h5>${currentFullLabel}分析統計;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>${command}</th><th class="numeric">金額</th><th class="numeric">佔比</th></tr></thead><tbody>`;
-      labels.forEach(l => { 
-        mainHtml += `<tr><td>${l}</td><td class="numeric">${counts[l].toLocaleString()}</td><td class="numeric">${((counts[l]/totalSum)*100).toFixed(1)}%</td></tr>`; 
-      });
-      mainHtml += `</tbody></table><div class="total">📌 ${command}總額：${totalSum.toLocaleString()} 元</div>`;
+      mainHtml += `<h5>${displayName}分析統計;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>${displayName}</th><th class="numeric">金額</th><th class="numeric">佔比</th></tr></thead><tbody>`;
+      labels.forEach(l => { mainHtml += `<tr><td>${l}</td><td class="numeric">${counts[l].toLocaleString()}</td><td class="numeric">${((counts[l]/totalSum)*100).toFixed(1)}%</td></tr>`; });
+      mainHtml += `</tbody></table><div class="total">📌 ${displayName}總額：${totalSum.toLocaleString()} 元</div>`;
       renderChart("pie", labels, values);
     } else {
-      mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">ℹ️ 所選區間無統計數據</div>`;
+      mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">ℹ️ 區間內無統計數據</div>`;
     }
 
-    // --- 📅 關鍵修正：近 6 個月趨勢邏輯 ---
+    // --- [ 第二部分：6個月趨勢（精確匹配版） ] ---
     if (json.months_6m && json.months_6m.length > 0) {
       const months = json.months_6m;
       const dataMap = {};
-      let gTotal6 = 0; 
+      let gTotal6 = 0;
 
       rows.forEach(r => {
         const d = new Date(r[4]);
-        // 強化比對：移除所有非數字字符，統一成 202601 這種格式來比對
-        const ymNormalized = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
+        // 統一成 YYYYMM 格式比對，避開橫線或斜線的干擾
+        const rowYM = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
         
-        let matchedMonth = months.find(m => m.replace(/[^0-9]/g, '') === ymNormalized);
+        let matchedMonth = months.find(m => m.replace(/[^0-9]/g, '') === rowYM);
         
         if (matchedMonth) {
           let itemKey = (r[idx] && String(r[idx]).trim() !== "") ? String(r[idx]).trim() : "未知";
@@ -277,10 +274,10 @@ function renderResult(command, json) {
         }
       });
 
-      // 判斷：總加總 > 0 才顯示
+      // 判斷：6個月加總 > 0 才渲染
       if (gTotal6 > 0) {
         let monthlySums = new Array(months.length).fill(0);
-        let sixHtml = `<h5>📅 依結束日期的近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
+        let sixHtml = `<h5>📅 依結束日期的近 6 個月${displayName}統計</h5><table id="table6m"><thead><tr><th>${displayName}</th>`;
         months.forEach(m => sixHtml += `<th>${m}</th>`);
         sixHtml += `<th>總額</th></tr></thead><tbody>`;
         
@@ -308,8 +305,10 @@ function renderResult(command, json) {
     }
   }
 
+  // 更新顯示
   document.getElementById("queryResult").innerHTML = mainHtml;
-  if (document.getElementById("mainTable")) makeTableSortable(document.getElementById("mainTable"), command);
+  const mainTable = document.getElementById("mainTable");
+  if (mainTable) makeTableSortable(mainTable, command);
   document.getElementById("exportArea").style.display = "block";
 }
   
@@ -540,4 +539,5 @@ function getExportFilename(type) {
 </script>
 </body>
 </html>
+
 
