@@ -219,7 +219,7 @@ function renderResult(command, json) {
       renderDetailChart(sortedDates, sortedDates.map(d=>dailyData[d].sum), sortedDates.map(d=>dailyData[d].ex));
     } else {
       if (mainChartContainer) mainChartContainer.style.display = "none";
-      mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">ℹ️ 所選區間無明細資料</div>`;
+      mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">ℹ️ 所選區間 ${document.getElementById("startDate").value} 至 ${document.getElementById("endDate").value} 無明細資料</div>`;
     }
     
   } else {
@@ -262,11 +262,11 @@ function renderResult(command, json) {
       globalStats.total = totalSum;
       globalStats.count = labels.length; 
       // 修改下方統計資訊：增加「總筆數」
-      mainHtml += `<div class="total">📌 ${command}總額：${globalStats.total.toLocaleString()} 元 | 📝 總筆數：${totalItems.toLocaleString()} 筆 | 📂 項目數：${globalStats.count} 項</div>`;
+      mainHtml += `<div class="total">${command} 📂 總項目：${globalStats.count} 項 📌 總額：${globalStats.total.toLocaleString()} 元  📝 總筆數：${totalItems.toLocaleString()} 筆  </div>`;
       renderChart("pie", labels, values);
     } else {
       if (mainChartContainer) mainChartContainer.style.display = "none";
-      mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">ℹ️ 無統計數據</div>`;
+      mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">ℹ️ 所選區間 ${document.getElementById("startDate").value} 至 ${document.getElementById("endDate").value} 無統計數據</div>`;
     }
 
     // 3. 📅 近 6 個月趨勢 (維持您原本的 code)
@@ -543,6 +543,7 @@ function getExportFilename(type) {
 </script>
 </body>
 </html>
+
 
 
 
