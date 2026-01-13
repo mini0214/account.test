@@ -33,12 +33,16 @@
 
     .numeric { text-align: right; }
     
-    /* 容器控制比例，防止變形 */
     .chart-container { width: 95%; margin: 30px auto; background: white; border: 1px solid #eee; padding: 10px; }
     canvas { width: 100% !important; height: auto !important; display: block; }
     
     #loading { font-size: 32px; text-align: center; font-weight: bold; margin: 20px; }
     
+    /* 筆數連結樣式 */
+    .drill-down-link { color: #0056b3; text-decoration: underline; cursor: pointer; font-weight: bold; }
+    /* 下鑽明細區塊樣式 */
+    #drillDownArea { margin-top: 40px; border-top: 5px solid #0056b3; padding-top: 20px; }
+
     @media print { button, .date-inputs, h3 { display: none !important; } }
   </style>
 </head>
@@ -70,6 +74,8 @@
 
 <div id="queryResult"></div>
 
+<div id="drillDownArea"></div>
+
 <div class="chart-container">
   <canvas id="chartCanvas"></canvas>
 </div>
@@ -93,6 +99,7 @@ let currentFullLabel = "";
 let currentCommandName = ""; 
 let globalStats = { total: 0, count: 0 };
 let orderMaps = { "付款": [], "分類": [], "幣別": [], "記帳者": [] };
+let lastFetchedRows = []; // 儲存最後一次抓取的原始資料供下鑽使用
 
 const SETTINGS_URL = "https://script.google.com/macros/s/AKfycby2-1JvsriAfskOJXHyMB8HASeuMs7V-mJOQneD73Q_dJN56NhbWH0Dj8Ldu0LcfxMe/exec";
 
@@ -163,6 +170,7 @@ document.querySelectorAll("button[id^='queryMonth']").forEach(btn => {
 async function sendQuery(command) {
   document.getElementById("loading").style.display = "block";
   document.getElementById("queryResult").innerHTML = "";
+  document.getElementById("drillDownArea").innerHTML = ""; // 清空下鑽區域
   document.getElementById("sixMonthArea").innerHTML = "";
   document.getElementById("trendContainer").style.display = "none";
   if(chartInstance) chartInstance.destroy();
@@ -181,8 +189,9 @@ function renderResult(command, json) {
   let mainHtml = "";
   const adminUser = "Betty Yi";
   
-  // 1. 權限過濾
+  // 1. 權限過濾並快取 rows 供點擊使用
   let rows = (currentUser === adminUser) ? (json.rows || []) : (json.rows || []).filter(r => r[3] === currentUser);
+  lastFetchedRows = rows; 
 
   const filterStart = new Date(document.getElementById("startDate").value + " 00:00:00");
   const filterEnd = new Date(document.getElementById("endDate").value + " 23:59:59");
@@ -192,7 +201,6 @@ function renderResult(command, json) {
   const trendContainer = document.getElementById("trendContainer");
 
   if (command === "明細") {
-    // 明細模式邏輯 (維持原狀)
     let displayRows = rows.filter(r => {
       const d = new Date(r[4]);
       return d >= filterStart && d <= filterEnd;
@@ -223,21 +231,21 @@ function renderResult(command, json) {
     }
     
   } else {
-    // 2. 統計模式 (幣別.付款.分類...) - 修改重點
+    // 2. 統計模式
     const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
     const idx = keyMap[command];
     
-    let counts = {};     // 存金額
-    let itemCounts = {}; // 存筆數
-    let totalItems = 0;  // 總筆數計數器
+    let counts = {};
+    let itemCounts = {};
+    let totalItems = 0;
     
     rows.forEach(r => { 
       const d = new Date(r[4]);
       if (d >= filterStart && d <= filterEnd) {
         let v = (r[idx] && String(r[idx]).trim() !== "") ? String(r[idx]).trim() : "未知";
         counts[v] = (counts[v] || 0) + Number(r[5] || 0); 
-        itemCounts[v] = (itemCounts[v] || 0) + 1; // 累加筆數
-        totalItems++; // 累加總筆數
+        itemCounts[v] = (itemCounts[v] || 0) + 1;
+        totalItems++;
       }
     });
     
@@ -248,20 +256,18 @@ function renderResult(command, json) {
     if (totalSum !== 0) {
       if (mainChartContainer) mainChartContainer.style.display = "block";
 
-      // 表格增加「筆數」標題
       mainHtml += `<h5>${currentFullLabel}分析統計;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>${command}</th><th class="numeric">金額</th><th class="numeric">佔比</th><th class="numeric">筆數</th></tr></thead><tbody>`;
       
       labels.forEach((l) => { 
         let val = counts[l];
-        let count = itemCounts[l]; // 取得該項目的筆數
-        // 表格增加「筆數」資料內容
-        mainHtml += `<tr><td>${l}</td><td class="numeric">${val.toLocaleString()}</td><td class="numeric">${((val/totalSum)*100).toFixed(1)}%</td><td class="numeric">${count.toLocaleString()}</td></tr>`; 
+        let count = itemCounts[l];
+        // 筆數加上 onclick 事件呼叫 showDrillDown
+        mainHtml += `<tr><td>${l}</td><td class="numeric">${val.toLocaleString()}</td><td class="numeric">${((val/totalSum)*100).toFixed(1)}%</td><td class="numeric"><span class="drill-down-link" onclick="showDrillDown('${command}', '${l}')">${count.toLocaleString()}</span></td></tr>`; 
       });
       mainHtml += `</tbody></table>`;
       
       globalStats.total = totalSum;
       globalStats.count = labels.length; 
-      // 修改下方統計資訊：增加「總筆數」
       mainHtml += `<div class="total"> 🏷️ ${command}分析統計總項目：${globalStats.count} 項 📌 總金額：${globalStats.total.toLocaleString()} 元  📝 總筆數：${totalItems.toLocaleString()} 筆  </div>`;
       renderChart("pie", labels, values);
     } else {
@@ -269,7 +275,7 @@ function renderResult(command, json) {
       mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">🔘 所選區間 ${document.getElementById("startDate").value} 至 ${document.getElementById("endDate").value} 無統計數據</div>`;
     }
 
-    // 3. 📅 近 6 個月趨勢 (維持您原本的 code)
+    // 3. 📅 近 6 個月趨勢
     if (json.months_6m) {
       const months = json.months_6m;
       const dataMap = {};
@@ -315,7 +321,39 @@ function renderResult(command, json) {
   makeTableSortable(document.getElementById("mainTable"), command);
   document.getElementById("exportArea").style.display = "block";
 }
+
+// 新增函數：顯示下鑽明細資料流
+function showDrillDown(command, itemValue) {
+  const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
+  const idx = keyMap[command];
+  const filterStart = new Date(document.getElementById("startDate").value + " 00:00:00");
+  const filterEnd = new Date(document.getElementById("endDate").value + " 23:59:59");
+
+  // 過濾出符合當前時間區間與該項目名稱的原始資料
+  let filteredRows = lastFetchedRows.filter(r => {
+    const d = new Date(r[4]);
+    let v = (r[idx] && String(r[idx]).trim() !== "") ? String(r[idx]).trim() : "未知";
+    return (d >= filterStart && d <= filterEnd) && (v === itemValue);
+  });
+
+  let drillHtml = `<h5>📂 資料流明細：${command} [${itemValue}]</h5>`;
+  drillHtml += `<table id="drillTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th></tr></thead><tbody>`;
   
+  filteredRows.forEach(r => {
+    drillHtml += `<tr><td>${r[3]||''}</td><td>${new Date(r[4]).toLocaleDateString()}</td><td>${r[8]||''}</td><td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td>${r[13]||1}</td><td class="numeric">${(Number(r[5])||0).toLocaleString()}</td><td>${r[7]||''}</td><td>${r[6]||''}</td><td>${r[9]||''}</td><td>${r[10]||''}</td><td>${r[14]||''}</td></tr>`;
+  });
+  
+  drillHtml += `</tbody></table>`;
+  const drillArea = document.getElementById("drillDownArea");
+  drillArea.innerHTML = drillHtml;
+  
+  // 讓新表格也可以排序
+  makeTableSortable(document.getElementById("drillTable"), "明細");
+  
+  // 捲動到下鑽區域
+  drillArea.scrollIntoView({ behavior: 'smooth' });
+}
+
 function renderDetailChart(labels, sums, rates) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
   chartInstance = new Chart(ctx, {
@@ -331,7 +369,7 @@ function renderDetailChart(labels, sums, rates) {
       responsive: true,
       maintainAspectRatio: true,
       aspectRatio: 2,
-      animation: false, // 關閉動畫減少抖動
+      animation: false,
       scales: {
         y: { type: 'linear', position: 'left', title: { display: true, text: '金額', font: {size:20} } },
         y1: { type: 'linear', position: 'right', title: { display: true, text: '匯率', font: {size:20}, color: "red" }, grid: { drawOnChartArea: false } }
@@ -373,9 +411,9 @@ function renderCategoryTrend(months, map) {
       label: k,
       data: months.map(m => map[k][m] || 0),
       borderColor: color,
-      backgroundColor: color, // 圖例點顏色
-      fill: false, // 改為線條，不要滿版
-      tension: 0.1, // 線條稍微平滑但不誇張
+      backgroundColor: color,
+      fill: false,
+      tension: 0.1,
       pointRadius: 6,
       pointStyle: 'circle'
     };
@@ -387,18 +425,18 @@ function renderCategoryTrend(months, map) {
       responsive: true,
       maintainAspectRatio: true,
       aspectRatio: 1.8,
-      animation: false, // 防止數字在游標移動時抖動
+      animation: false,
       plugins: {
         legend: { 
           labels: { 
             font: { size: 24, weight: 'bold' },
-            usePointStyle: true, // 圓點圖例
+            usePointStyle: true,
             boxWidth: 20
           } 
         },
         tooltip: { 
           bodyFont: { size: 22 },
-          intersect: false, // 游標靠近即顯示，不需精準重疊點
+          intersect: false,
           mode: 'index'
         }
       },
@@ -441,14 +479,20 @@ function makeTableSortable(table, currentCommand) {
 
 function getExportFilename(type) {
   const now = new Date();
-  const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}-${String(now.getSeconds()).padStart(2,'0')}`;
+  const Y = now.getFullYear();
+  const M = String(now.getMonth() + 1).padStart(2, '0');
+  const D = String(now.getDate()).padStart(2, '0');
+  const h = String(now.getHours()).padStart(2, '0');
+  const m = String(now.getMinutes()).padStart(2, '0');
+  const s = String(now.getSeconds()).padStart(2, '0');
+  const ts = `${Y}-${M}-${D}-${h}-${m}-${s}`;
   return `非匯不可${type}_${currentCommandName}統計_${ts}`;
 }
 
 function getExportHeader() {
   const start = document.getElementById("startDate").value;
   const end = document.getElementById("endDate").value;
-  return [["🔍 非匯不可統計報表"], [`匯出時間：${new Date().toLocaleString()}`], [`日期區間：${start} ~ ${end}`],  [`統計報表：選擇${currentCommandName}統計`], []];
+  return [["🔍 非匯不可統計報表"], [`匯出時間：${new Date().toLocaleString()}`], [`日期區間：${start} ~ ${end}`], [`統計報表：選擇${currentCommandName}統計`], []];
 }
 
 function getTableData(tableId, isMain = false) {
@@ -500,11 +544,8 @@ document.getElementById("exportCsvBtn").onclick = () => {
   link.download = `${getExportFilename('CSV')}.csv`; link.click();
 };
 
-// --- 修正後的 PDF 匯出功能 ---
 document.getElementById("exportPdfBtn").onclick = async () => {
   const originalTitle = document.title;
-  
-  // 1. 生成精確的日期時間格式: 2026-01-09-17-25-03
   const now = new Date();
   const Y = now.getFullYear();
   const M = String(now.getMonth() + 1).padStart(2, '0');
@@ -513,44 +554,13 @@ document.getElementById("exportPdfBtn").onclick = async () => {
   const m = String(now.getMinutes()).padStart(2, '0');
   const s = String(now.getSeconds()).padStart(2, '0');
   const ts = `${Y}-${M}-${D}-${h}-${m}-${s}`;
-  
-  // 2. 強制更新網頁標題
   const newTitle = `非匯不可PDF_${currentCommandName}統計_${ts}`;
   document.title = newTitle;
-  
-  // 3. 稍微延遲 250ms，確保標題已經寫入 DOM 再喚起列印視窗
   setTimeout(() => {
     window.print();
-    // 4. 列印視窗開啟後，稍候還原原始標題
-    setTimeout(() => { 
-      document.title = originalTitle; 
-    }, 2000);
+    setTimeout(() => { document.title = originalTitle; }, 2000);
   }, 250);
 };
-
-// --- 同步修正通用檔名生成函式 (供 CSV/Excel 使用) ---
-function getExportFilename(type) {
-  const now = new Date();
-  const Y = now.getFullYear();
-  const M = String(now.getMonth() + 1).padStart(2, '0');
-  const D = String(now.getDate()).padStart(2, '0');
-  const h = String(now.getHours()).padStart(2, '0');
-  const m = String(now.getMinutes()).padStart(2, '0');
-  const s = String(now.getSeconds()).padStart(2, '0');
-  const ts = `${Y}-${M}-${D}-${h}-${m}-${s}`;
-  return `非匯不可${type}_${currentCommandName}統計_${ts}`;
-}
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
