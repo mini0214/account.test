@@ -106,7 +106,7 @@
   <button id="queryMonthPayBtn">💳 付款</button>
   <button id="queryMonthTypeBtn">📂 分類</button>
   <button id="queryMonthUserBtn">👤 記帳者</button>
-  <button id="queryMonthStoreBtn">📋 店家</button>
+  <button id="queryMonthStoreBtn">🏠 店家</button>
 </div>
 
 <div id="loading" style="display:none;">⏳ 正在載入中,請稍侯...</div>
@@ -508,13 +508,16 @@ function renderDetailChart(labels, sums, rates) {
 
 async function deleteRow(id, dataObj = {}) {
   if (!id) { alert("此筆資料無 ID，無法刪除"); return; }
-  const confirmMsg = `⚠️ 確定要刪除此筆資料嗎？\n` +
+  const confirmMsg = `⚠️ 此操作不可還原。確定要刪除${dataObj.id || ''}此筆資料嗎？\n` +
     `--------------------------\n` +
-    `👤 記帳者：${dataObj.user || '未知'}\n` +
-    `📅 日期：${new Date(dataObj.date).toLocaleDateString() || '無'}\n` +
+    `👤 記帳者：${dataObj.user || ''}\n` +
+    `📅 日期：${dataObj.date || ''}\n` +
+    `🏠 店家：${dataObj.store || ''}\n` +
     `💰 金額：${Number(dataObj.amount).toLocaleString()} (${dataObj.curr || '幣別'})\n` +
-    `--------------------------\n` +
-    `此操作不可還原。`;
+    `💳 付款：${dataObj.pay || ''}\n` +
+    `📂 分類：${dataObj.type || ''}\n` +
+    `🏷️ 附註：${dataObj.note || ''}\n` +
+    `📝 備註：${dataObj.memo || ''}\n` +;
 
   if (confirm(confirmMsg)) {
     document.getElementById("loading").style.display = "block";
@@ -653,3 +656,4 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
