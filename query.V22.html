@@ -537,7 +537,7 @@ async function deleteRow(id, dataObj = {}) {
       const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(body) });
       const result = await res.json();
       if (result.success || result.ok) {
-        alert("✅ ID:${id} 刪除成功！");
+        alert(`✅ ID: ${id} 刪除成功！`);
         sendQuery(currentCommandName);
       } else {
         alert("❌ ID:${id} 刪除失敗：" + (result.message || "未知原因"));
@@ -667,6 +667,7 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
 
