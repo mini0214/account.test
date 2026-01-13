@@ -187,11 +187,15 @@ function renderResult(command, json) {
   const filterStart = new Date(document.getElementById("startDate").value + " 00:00:00");
   const filterEnd = new Date(document.getElementById("endDate").value + " 23:59:59");
 
-  // 取得圖表容器 (對應 HTML 中的 class="chart-container")
-  // 注意：第一個是主圖表(chartCanvas)，第二個是趨勢圖(categoryTrendCanvas)
+  // 取得容器元素
   const allChartContainers = document.querySelectorAll(".chart-container");
   const mainChartContainer = allChartContainers[0]; 
   const trendContainer = document.getElementById("trendContainer");
+  const sixMonthArea = document.getElementById("sixMonthArea");
+
+  // 初始化：先清空舊的 6 個月區域，避免殘留
+  if (sixMonthArea) sixMonthArea.innerHTML = "";
+  if (trendContainer) trendContainer.style.display = "none";
 
   if (command === "明細") {
     // 明細模式過濾
@@ -201,7 +205,6 @@ function renderResult(command, json) {
     });
 
     if (displayRows.length > 0) {
-      // 有資料：顯示圖表容器並渲染
       if (mainChartContainer) mainChartContainer.style.display = "block";
 
       mainHtml += `<h5>${currentFullLabel}查詢;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th></tr></thead><tbody>`;
@@ -223,7 +226,6 @@ function renderResult(command, json) {
       const sortedDates = Object.keys(dailyData).sort((a,b)=>new Date(a)-new Date(b));
       renderDetailChart(sortedDates, sortedDates.map(d=>dailyData[d].sum), sortedDates.map(d=>dailyData[d].ex));
     } else {
-      // 無資料：隱藏圖表容器，並顯示精簡提示
       if (mainChartContainer) mainChartContainer.style.display = "none";
       mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">ℹ️ 所選區間 ${document.getElementById("startDate").value} 至 ${document.getElementById("endDate").value} 無明細資料</div>`;
     }
@@ -265,7 +267,7 @@ function renderResult(command, json) {
       mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">ℹ️ 所選區間 ${document.getElementById("startDate").value} 至 ${document.getElementById("endDate").value} 無統計數據</div>`;
     }
 
-// 3. 📅 近 6 個月趨勢：使用完整的 rows
+    // 3. 📅 近 6 個月趨勢
     if (json.months_6m) {
       const months = json.months_6m;
       const dataMap = {};
@@ -287,7 +289,6 @@ function renderResult(command, json) {
       let monthlySums = new Array(months.length).fill(0);
       let grandTotal = 0;
       
-      // 先遍歷一次計算 grandTotal
       Object.keys(dataMap).forEach(item => {
         months.forEach((m, i) => {
           let val = dataMap[item][m] || 0;
@@ -296,12 +297,7 @@ function renderResult(command, json) {
         });
       });
 
-      // --- 關鍵修正：判斷 6 個月總額是否為 0 ---
-      const sixMonthArea = document.getElementById("sixMonthArea");
-      const trendContainer = document.getElementById("trendContainer");
-
       if (grandTotal > 0) {
-        // 有資料才渲染表格
         let sixHtml = `<h5>📅 依結束日期的近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
         months.forEach(m => sixHtml += `<th>${m}</th>`);
         sixHtml += `<th>總額</th></tr></thead><tbody>`;
@@ -324,16 +320,20 @@ function renderResult(command, json) {
         sixMonthArea.innerHTML = sixHtml;
         makeTableSortable(document.getElementById("table6m"), command);
         
-        // 顯示並渲染趨勢圖
         if (trendContainer) trendContainer.style.display = "block";
         renderCategoryTrend(months, dataMap);
       } else {
-        // 全為 0 則徹底清空並隱藏
         sixMonthArea.innerHTML = ""; 
         if (trendContainer) trendContainer.style.display = "none";
       }
     }
-}
+  } // 這裡閉合 else
+
+  // 最後處理通用元件
+  document.getElementById("queryResult").innerHTML = mainHtml;
+  makeTableSortable(document.getElementById("mainTable"), command);
+  document.getElementById("exportArea").style.display = "block";
+} // 這裡閉合 renderResult
   
 function renderDetailChart(labels, sums, rates) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
@@ -562,6 +562,7 @@ function getExportFilename(type) {
 </script>
 </body>
 </html>
+
 
 
 
