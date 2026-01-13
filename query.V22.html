@@ -341,7 +341,7 @@ function showDrillDown(command, itemValue) {
   let subCount = filteredRows.length;
 
   // 3. 組裝標題 (加上金額及筆數)
-  let drillHtml = `<h5>📇 明細：${command}<span style="color: blue; font-weight: bold;">[${itemValue}]</span>📍 金額：${subTotal.toLocaleString()} 元 📝 筆數：${subCount.toLocaleString()} 筆</h5>`;
+  let drillHtml = `<h5>📇 ${command}明細：<span style="color: blue; font-weight: bold;">${itemValue}</span>📍 金額：${subTotal.toLocaleString()} 元 📝 筆數：${subCount.toLocaleString()} 筆</h5>`;
   
   // 4. 生成表格
   drillHtml += `<table id="drillTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th></tr></thead><tbody>`;
@@ -588,4 +588,5 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
 
