@@ -385,7 +385,8 @@ function editRow(id) {
   document.getElementById("editAmount").value = row[5] || 0;
   document.getElementById("editType").value = row[6] || "";
   document.getElementById("editPay").value = row[7] || "";
-  document.getElementById("editNote").value = row[10] || "";
+  document.getElementById("editNote").value = row[9] || "";
+  document.getElementById("editMemo").value = row[10] || "";
   document.getElementById("editCurr").value = row[14] || "";
 
   document.getElementById("editModal").style.display = "block";
@@ -408,7 +409,7 @@ async function confirmUpdate() {
       type: document.getElementById("editType").value,
       pay: document.getElementById("editPay").value,
       note: document.getElementById("editNote").value,
-      memo: document.getElementById("editmemo").value,
+      memo: document.getElementById("editMemo").value,
       curr: document.getElementById("editCurr").value
     }
   };
@@ -667,4 +668,5 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
 
