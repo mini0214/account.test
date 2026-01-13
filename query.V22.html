@@ -219,7 +219,7 @@ function renderResult(command, json) {
       renderDetailChart(sortedDates, sortedDates.map(d=>dailyData[d].sum), sortedDates.map(d=>dailyData[d].ex));
     } else {
       if (mainChartContainer) mainChartContainer.style.display = "none";
-      mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">ℹ️ 所選區間 ${document.getElementById("startDate").value} 至 ${document.getElementById("endDate").value} 無明細資料</div>`;
+      mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">🔘 所選區間 ${document.getElementById("startDate").value} 至 ${document.getElementById("endDate").value} 無明細資料</div>`;
     }
     
   } else {
@@ -266,7 +266,7 @@ function renderResult(command, json) {
       renderChart("pie", labels, values);
     } else {
       if (mainChartContainer) mainChartContainer.style.display = "none";
-      mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">ℹ️ 所選區間 ${document.getElementById("startDate").value} 至 ${document.getElementById("endDate").value} 無統計數據</div>`;
+      mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">🔘 所選區間 ${document.getElementById("startDate").value} 至 ${document.getElementById("endDate").value} 無統計數據</div>`;
     }
 
     // 3. 📅 近 6 個月趨勢 (維持您原本的 code)
@@ -543,6 +543,7 @@ function getExportFilename(type) {
 </script>
 </body>
 </html>
+
 
 
 
