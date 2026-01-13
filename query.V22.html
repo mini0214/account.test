@@ -265,7 +265,7 @@ function renderResult(command, json) {
       mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">ℹ️ 所選區間 ${document.getElementById("startDate").value} 至 ${document.getElementById("endDate").value} 無統計數據</div>`;
     }
 
-    // 3. 📅 近 6 個月趨勢：使用完整的 rows (不分日期區間，只分權限)
+// 3. 📅 近 6 個月趨勢：使用完整的 rows
     if (json.months_6m) {
       const months = json.months_6m;
       const dataMap = {};
@@ -287,36 +287,52 @@ function renderResult(command, json) {
       let monthlySums = new Array(months.length).fill(0);
       let grandTotal = 0;
       
-      let sixHtml = `<h5>📅 依結束日期的近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
-      months.forEach(m => sixHtml += `<th>${m}</th>`);
-      sixHtml += `<th>總額</th></tr></thead><tbody>`;
-      
+      // 先遍歷一次計算 grandTotal
       Object.keys(dataMap).forEach(item => {
-        let rSum = 0; 
-        sixHtml += `<tr><td>${item}</td>`;
-        months.forEach((m, i) => { 
-          let val = dataMap[item][m] || 0; 
-          rSum += val; 
-          monthlySums[i] += val; 
-          sixHtml += `<td class="numeric">${val.toLocaleString()}</td>`; 
+        months.forEach((m, i) => {
+          let val = dataMap[item][m] || 0;
+          grandTotal += val;
+          monthlySums[i] += val;
         });
-        grandTotal += rSum; 
-        sixHtml += `<td class="numeric"><strong>${rSum.toLocaleString()}</strong></td></tr>`;
       });
-      
-      sixHtml += `</tbody><tfoot><tr><td>每月總計</td>`;
-      monthlySums.forEach(sum => sixHtml += `<td class="numeric">${sum.toLocaleString()}</td>`);
-      sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td></tr></tfoot></table>`;
-      
-      document.getElementById("sixMonthArea").innerHTML = sixHtml;
-      makeTableSortable(document.getElementById("table6m"), command);
-      document.getElementById("trendContainer").style.display = "block";
-      renderCategoryTrend(months, dataMap);
+
+      // --- 關鍵修正：判斷 6 個月總額是否為 0 ---
+      const sixMonthArea = document.getElementById("sixMonthArea");
+      const trendContainer = document.getElementById("trendContainer");
+
+      if (grandTotal > 0) {
+        // 有資料才渲染表格
+        let sixHtml = `<h5>📅 依結束日期的近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
+        months.forEach(m => sixHtml += `<th>${m}</th>`);
+        sixHtml += `<th>總額</th></tr></thead><tbody>`;
+        
+        Object.keys(dataMap).forEach(item => {
+          let rSum = 0; 
+          sixHtml += `<tr><td>${item}</td>`;
+          months.forEach((m, i) => { 
+            let val = dataMap[item][m] || 0; 
+            rSum += val; 
+            sixHtml += `<td class="numeric">${val.toLocaleString()}</td>`; 
+          });
+          sixHtml += `<td class="numeric"><strong>${rSum.toLocaleString()}</strong></td></tr>`;
+        });
+        
+        sixHtml += `</tbody><tfoot><tr><td>每月總計</td>`;
+        monthlySums.forEach(sum => sixHtml += `<td class="numeric">${sum.toLocaleString()}</td>`);
+        sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td></tr></tfoot></table>`;
+        
+        sixMonthArea.innerHTML = sixHtml;
+        makeTableSortable(document.getElementById("table6m"), command);
+        
+        // 顯示並渲染趨勢圖
+        if (trendContainer) trendContainer.style.display = "block";
+        renderCategoryTrend(months, dataMap);
+      } else {
+        // 全為 0 則徹底清空並隱藏
+        sixMonthArea.innerHTML = ""; 
+        if (trendContainer) trendContainer.style.display = "none";
+      }
     }
-  }
-  document.getElementById("queryResult").innerHTML = mainHtml;
-  makeTableSortable(document.getElementById("mainTable"), command);
-  document.getElementById("exportArea").style.display = "block";
 }
   
 function renderDetailChart(labels, sums, rates) {
@@ -546,6 +562,7 @@ function getExportFilename(type) {
 </script>
 </body>
 </html>
+
 
 
 
