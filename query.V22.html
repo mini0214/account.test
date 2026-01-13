@@ -255,7 +255,7 @@ function renderResult(command, json) {
         const rowId = r[15] || '';
         const dataInfo = {
           user: r[3]||'', date: r[4], store: r[8]||'',
-          amount: r[5]||0, pay: r[7]||'', type: r[6]||'', note: r[10]||'', curr: r[14]||''
+          amount: r[5]||0, pay: r[7]||'', type: r[6]||'', note: r[9]||'', note: r[10]||'', curr: r[14]||''
         };
         const dataStr = JSON.stringify(dataInfo).replace(/"/g, '&quot;');
 
@@ -667,6 +667,7 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
 
