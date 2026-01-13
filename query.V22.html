@@ -262,7 +262,7 @@ function renderResult(command, json) {
       globalStats.total = totalSum;
       globalStats.count = labels.length; 
       // 修改下方統計資訊：增加「總筆數」
-      mainHtml += `<div class="total">${command}分析統計 📂 總項目：${globalStats.count} 項 📌 總金額：${globalStats.total.toLocaleString()} 元  📝 總筆數：${totalItems.toLocaleString()} 筆  </div>`;
+      mainHtml += `<div class="total"> 🏷️ ${command}分析統計總項目：${globalStats.count} 項 📌 總金額：${globalStats.total.toLocaleString()} 元  📝 總筆數：${totalItems.toLocaleString()} 筆  </div>`;
       renderChart("pie", labels, values);
     } else {
       if (mainChartContainer) mainChartContainer.style.display = "none";
@@ -543,6 +543,7 @@ function getExportFilename(type) {
 </script>
 </body>
 </html>
+
 
 
 
