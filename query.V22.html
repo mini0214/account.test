@@ -74,8 +74,12 @@
       <select id="editPay"></select>
     </div>
     <div class="form-group">
-      <label>備註</label>
+      <label>附註</label>
       <input type="text" id="editNote">
+    </div>
+    <div class="form-group">
+      <label>備註</label>
+      <input type="text" id="editMemo">
     </div>
     <div class="form-group">
       <label>幣別</label>
@@ -161,16 +165,20 @@ async function fetchOrderLists() {
       orderMaps["幣別"] = (json.list.currency || []).map(item => item.name);
       orderMaps["記帳者"] = (json.list.user || []).map(item => item.name);
       
-      // 更新修改視窗的下拉選單
-      updateSelectOptions("editType", orderMaps["分類"]);
-      updateSelectOptions("editPay", orderMaps["付款"]);
-      updateSelectOptions("editCurr", orderMaps["幣別"]);
+      refreshSelects();
     }
   } catch (e) {}
 }
 
+function refreshSelects() {
+    updateSelectOptions("editType", orderMaps["分類"]);
+    updateSelectOptions("editPay", orderMaps["付款"]);
+    updateSelectOptions("editCurr", orderMaps["幣別"]);
+}
+
 function updateSelectOptions(elementId, list) {
     const el = document.getElementById(elementId);
+    if (!el) return;
     el.innerHTML = "";
     list.forEach(item => {
         let opt = document.createElement("option");
@@ -374,6 +382,9 @@ function editRow(id) {
   const row = lastFetchedRows.find(r => r[15] == id);
   if (!row) { alert("找不到該筆資料"); return; }
 
+  // 確保彈出視窗前下拉選單有值
+  refreshSelects();
+
   // 填入視窗資料
   document.getElementById("editId").value = id;
   document.getElementById("displayEditId").innerText = id;
@@ -423,7 +434,7 @@ async function confirmUpdate() {
     if (result.success || result.ok) {
       alert("✅ 修改成功！");
       closeEditModal();
-      sendQuery(currentCommandName); // 重新載入當前清單
+      sendQuery(currentCommandName || "明細"); 
     } else {
       alert("❌ 修改失敗：" + (result.message || "未知原因"));
     }
@@ -455,7 +466,7 @@ function showDrillDown(command, itemValue) {
     const rowId = r[15] || '';
     const dataInfo = {
       user: r[3]||'', date: r[4], store: r[8]||'',
-      amount: r[5]||0, pay: r[7]||'', type: r[6]||'', note: r[10]||'', curr: r[14]||''
+      amount: r[5]||0, pay: r[7]||'', type: r[6]||'', note: r[9]||'', memo: r[10]||'', curr: r[14]||''
     };
     const dataStr = JSON.stringify(dataInfo).replace(/"/g, '&quot;');
 
@@ -510,16 +521,12 @@ function renderDetailChart(labels, sums, rates) {
 
 async function deleteRow(id, dataObj = {}) {
   if (!id) { alert("此筆資料無 ID，無法刪除"); return; }
-
-  // 1. 處理日期格式 (移除 T16:00:00.000Z)
   let formattedDate = "";
   if (dataObj.date) {
     const d = new Date(dataObj.date);
-    // 格式化為 YYYY/MM/DD
     formattedDate = `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
   }
 
-  // 2. 組合訊息 (修正帶入 ID 的邏輯並移除多餘符號)
   const confirmMsg = `⚠️ 此操作不可還原。確定要刪除 ID:${id} 此筆資料嗎？\n` +
     `--------------------------\n` +
     `👤 記帳者：${dataObj.user || ''}\n` +
@@ -668,5 +675,3 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
-
-
