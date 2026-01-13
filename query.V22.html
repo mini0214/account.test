@@ -329,14 +329,21 @@ function showDrillDown(command, itemValue) {
   const filterStart = new Date(document.getElementById("startDate").value + " 00:00:00");
   const filterEnd = new Date(document.getElementById("endDate").value + " 23:59:59");
 
-  // 過濾出符合當前時間區間與該項目名稱的原始資料
+  // 1. 過濾出符合條件的原始資料
   let filteredRows = lastFetchedRows.filter(r => {
     const d = new Date(r[4]);
     let v = (r[idx] && String(r[idx]).trim() !== "") ? String(r[idx]).trim() : "未知";
     return (d >= filterStart && d <= filterEnd) && (v === itemValue);
   });
+  
+  // 2. 計算該項目的小計與筆數
+  let subTotal = filteredRows.reduce((sum, r) => sum + Number(r[5] || 0), 0);
+  let subCount = filteredRows.length;
 
-  let drillHtml = `<h5>📇 資料明細：${command} [${itemValue}]</h5>`;
+  // 3. 組裝標題 (加上金額及筆數)
+  let drillHtml = `<h5>📇 資料明細：${command} [${itemValue}]<span style="color: #d9534f; margin-left: 20px;">💰 金額：${subTotal.toLocaleString()} 元</span> <span style="color: #28a745; margin-left: 10px;">📝 筆數：${subCount.toLocaleString()} 筆</span></h5>`;
+  
+  // 4. 生成表格
   drillHtml += `<table id="drillTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th></tr></thead><tbody>`;
   
   filteredRows.forEach(r => {
@@ -564,4 +571,5 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
 
