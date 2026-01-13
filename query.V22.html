@@ -429,6 +429,47 @@ function renderDetailChart(labels, sums, rates) {
   });
 }
 
+// 修改.刪除
+// 修改函數 (暫時以 Alert 代替，後續可開發 Modal 表單)
+function editRow(id) {
+  if (!id) { alert("此筆資料無 ID，無法修改"); return; }
+  alert("準備修改 ID 為 [" + id + "] 的資料");
+  // 這裡可以實作開啟一個小視窗填寫新內容
+}
+
+// 刪除函數
+async function deleteRow(id) {
+  if (!id) { alert("此筆資料無 ID，無法刪除"); return; }
+  
+  if (confirm("⚠️ 確定要刪除 ID 為 [" + id + "] 的資料嗎？此操作不可還原。")) {
+    document.getElementById("loading").style.display = "block";
+    
+    // 準備傳送到後端 GAS 的資料
+    const body = {
+      type: "delete",
+      id: id,
+      version: VERSION
+    };
+
+    try {
+      const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(body) });
+      const result = await res.json();
+      
+      if (result.success) {
+        alert("✅ 刪除成功！");
+        // 重新整理目前的查詢結果
+        sendQuery(currentCommandName);
+      } else {
+        alert("❌ 刪除失敗：" + (result.message || "未知原因"));
+      }
+    } catch (e) {
+      alert("📡 連線後端失敗，請檢查網路或 API 設定");
+    } finally {
+      document.getElementById("loading").style.display = "none";
+    }
+  }
+}
+  
 function renderChart(type, labels, values) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
   chartInstance = new Chart(ctx, {
@@ -614,4 +655,5 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
 
