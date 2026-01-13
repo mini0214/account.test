@@ -181,21 +181,22 @@ function renderResult(command, json) {
   let mainHtml = "";
   const adminUser = "Betty Yi";
   
-  // 1. 權限過濾與容器取得
+  // 1. 基本資料取得
   let rows = (currentUser === adminUser) ? (json.rows || []) : (json.rows || []).filter(r => r[3] === currentUser);
   const filterStart = new Date(document.getElementById("startDate").value + " 00:00:00");
   const filterEnd = new Date(document.getElementById("endDate").value + " 23:59:59");
   
   const sixMonthArea = document.getElementById("sixMonthArea");
   const trendContainer = document.getElementById("trendContainer");
-  const mainChartContainer = document.querySelectorAll(".chart-container")[0];
+  const allChartContainers = document.querySelectorAll(".chart-container");
+  const mainChartContainer = allChartContainers[0];
 
-  // 初始化：預設隱藏 6 個月區域
+  // 初始化：預設隱藏 6 個月相關區域
   if (sixMonthArea) sixMonthArea.innerHTML = "";
   if (trendContainer) trendContainer.style.display = "none";
 
   if (command === "明細") {
-    // --- 明細模式 (不顯示 6 個月表格) ---
+    // --- 明細模式 ---
     let displayRows = rows.filter(r => {
       const d = new Date(r[4]);
       return d >= filterStart && d <= filterEnd;
@@ -223,7 +224,6 @@ function renderResult(command, json) {
       if (mainChartContainer) mainChartContainer.style.display = "none";
       mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">ℹ️ 所選區間無明細資料</div>`;
     }
-    
   } else {
     // --- 統計模式 (分類/幣別等) ---
     const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
@@ -252,19 +252,18 @@ function renderResult(command, json) {
       mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">ℹ️ 所選區間無統計數據</div>`;
     }
 
-    // --- 📅 近 6 個月趨勢邏輯 ---
+    // --- 📅 關鍵修正：近 6 個月趨勢邏輯 ---
     if (json.months_6m && json.months_6m.length > 0) {
       const months = json.months_6m;
       const dataMap = {};
-      let gTotal6 = 0; // 用於判斷 6 個月加總是否 > 0
+      let gTotal6 = 0; 
 
       rows.forEach(r => {
         const d = new Date(r[4]);
-        const ymDash = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        const ymSlash = `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+        // 強化比對：移除所有非數字字符，統一成 202601 這種格式來比對
+        const ymNormalized = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
         
-        // 同時支援 2026-01 或 2026/01 格式匹配
-        let matchedMonth = months.find(m => m === ymDash || m === ymSlash);
+        let matchedMonth = months.find(m => m.replace(/[^0-9]/g, '') === ymNormalized);
         
         if (matchedMonth) {
           let itemKey = (r[idx] && String(r[idx]).trim() !== "") ? String(r[idx]).trim() : "未知";
@@ -278,7 +277,7 @@ function renderResult(command, json) {
         }
       });
 
-      // 關鍵判斷：加總大於 0 才顯示
+      // 判斷：總加總 > 0 才顯示
       if (gTotal6 > 0) {
         let monthlySums = new Array(months.length).fill(0);
         let sixHtml = `<h5>📅 依結束日期的近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
@@ -309,7 +308,6 @@ function renderResult(command, json) {
     }
   }
 
-  // 最後渲染主查詢結果
   document.getElementById("queryResult").innerHTML = mainHtml;
   if (document.getElementById("mainTable")) makeTableSortable(document.getElementById("mainTable"), command);
   document.getElementById("exportArea").style.display = "block";
@@ -542,3 +540,4 @@ function getExportFilename(type) {
 </script>
 </body>
 </html>
+
