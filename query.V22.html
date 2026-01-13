@@ -207,10 +207,34 @@ function renderResult(command, json) {
     if (displayRows.length > 0) {
       if (mainChartContainer) mainChartContainer.style.display = "block";
       mainHtml += `<h5>${currentFullLabel}查詢;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th><th>ID</th><th>功能</th></tr></thead><tbody>`;
-      displayRows.forEach(r => { 
-        mainHtml += `<tr><td>${r[3]||''}</td><td>${new Date(r[4]).toLocaleDateString()}</td><td>${r[8]||''}</td><td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td>${r[13]||1}</td><td class="numeric">${(Number(r[5])||0).toLocaleString()}</td><td>${r[7]||''}</td><td>${r[6]||''}</td><td>${r[9]||''}</td><td>${r[10]||''}</td><td>${r[14]||''}</td><td>${r[15]||''}</td><td><button class="edit-btn" data-index="${i}">📝 修改</button><button class="action-btn" data-index="${i}"> 🗑️ 刪除</button></td></tr>`; 
+      
+      // 修正點 1: 傳入 (r, i) 確保索引可用
+      displayRows.forEach((r, i) => { 
+        // 修正點 2: 取得第 15 欄的 ID
+        const rowId = r[15] || '';
+
+        mainHtml += `<tr>
+          <td>${r[3]||''}</td>
+          <td>${new Date(r[4]).toLocaleDateString()}</td>
+          <td>${r[8]||''}</td>
+          <td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+          <td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+          <td>${r[13]||1}</td>
+          <td class="numeric">${(Number(r[5])||0).toLocaleString()}</td>
+          <td>${r[7]||''}</td>
+          <td>${r[6]||''}</td>
+          <td>${r[9]||''}</td>
+          <td>${r[10]||''}</td>
+          <td>${r[14]||''}</td>
+          <td>${rowId}</td>
+          <td>
+            <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#f0f0f0; border:1px solid #ccc; border-radius:4px;" onclick="editRow('${rowId}')">📝</button>
+            <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#d9534f; color:white; border:none; border-radius:4px; margin-left:5px;" onclick="deleteRow('${rowId}')">🗑️</button>
+          </td>
+        </tr>`; 
       });
       mainHtml += `</tbody></table>`;
+      
       globalStats.total = displayRows.reduce((s, r) => s + Number(r[5] || 0), 0);
       globalStats.count = displayRows.length;
       mainHtml += `<div class="total">📌 總金額：${globalStats.total.toLocaleString()} 元 📝 總筆數：${globalStats.count} 筆</div>`;
@@ -366,8 +390,8 @@ function showDrillDown(command, itemValue) {
       <td style="${isCurr ? 'color: blue; font-weight: bold;' : ''}">${r[14]||''}</td>
       <td>${rowId}</td>
       <td>
-        <button class="edit-btn" style="font-size:20px; padding:5px;" onclick="editRow('${rowId}')">📝</button>
-        <button class="action-btn" style="font-size:20px; padding:5px; background-color:#d9534f;" onclick="deleteRow('${rowId}')">🗑️</button>
+        <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#f0f0f0; border:1px solid #ccc; border-radius:4px;" onclick="editRow('${rowId}')">📝</button>
+        <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#d9534f; color:white; border:none; border-radius:4px; margin-left:5px;" onclick="deleteRow('${rowId}')">🗑️</button>
       </td>
     </tr>`;
   });
@@ -590,3 +614,4 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
