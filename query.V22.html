@@ -518,7 +518,7 @@ async function deleteRow(id, dataObj = {}) {
   }
 
   // 2. 組合訊息 (修正帶入 ID 的邏輯並移除多餘符號)
-  const confirmMsg = `⚠️ 此操作不可還原。確定要刪除ID:${id}此筆資料嗎？\n` +
+  const confirmMsg = `⚠️ 此操作不可還原。確定要刪除 ID:${id} 此筆資料嗎？\n` +
     `--------------------------\n` +
     `👤 記帳者：${dataObj.user || ''}\n` +
     `📅 日期：${formattedDate}\n` +
@@ -536,10 +536,10 @@ async function deleteRow(id, dataObj = {}) {
       const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(body) });
       const result = await res.json();
       if (result.success || result.ok) {
-        alert("✅ 刪除成功！");
+        alert("✅ ID:${id} 刪除成功！");
         sendQuery(currentCommandName);
       } else {
-        alert("❌ 刪除失敗：" + (result.message || "未知原因"));
+        alert("❌ ID:${id} 刪除失敗：" + (result.message || "未知原因"));
       }
     } catch (e) {
       alert("📡 連線後端失敗");
@@ -666,6 +666,7 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
 
