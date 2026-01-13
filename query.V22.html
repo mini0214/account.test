@@ -225,7 +225,7 @@ function renderResult(command, json) {
     } else {
       // 無資料：隱藏圖表容器，並顯示精簡提示
       if (mainChartContainer) mainChartContainer.style.display = "none";
-      mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">ℹ️ 所選區間無明細資料</div>`;
+      mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">ℹ️ 所選區間 ${document.getElementById("startDate").value} 至 ${document.getElementById("endDate").value} 無明細資料</div>`;
     }
     
   } else {
@@ -546,6 +546,7 @@ function getExportFilename(type) {
 </script>
 </body>
 </html>
+
 
 
 
