@@ -262,7 +262,7 @@ function renderResult(command, json) {
       renderChart("pie", labels, values);
     } else {
       if (mainChartContainer) mainChartContainer.style.display = "none";
-      mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">ℹ️ 所選區間 (${document.getElementById("startDate").value})-(${document.getElementById("endDate").value}) 無統計數據</div>`;
+      mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">ℹ️ 所選區間 ${document.getElementById("startDate").value} 至 ${document.getElementById("endDate").value} 無統計數據</div>`;
     }
 
     // 3. 📅 近 6 個月趨勢：使用完整的 rows (不分日期區間，只分權限)
@@ -546,5 +546,6 @@ function getExportFilename(type) {
 </script>
 </body>
 </html>
+
 
 
