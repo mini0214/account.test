@@ -407,22 +407,34 @@ function closeEditModal() {
   document.getElementById("editModal").style.display = "none";
 }
 
+//交易修改
 async function confirmUpdate() {
   const id = document.getElementById("editId").value;
+  
+  // 1. 取得原本那列的所有原始資料 (為了保留不修改的欄位，如：記帳者、收入等)
+  const row = lastFetchedRows.find(r => r[15] == id);
+  if (!row) return;
+
+  // 2. 構建「整列」陣列 (對應試算表 A 到 P 欄)
+  // 假設結構：[0]?, [1]?, [2]?, [3]記帳者, [4]日期, [5]金額, [6]分類, [7]付款, [8]店家, [9]附註, [10]備註, [11]收入, [12]支出, [13]匯率, [14]幣別, [15]ID
+  let updatedRow = [...row]; // 先複製原始資料
+  
+  // 3. 更新使用者在視窗修改的欄位 (請根據您試算表實際欄位位置調整索引)
+  updatedRow[4]  = document.getElementById("editDate").value;
+  updatedRow[8]  = document.getElementById("editStore").value;
+  updatedRow[5]  = Number(document.getElementById("editAmount").value); // 轉為數字
+  updatedRow[6]  = document.getElementById("editType").value;
+  updatedRow[7]  = document.getElementById("editPay").value;
+  updatedRow[9]  = document.getElementById("editNote").value;
+  updatedRow[10] = document.getElementById("editMemo").value;
+  updatedRow[14] = document.getElementById("editCurr").value;
+  // 收入/支出通常由公式或後端計算，若需前端更新請在此指定 updatedRow[11] 或 [12]
+
   const body = {
     type: "update",
     id: id,
     version: VERSION,
-    data: {
-      date: document.getElementById("editDate").value,
-      store: document.getElementById("editStore").value,
-      amount: document.getElementById("editAmount").value,
-      type: document.getElementById("editType").value,
-      pay: document.getElementById("editPay").value,
-      note: document.getElementById("editNote").value,
-      memo: document.getElementById("editMemo").value,
-      curr: document.getElementById("editCurr").value
-    }
+    updatedRow: updatedRow // 這裡的名稱必須與 GAS 內的 data.updatedRow 對應
   };
 
   if (!confirm("確定要儲存修改嗎？")) return;
@@ -436,10 +448,10 @@ async function confirmUpdate() {
       closeEditModal();
       sendQuery(currentCommandName || "明細"); 
     } else {
-      alert("❌ 修改失敗：" + (result.message || "未知原因"));
+      alert("❌ 修改失敗：" + (result.message || "原因不明"));
     }
   } catch (e) {
-    alert("📡 連線後端失敗");
+    alert("📡 連線後端失敗：" + e.message);
   } finally {
     document.getElementById("loading").style.display = "none";
   }
@@ -675,3 +687,4 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
