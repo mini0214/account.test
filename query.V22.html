@@ -187,12 +187,18 @@ function renderResult(command, json) {
   const filterStart = new Date(document.getElementById("startDate").value + " 00:00:00");
   const filterEnd = new Date(document.getElementById("endDate").value + " 23:59:59");
 
+  // 取得 UI 容器
   const allChartContainers = document.querySelectorAll(".chart-container");
   const mainChartContainer = allChartContainers[0]; 
   const trendContainer = document.getElementById("trendContainer");
+  const sixMonthArea = document.getElementById("sixMonthArea");
+
+  // 初始化：每次查詢先清空 6 個月區域並隱藏趨勢圖
+  if (sixMonthArea) sixMonthArea.innerHTML = "";
+  if (trendContainer) trendContainer.style.display = "none";
 
   if (command === "明細") {
-    // 明細模式過濾
+    // --- 明細模式邏輯 ---
     let displayRows = rows.filter(r => {
       const d = new Date(r[4]);
       return d >= filterStart && d <= filterEnd;
@@ -223,7 +229,7 @@ function renderResult(command, json) {
     }
     
   } else {
-    // 2. 統計模式
+    // --- 統計模式 (分類/幣別等) ---
     const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
     const idx = keyMap[command];
     
@@ -257,11 +263,11 @@ function renderResult(command, json) {
       mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">ℹ️ 所選區間 ${document.getElementById("startDate").value} 至 ${document.getElementById("endDate").value} 無統計數據</div>`;
     }
 
-    // 3. 📅 近 6 個月趨勢 (判斷總額為 0 時隱藏)
+    // --- 📅 近 6 個月趨勢邏輯 (獨立判斷) ---
     if (json.months_6m) {
       const months = json.months_6m;
       const dataMap = {};
-      let grandTotal = 0; // 新增：用來判斷 6 個月是否有資料
+      let grandTotal6m = 0; // 用來判斷這半年有沒有任何錢
 
       rows.forEach(r => {
         let key = (r[idx] && String(r[idx]).trim() !== "") ? String(r[idx]).trim() : "未知";
@@ -273,14 +279,14 @@ function renderResult(command, json) {
             dataMap[key] = {};
             months.forEach(m => dataMap[key][m] = 0);
           }
-          let amt = (Number(r[5]) || 0);
+          let amt = Number(r[5] || 0);
           dataMap[key][ym] += amt;
-          grandTotal += amt; // 累加總額
+          grandTotal6m += amt; 
         }
       });
 
-      // 關鍵判斷：只有 6 個月總額 > 0 才顯示
-      if (grandTotal > 0) {
+      // 只有當這 6 個月的總和 > 0 才有必要畫圖與表格
+      if (grandTotal6m > 0) {
         let monthlySums = new Array(months.length).fill(0);
         let sixHtml = `<h5>📅 依結束日期的近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
         months.forEach(m => sixHtml += `<th>${m}</th>`);
@@ -300,16 +306,12 @@ function renderResult(command, json) {
         
         sixHtml += `</tbody><tfoot><tr><td>每月總計</td>`;
         monthlySums.forEach(sum => sixHtml += `<td class="numeric">${sum.toLocaleString()}</td>`);
-        sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td></tr></tfoot></table>`;
+        sixHtml += `<td class="numeric">${grandTotal6m.toLocaleString()}</td></tr></tfoot></table>`;
         
         document.getElementById("sixMonthArea").innerHTML = sixHtml;
         makeTableSortable(document.getElementById("table6m"), command);
         document.getElementById("trendContainer").style.display = "block";
         renderCategoryTrend(months, dataMap);
-      } else {
-        // 如果 6 個月沒資料，清空區域並隱藏容器
-        document.getElementById("sixMonthArea").innerHTML = "";
-        document.getElementById("trendContainer").style.display = "none";
       }
     }
   }
@@ -545,4 +547,3 @@ function getExportFilename(type) {
 </script>
 </body>
 </html>
-
