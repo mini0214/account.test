@@ -42,6 +42,10 @@
     #drillDownArea { margin-top: 40px; padding-top: 20px; }
 
     @media print { button, .date-inputs, h3 { display: none !important; } }
+
+    .edit-btn { font-size: 26px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background: #28a745; }
+    .action-btn { font-size: 26px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background: #dc3545; margin: 0 2px; }
+    .edit-btn:hover, .action-btn:hover { background: #0056b3; color: white; opacity: 0.8; } /* 按下藍色 */
   </style>
 </head>
 <body>
@@ -206,9 +210,9 @@ function renderResult(command, json) {
 
     if (displayRows.length > 0) {
       if (mainChartContainer) mainChartContainer.style.display = "block";
-      mainHtml += `<h5>${currentFullLabel}查詢;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th><th>ID</th></tr></thead><tbody>`;
+      mainHtml += `<h5>${currentFullLabel}查詢;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th><th>ID</th><th>功能</th></tr></thead><tbody>`;
       displayRows.forEach(r => { 
-        mainHtml += `<tr><td>${r[3]||''}</td><td>${new Date(r[4]).toLocaleDateString()}</td><td>${r[8]||''}</td><td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td>${r[13]||1}</td><td class="numeric">${(Number(r[5])||0).toLocaleString()}</td><td>${r[7]||''}</td><td>${r[6]||''}</td><td>${r[9]||''}</td><td>${r[10]||''}</td><td>${r[14]||''}</td><td>${r[15]||''}</td></tr>`; 
+        mainHtml += `<tr><td>${r[3]||''}</td><td>${new Date(r[4]).toLocaleDateString()}</td><td>${r[8]||''}</td><td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td>${r[13]||1}</td><td class="numeric">${(Number(r[5])||0).toLocaleString()}</td><td>${r[7]||''}</td><td>${r[6]||''}</td><td>${r[9]||''}</td><td>${r[10]||''}</td><td>${r[14]||''}</td><td>${r[15]||''}</td><td><button class="edit-btn" data-index="${i}">📝 修改</button><button class="action-btn" data-index="${i}"> 🗑️ 刪除</button></td></tr>`; 
       });
       mainHtml += `</tbody></table>`;
       globalStats.total = displayRows.reduce((s, r) => s + Number(r[5] || 0), 0);
@@ -342,7 +346,7 @@ function showDrillDown(command, itemValue) {
   let drillHtml = `<h5>📇 ${command}明細：<span style="color: blue; font-weight: bold;">${itemValue}</span>📍 金額：${subTotal.toLocaleString()} 元 📝 筆數：${subCount.toLocaleString()} 筆</h5>`;
   
   // 4. 生成表格
-  drillHtml += `<table id="drillTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th><th>ID</th></tr></thead><tbody>`;
+  drillHtml += `<table id="drillTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th><th>ID</th><th>功能</th></tr></thead><tbody>`;
   
   filteredRows.forEach(r => {
     // 判斷哪些欄位需要變藍色加粗
@@ -366,6 +370,7 @@ function showDrillDown(command, itemValue) {
       <td>${r[10]||''}</td>
       <td style="${isCurr ? 'color: blue; font-weight: bold;' : ''}">${r[14]||''}</td>
       <td>${r[15]||''}</td>
+      <td><button class="edit-btn" data-index="${i}">📝 修改</button><button class="action-btn" data-index="${i}"> 🗑️ 刪除</button></td>
     </tr>`;
   });
   
@@ -587,4 +592,5 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
 
