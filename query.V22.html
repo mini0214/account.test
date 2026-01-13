@@ -31,11 +31,63 @@
     .drill-down-link { color: #0056b3; text-decoration: underline; cursor: pointer; font-weight: bold; }
     #drillDownArea { margin-top: 40px; padding-top: 20px; }
     @media print { button, .date-inputs, h3 { display: none !important; } }
+
+    /* --- 新增修改視窗樣式 --- */
+    .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); }
+    .modal-content { background-color: white; margin: 2% auto; padding: 40px; border-radius: 20px; width: 85%; max-height: 90vh; overflow-y: auto; }
+    .modal-content h3 { font-size: 45px; margin-top: 0; }
+    .form-group { margin-bottom: 25px; text-align: left; }
+    .form-group label { display: block; font-size: 32px; margin-bottom: 10px; font-weight: bold; }
+    .form-group input, .form-group select { width: 100%; font-size: 35px; padding: 15px; border: 2px solid #ccc; border-radius: 10px; box-sizing: border-box; }
+    .modal-footer { text-align: right; margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; }
+    .save-btn { background-color: #28a745; margin-left: 20px; }
+    .cancel-btn { background-color: #dc3545; }
   </style>
 </head>
 <body>
 
 <h3>🔍非<span style="color: blue;">看</span><span>/</span><span style="color: green;">匯</span>不可.[<span id="version"></span>]</h3>
+
+<div id="editModal" class="modal">
+  <div class="modal-content">
+    <h3>📝 修改資料 (ID: <span id="displayEditId"></span>)</h3>
+    <input type="hidden" id="editId">
+    
+    <div class="form-group">
+      <label>日期</label>
+      <input type="date" id="editDate">
+    </div>
+    <div class="form-group">
+      <label>店家</label>
+      <input type="text" id="editStore">
+    </div>
+    <div class="form-group">
+      <label>金額 (支出)</label>
+      <input type="number" id="editAmount">
+    </div>
+    <div class="form-group">
+      <label>分類</label>
+      <select id="editType"></select>
+    </div>
+    <div class="form-group">
+      <label>付款方式</label>
+      <select id="editPay"></select>
+    </div>
+    <div class="form-group">
+      <label>備註</label>
+      <input type="text" id="editNote">
+    </div>
+    <div class="form-group">
+      <label>幣別</label>
+      <select id="editCurr"></select>
+    </div>
+
+    <div class="modal-footer">
+      <button class="cancel-btn" onclick="closeEditModal()">取消</button>
+      <button class="save-btn" onclick="confirmUpdate()">確定儲存</button>
+    </div>
+  </div>
+</div>
 
 <div class="date-inputs">
   開始日期：<input type="date" id="startDate"><br>
@@ -89,7 +141,7 @@ async function initApp(){
     VERSION = json.data.D10.trim();
     LIFF_IDq = json.data.D12.trim();
     document.getElementById("version").textContent = VERSION;
-    fetchOrderLists();
+    await fetchOrderLists();
     await liff.init({ liffId: LIFF_IDq });
     if (!liff.isLoggedIn()) liff.login();
     const profile = await liff.getProfile();
@@ -108,8 +160,23 @@ async function fetchOrderLists() {
       orderMaps["分類"] = (json.list.type || []).map(item => item.name);
       orderMaps["幣別"] = (json.list.currency || []).map(item => item.name);
       orderMaps["記帳者"] = (json.list.user || []).map(item => item.name);
+      
+      // 更新修改視窗的下拉選單
+      updateSelectOptions("editType", orderMaps["分類"]);
+      updateSelectOptions("editPay", orderMaps["付款"]);
+      updateSelectOptions("editCurr", orderMaps["幣別"]);
     }
   } catch (e) {}
+}
+
+function updateSelectOptions(elementId, list) {
+    const el = document.getElementById(elementId);
+    el.innerHTML = "";
+    list.forEach(item => {
+        let opt = document.createElement("option");
+        opt.value = item; opt.innerText = item;
+        el.appendChild(opt);
+    });
 }
 
 function setDefaultDateRange() {
@@ -186,9 +253,8 @@ function renderResult(command, json) {
       
       displayRows.forEach((r) => { 
         const rowId = r[15] || '';
-        // 封裝資料物件
         const dataInfo = {
-          user: r[3]||'', date: new Date(r[4]).toLocaleDateString(), store: r[8]||'',
+          user: r[3]||'', date: r[4], store: r[8]||'',
           amount: r[5]||0, pay: r[7]||'', type: r[6]||'', note: r[10]||'', curr: r[14]||''
         };
         const dataStr = JSON.stringify(dataInfo).replace(/"/g, '&quot;');
@@ -208,8 +274,8 @@ function renderResult(command, json) {
           <td>${r[14]||''}</td>
           <td>${rowId}</td>
           <td>
-            <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#f0f0f0; border:1px solid #ccc; border-radius:4px;" onclick="editRow('${rowId}')">📝</button>
-            <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#d9534f; color:white; border:none; border-radius:4px; margin-left:5px;" onclick="deleteRow('${rowId}', ${dataStr})">🗑️</button>
+            <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#f0f0f0; border:1px solid #ccc; border-radius:4px;" onclick='editRow("${rowId}")'>📝</button>
+            <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#d9534f; color:white; border:none; border-radius:4px; margin-left:5px;" onclick='deleteRow("${rowId}", ${dataStr})'>🗑️</button>
           </td>
         </tr>`; 
       });
@@ -302,6 +368,72 @@ function renderResult(command, json) {
   document.getElementById("exportArea").style.display = "block";
 }
 
+// --- 修改功能核心 ---
+
+function editRow(id) {
+  const row = lastFetchedRows.find(r => r[15] == id);
+  if (!row) { alert("找不到該筆資料"); return; }
+
+  // 填入視窗資料
+  document.getElementById("editId").value = id;
+  document.getElementById("displayEditId").innerText = id;
+  
+  // 日期處理
+  const d = new Date(row[4]);
+  document.getElementById("editDate").value = toInputDate(d);
+  document.getElementById("editStore").value = row[8] || "";
+  document.getElementById("editAmount").value = row[5] || 0;
+  document.getElementById("editType").value = row[6] || "";
+  document.getElementById("editPay").value = row[7] || "";
+  document.getElementById("editNote").value = row[10] || "";
+  document.getElementById("editCurr").value = row[14] || "";
+
+  document.getElementById("editModal").style.display = "block";
+}
+
+function closeEditModal() {
+  document.getElementById("editModal").style.display = "none";
+}
+
+async function confirmUpdate() {
+  const id = document.getElementById("editId").value;
+  const body = {
+    type: "update",
+    id: id,
+    version: VERSION,
+    data: {
+      date: document.getElementById("editDate").value,
+      store: document.getElementById("editStore").value,
+      amount: document.getElementById("editAmount").value,
+      type: document.getElementById("editType").value,
+      pay: document.getElementById("editPay").value,
+      note: document.getElementById("editNote").value,
+      curr: document.getElementById("editCurr").value
+    }
+  };
+
+  if (!confirm("確定要儲存修改嗎？")) return;
+
+  document.getElementById("loading").style.display = "block";
+  try {
+    const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(body) });
+    const result = await res.json();
+    if (result.success || result.ok) {
+      alert("✅ 修改成功！");
+      closeEditModal();
+      sendQuery(currentCommandName); // 重新載入當前清單
+    } else {
+      alert("❌ 修改失敗：" + (result.message || "未知原因"));
+    }
+  } catch (e) {
+    alert("📡 連線後端失敗");
+  } finally {
+    document.getElementById("loading").style.display = "none";
+  }
+}
+
+// --- 以下為原始其他功能函數 ---
+
 function showDrillDown(command, itemValue) {
   const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
   const idx = keyMap[command];
@@ -320,7 +452,7 @@ function showDrillDown(command, itemValue) {
   filteredRows.forEach((r) => {
     const rowId = r[15] || '';
     const dataInfo = {
-      user: r[3]||'', date: new Date(r[4]).toLocaleDateString(), store: r[8]||'',
+      user: r[3]||'', date: r[4], store: r[8]||'',
       amount: r[5]||0, pay: r[7]||'', type: r[6]||'', note: r[10]||'', curr: r[14]||''
     };
     const dataStr = JSON.stringify(dataInfo).replace(/"/g, '&quot;');
@@ -340,8 +472,8 @@ function showDrillDown(command, itemValue) {
       <td>${r[14]||''}</td>
       <td>${rowId}</td>
       <td>
-        <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#f0f0f0; border:1px solid #ccc; border-radius:4px;" onclick="editRow('${rowId}')">📝</button>
-        <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#d9534f; color:white; border:none; border-radius:4px; margin-left:5px;" onclick="deleteRow('${rowId}', ${dataStr})">🗑️</button>
+        <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#f0f0f0; border:1px solid #ccc; border-radius:4px;" onclick='editRow("${rowId}")'>📝</button>
+        <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#d9534f; color:white; border:none; border-radius:4px; margin-left:5px;" onclick='deleteRow("${rowId}", ${dataStr})'>🗑️</button>
       </td>
     </tr>`;
   });
@@ -374,24 +506,13 @@ function renderDetailChart(labels, sums, rates) {
   });
 }
 
-function editRow(id) {
-  if (!id) { alert("此筆資料無 ID，無法修改"); return; }
-  alert("準備修改 ID 為 [" + id + "] 的資料");
-}
-
 async function deleteRow(id, dataObj = {}) {
   if (!id) { alert("此筆資料無 ID，無法刪除"); return; }
-  
-  // 顯示詳細資訊確認
   const confirmMsg = `⚠️ 確定要刪除此筆資料嗎？\n` +
     `--------------------------\n` +
     `👤 記帳者：${dataObj.user || '未知'}\n` +
-    `📅 日期：${dataObj.date || '無'}\n` +
-    `🏠 店家：${dataObj.store || '無'}\n` +
+    `📅 日期：${new Date(dataObj.date).toLocaleDateString() || '無'}\n` +
     `💰 金額：${Number(dataObj.amount).toLocaleString()} (${dataObj.curr || '幣別'})\n` +
-    `💳 付款：${dataObj.pay || '無'}\n` +
-    `🏷️ 分類：${dataObj.type || '無'}\n` +
-    `📝 備註：${dataObj.note || '無'}\n` +
     `--------------------------\n` +
     `此操作不可還原。`;
 
@@ -408,7 +529,7 @@ async function deleteRow(id, dataObj = {}) {
         alert("❌ 刪除失敗：" + (result.message || "未知原因"));
       }
     } catch (e) {
-      alert("📡 連線後端失敗，請檢查網路或 API 設定");
+      alert("📡 連線後端失敗");
     } finally {
       document.getElementById("loading").style.display = "none";
     }
