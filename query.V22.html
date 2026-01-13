@@ -38,10 +38,9 @@
     
     #loading { font-size: 32px; text-align: center; font-weight: bold; margin: 20px; }
     
-    /* 筆數連結樣式 */
     .drill-down-link { color: #0056b3; text-decoration: underline; cursor: pointer; font-weight: bold; }
-    /* 下鑽明細區塊樣式 */
-    #drillDownArea { margin-top: 40px; border-top: 5px solid #0056b3; padding-top: 20px; }
+    /* 移除 border-top，消除藍色線 */
+    #drillDownArea { margin-top: 40px; padding-top: 20px; }
 
     @media print { button, .date-inputs, h3 { display: none !important; } }
   </style>
@@ -588,5 +587,6 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
