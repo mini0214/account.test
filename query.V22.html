@@ -336,7 +336,7 @@ function showDrillDown(command, itemValue) {
     return (d >= filterStart && d <= filterEnd) && (v === itemValue);
   });
 
-  let drillHtml = `<h5>📂 資料流明細：${command} [${itemValue}]</h5>`;
+  let drillHtml = `<h5>📇 資料明細：${command} [${itemValue}]</h5>`;
   drillHtml += `<table id="drillTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th></tr></thead><tbody>`;
   
   filteredRows.forEach(r => {
@@ -564,3 +564,4 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
