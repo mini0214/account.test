@@ -341,13 +341,31 @@ function showDrillDown(command, itemValue) {
   let subCount = filteredRows.length;
 
   // 3. 組裝標題 (加上金額及筆數)
-  let drillHtml = `<h5>📇 資料明細：${command} [${itemValue}] 💰 金額：${subTotal.toLocaleString()} 元 📝 筆數：${subCount.toLocaleString()} 筆</h5>`;
+  let drillHtml = `<h5>📇 資料明細：${command}  [${itemValue}] 📍 金額：${subTotal.toLocaleString()} 元 📝 筆數：${subCount.toLocaleString()} 筆</h5>`;
   
   // 4. 生成表格 (針對金額相關欄位：收入、支出、金額 加上藍色樣式)
   drillHtml += `<table id="drillTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th></tr></thead><tbody>`;
   
   filteredRows.forEach(r => {
-    drillHtml += `<tr><td>${r[3]||''}</td><td>${new Date(r[4]).toLocaleDateString()}</td><td>${r[8]||''}</td><td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td><td>${r[13]||1}</td><td class="numeric">${(Number(r[5])||0).toLocaleString()}</td><td>${r[7]||''}</td><td>${r[6]||''}</td><td>${r[9]||''}</td><td>${r[10]||''}</td><td>${r[14]||''}</td></tr>`;
+    // 預先轉換數值
+    const income = (Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    const expense = (Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    const totalAmount = (Number(r[5])||0).toLocaleString();
+
+    drillHtml += `<tr>
+      <td>${r[3]||''}</td>
+      <td>${new Date(r[4]).toLocaleDateString()}</td>
+      <td>${r[8]||''}</td>
+      <td class="numeric" style="color: blue;">${income}</td>
+      <td class="numeric" style="color: blue;">${expense}</td>
+      <td>${r[13]||1}</td>
+      <td class="numeric" style="color: blue; font-weight: bold;">${totalAmount}</td>
+      <td>${r[7]||''}</td>
+      <td>${r[6]||''}</td>
+      <td>${r[9]||''}</td>
+      <td>${r[10]||''}</td>
+      <td>${r[14]||''}</td>
+    </tr>`;
   });
   
   drillHtml += `</tbody></table>`;
@@ -571,6 +589,3 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
-
-
-
