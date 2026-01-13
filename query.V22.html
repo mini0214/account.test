@@ -255,7 +255,7 @@ function renderResult(command, json) {
     if (totalSum !== 0) {
       if (mainChartContainer) mainChartContainer.style.display = "block";
 
-      mainHtml += `<h5>${currentFullLabel}分析統計;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>${command}</th><th class="numeric">金額</th><th class="numeric">佔比</th><th class="numeric">筆數</th></tr></thead><tbody>`;
+      mainHtml += `<h5>${currentFullLabel}分析統計;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>${command}</th><th class="numeric">金額</th><th class="numeric">佔比</th><th class="numeric">筆數(明細)</th></tr></thead><tbody>`;
       
       labels.forEach((l) => { 
         let val = counts[l];
@@ -587,6 +587,7 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
 
