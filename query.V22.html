@@ -327,30 +327,29 @@ function showDrillDown(command, itemValue) {
   const filterStart = new Date(document.getElementById("startDate").value + " 00:00:00");
   const filterEnd = new Date(document.getElementById("endDate").value + " 23:59:59");
 
-  // 1. 過濾出符合條件的原始資料
   let filteredRows = lastFetchedRows.filter(r => {
     const d = new Date(r[4]);
     let v = (r[idx] && String(r[idx]).trim() !== "") ? String(r[idx]).trim() : "未知";
     return (d >= filterStart && d <= filterEnd) && (v === itemValue);
   });
   
-  // 2. 計算該項目的小計與筆數
   let subTotal = filteredRows.reduce((sum, r) => sum + Number(r[5] || 0), 0);
   let subCount = filteredRows.length;
 
-  // 3. 組裝標題 (加上金額及筆數)
-  let drillHtml = `<h5>📇 ${command}明細：<span style="color: blue; font-weight: bold;">${itemValue}</span>📍 金額：${subTotal.toLocaleString()} 元 📝 筆數：${subCount.toLocaleString()} 筆</h5>`;
+  let drillHtml = `<h5>📇 ${command}明細：<span style="color: blue; font-weight: bold;">${itemValue}</span> 📍 金額：${subTotal.toLocaleString()} 元 📝 筆數：${subCount.toLocaleString()} 筆</h5>`;
   
-  // 4. 生成表格
   drillHtml += `<table id="drillTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th><th>ID</th><th>功能</th></tr></thead><tbody>`;
   
-  filteredRows.forEach(r => {
-    // 判斷哪些欄位需要變藍色加粗
+  // 注意這裡：加入了 i 作為索引
+  filteredRows.forEach((r, i) => {
     const isUser = (command === "記帳者");
     const isStore = (command === "店家");
     const isPay = (command === "付款");
     const isType = (command === "分類");
     const isCurr = (command === "幣別");
+    
+    // 取得 ID (第 15 欄)
+    const rowId = r[15] || '';
 
     drillHtml += `<tr>
       <td style="${isUser ? 'color: blue; font-weight: bold;' : ''}">${r[3]||''}</td>
@@ -365,8 +364,11 @@ function showDrillDown(command, itemValue) {
       <td>${r[9]||''}</td>
       <td>${r[10]||''}</td>
       <td style="${isCurr ? 'color: blue; font-weight: bold;' : ''}">${r[14]||''}</td>
-      <td>${r[15]||''}</td>
-      <td><button class="edit-btn" data-index="${i}">📝 修改</button><button class="action-btn" data-index="${i}"> 🗑️ 刪除</button></td>
+      <td>${rowId}</td>
+      <td>
+        <button class="edit-btn" style="font-size:20px; padding:5px;" onclick="editRow('${rowId}')">📝</button>
+        <button class="action-btn" style="font-size:20px; padding:5px; background-color:#d9534f;" onclick="deleteRow('${rowId}')">🗑️</button>
+      </td>
     </tr>`;
   });
   
