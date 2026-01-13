@@ -540,7 +540,7 @@ async function deleteRow(id, dataObj = {}) {
         alert(`✅ ID: ${id} 刪除成功！`);
         sendQuery(currentCommandName);
       } else {
-        alert("❌ ID:${id} 刪除失敗：" + (result.message || "未知原因"));
+        alert(`❌ ID: ${id} 刪除失敗：` + (result.message || "未知原因"));
       }
     } catch (e) {
       alert("📡 連線後端失敗");
@@ -667,10 +667,3 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
