@@ -438,34 +438,59 @@ function editRow(id) {
 }
 
 // 刪除函數
-async function deleteRow(id) {
+async function deleteRow(id, dataObj = {}) {
   if (!id) { alert("此筆資料無 ID，無法刪除"); return; }
   
-  if (confirm("⚠️ 確定要刪除 ID 為 [" + id + "] 的資料嗎？此操作不可還原。")) {
-    document.getElementById("loading").style.display = "block";
+  // 整理要顯示的資訊清單
+  // 假設 dataObj 內的 Key 根據你的表格欄位命名
+  const info = `
+  ⚠️ 確定要刪除此筆資料嗎？
+  --------------------------
+  👤 記帳者：${dataObj.displayName || '未登錄'}
+  📅 日期：${dataObj.date || '無'}
+  🏠 店家：${dataObj.store || '無'}
+  💰 金額：${dataObj.amount || 0} (${dataObj.currency || 'TWD'})
+  💳 付款：${dataObj.payment || '無'}
+  🏷️ 分類：${dataObj.type || '無'}
+  📝 備註：${dataObj.note || '無'}
+  --------------------------
+  此操作不可還原。`;
+
+  if (confirm(info)) {
+    const loading = document.getElementById("loading");
+    if (loading) loading.style.display = "block";
     
-    // 準備傳送到後端 GAS 的資料
     const body = {
       type: "delete",
-      id: id,
-      version: VERSION
+      id: id.toString().trim(),
+      version: typeof VERSION !== 'undefined' ? VERSION : '1.0.0'
     };
 
     try {
-      const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(body) });
+      const res = await fetch(API_URL, { 
+        method: "POST", 
+        body: JSON.stringify(body) 
+      });
+      
+      // GAS 回傳可能是文字或 JSON，這裡確保解析正確
       const result = await res.json();
       
-      if (result.success) {
+      if (result.success || result.ok) {
         alert("✅ 刪除成功！");
-        // 重新整理目前的查詢結果
-        sendQuery(currentCommandName);
+        if (typeof sendQuery === "function") {
+          sendQuery(currentCommandName);
+        } else {
+          location.reload();
+        }
       } else {
-        alert("❌ 刪除失敗：" + (result.message || "未知原因"));
+        // 這裡會抓到 GAS throw new Error 的內容
+        alert("❌ 刪除失敗：" + (result.message || result.error || "找不到該 ID"));
       }
     } catch (e) {
-      alert("📡 連線後端失敗，請檢查網路或 API 設定");
+      console.error("Delete Error:", e);
+      alert("📡 連線失敗：請確認 GAS 已部署為最新版本並開放權限為 Anyone。");
     } finally {
-      document.getElementById("loading").style.display = "none";
+      if (loading) loading.style.display = "none";
     }
   }
 }
@@ -655,5 +680,6 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
