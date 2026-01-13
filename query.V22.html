@@ -16,31 +16,20 @@
     .green-btn { background-color: #28a745; }
     .pdf-btn { background-color: #d9534f; }
     .excel-btn { background-color: #1d6f42; }
-
     .slogan { font-size: 36px; text-align: center; margin: 30px 0 10px 0; color: #333; font-weight: bold; }
     h5 { font-size: 32px; margin: 20px 0 10px 0; padding: 0; }
     table { font-size: 28px; border-collapse: collapse; width: 100%; margin-top: 15px; background: white; }
     th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
     th { background-color: #eee; cursor: pointer; white-space: nowrap; }
-    
     .total, tfoot { background-color: #eee !important; color: #000 !important; font-weight: bold; }
-    .total { 
-      font-size: 36px; margin: 20px 0; text-align: center; 
-      border: 1px solid #ddd; padding: 20px; border-radius: 12px; 
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
-    }
+    .total { font-size: 36px; margin: 20px 0; text-align: center; border: 1px solid #ddd; padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
     tfoot td { border: 1px solid #ddd !important; color: #000 !important; }
-
     .numeric { text-align: right; }
-    
     .chart-container { width: 95%; margin: 30px auto; background: white; border: 1px solid #eee; padding: 10px; }
     canvas { width: 100% !important; height: auto !important; display: block; }
-    
     #loading { font-size: 32px; text-align: center; font-weight: bold; margin: 20px; }
-    
     .drill-down-link { color: #0056b3; text-decoration: underline; cursor: pointer; font-weight: bold; }
     #drillDownArea { margin-top: 40px; padding-top: 20px; }
-
     @media print { button, .date-inputs, h3 { display: none !important; } }
   </style>
 </head>
@@ -69,20 +58,11 @@
 </div>
 
 <div id="loading" style="display:none;">⏳ 正在載入中,請稍侯...</div>
-
 <div id="queryResult"></div>
-
 <div id="drillDownArea"></div>
-
-<div class="chart-container">
-  <canvas id="chartCanvas"></canvas>
-</div>
-
+<div class="chart-container"><canvas id="chartCanvas"></canvas></div>
 <div id="sixMonthArea"></div>
-
-<div class="chart-container" id="trendContainer" style="display:none;">
-  <canvas id="categoryTrendCanvas"></canvas>
-</div>
+<div class="chart-container" id="trendContainer" style="display:none;"><canvas id="categoryTrendCanvas"></canvas></div>
 
 <div id="exportArea" style="text-align:center; margin-top:40px; display:none; padding-bottom: 100px;">
   <button id="exportCsvBtn" class="green-btn">📤 匯出 CSV</button>
@@ -97,7 +77,7 @@ let currentFullLabel = "";
 let currentCommandName = ""; 
 let globalStats = { total: 0, count: 0 };
 let orderMaps = { "付款": [], "分類": [], "幣別": [], "記帳者": [] };
-let lastFetchedRows = []; // 儲存最後一次抓取的原始資料供下鑽使用
+let lastFetchedRows = []; 
 
 const SETTINGS_URL = "https://script.google.com/macros/s/AKfycby2-1JvsriAfskOJXHyMB8HASeuMs7V-mJOQneD73Q_dJN56NhbWH0Dj8Ldu0LcfxMe/exec";
 
@@ -168,7 +148,7 @@ document.querySelectorAll("button[id^='queryMonth']").forEach(btn => {
 async function sendQuery(command) {
   document.getElementById("loading").style.display = "block";
   document.getElementById("queryResult").innerHTML = "";
-  document.getElementById("drillDownArea").innerHTML = ""; // 清空下鑽區域
+  document.getElementById("drillDownArea").innerHTML = ""; 
   document.getElementById("sixMonthArea").innerHTML = "";
   document.getElementById("trendContainer").style.display = "none";
   if(chartInstance) chartInstance.destroy();
@@ -186,17 +166,13 @@ async function sendQuery(command) {
 function renderResult(command, json) {
   let mainHtml = "";
   const adminUser = "Betty Yi";
-  
-  // 1. 權限過濾並快取 rows 供點擊使用
   let rows = (currentUser === adminUser) ? (json.rows || []) : (json.rows || []).filter(r => r[3] === currentUser);
   lastFetchedRows = rows; 
 
   const filterStart = new Date(document.getElementById("startDate").value + " 00:00:00");
   const filterEnd = new Date(document.getElementById("endDate").value + " 23:59:59");
-
   const allChartContainers = document.querySelectorAll(".chart-container");
   const mainChartContainer = allChartContainers[0]; 
-  const trendContainer = document.getElementById("trendContainer");
 
   if (command === "明細") {
     let displayRows = rows.filter(r => {
@@ -208,10 +184,14 @@ function renderResult(command, json) {
       if (mainChartContainer) mainChartContainer.style.display = "block";
       mainHtml += `<h5>${currentFullLabel}查詢;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th><th>ID</th><th>功能</th></tr></thead><tbody>`;
       
-      // 修正點 1: 傳入 (r, i) 確保索引可用
-      displayRows.forEach((r, i) => { 
-        // 修正點 2: 取得第 15 欄的 ID
+      displayRows.forEach((r) => { 
         const rowId = r[15] || '';
+        // 封裝資料物件
+        const dataInfo = {
+          user: r[3]||'', date: new Date(r[4]).toLocaleDateString(), store: r[8]||'',
+          amount: r[5]||0, pay: r[7]||'', type: r[6]||'', note: r[10]||'', curr: r[14]||''
+        };
+        const dataStr = JSON.stringify(dataInfo).replace(/"/g, '&quot;');
 
         mainHtml += `<tr>
           <td>${r[3]||''}</td>
@@ -229,12 +209,11 @@ function renderResult(command, json) {
           <td>${rowId}</td>
           <td>
             <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#f0f0f0; border:1px solid #ccc; border-radius:4px;" onclick="editRow('${rowId}')">📝</button>
-            <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#d9534f; color:white; border:none; border-radius:4px; margin-left:5px;" onclick="deleteRow('${rowId}')">🗑️</button>
+            <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#d9534f; color:white; border:none; border-radius:4px; margin-left:5px;" onclick="deleteRow('${rowId}', ${dataStr})">🗑️</button>
           </td>
         </tr>`; 
       });
       mainHtml += `</tbody></table>`;
-      
       globalStats.total = displayRows.reduce((s, r) => s + Number(r[5] || 0), 0);
       globalStats.count = displayRows.length;
       mainHtml += `<div class="total">📌 總金額：${globalStats.total.toLocaleString()} 元 📝 總筆數：${globalStats.count} 筆</div>`;
@@ -251,15 +230,10 @@ function renderResult(command, json) {
       if (mainChartContainer) mainChartContainer.style.display = "none";
       mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">🔘 所選區間 ${document.getElementById("startDate").value} 至 ${document.getElementById("endDate").value} 無明細資料</div>`;
     }
-    
   } else {
-    // 2. 統計模式
     const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
     const idx = keyMap[command];
-    
-    let counts = {};
-    let itemCounts = {};
-    let totalItems = 0;
+    let counts = {}; let itemCounts = {}; let totalItems = 0;
     
     rows.forEach(r => { 
       const d = new Date(r[4]);
@@ -277,19 +251,13 @@ function renderResult(command, json) {
 
     if (totalSum !== 0) {
       if (mainChartContainer) mainChartContainer.style.display = "block";
-
       mainHtml += `<h5>${currentFullLabel}分析統計;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>${command}</th><th class="numeric">金額</th><th class="numeric">佔比</th><th class="numeric">筆數(明細)</th></tr></thead><tbody>`;
-      
       labels.forEach((l) => { 
-        let val = counts[l];
-        let count = itemCounts[l];
-        // 筆數加上 onclick 事件呼叫 showDrillDown
+        let val = counts[l]; let count = itemCounts[l];
         mainHtml += `<tr><td>${l}</td><td class="numeric">${val.toLocaleString()}</td><td class="numeric">${((val/totalSum)*100).toFixed(1)}%</td><td class="numeric"><span class="drill-down-link" onclick="showDrillDown('${command}', '${l}')">${count.toLocaleString()}</span></td></tr>`; 
       });
       mainHtml += `</tbody></table>`;
-      
-      globalStats.total = totalSum;
-      globalStats.count = labels.length; 
+      globalStats.total = totalSum; globalStats.count = labels.length; 
       mainHtml += `<div class="total"> 🏷️ ${command}總項目：${globalStats.count} 項 📌 總金額：${globalStats.total.toLocaleString()} 元  📝 總筆數：${totalItems.toLocaleString()} 筆  </div>`;
       renderChart("pie", labels, values);
     } else {
@@ -297,34 +265,24 @@ function renderResult(command, json) {
       mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">🔘 所選區間 ${document.getElementById("startDate").value} 至 ${document.getElementById("endDate").value} 無統計數據</div>`;
     }
 
-    // 3. 📅 近 6 個月趨勢
     if (json.months_6m) {
-      const months = json.months_6m;
-      const dataMap = {};
+      const months = json.months_6m; const dataMap = {};
       rows.forEach(r => {
         let key = (r[idx] && String(r[idx]).trim() !== "") ? String(r[idx]).trim() : "未知";
-        const d = new Date(r[4]);
-        const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const d = new Date(r[4]); const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         if (months.includes(ym)) {
-          if (!dataMap[key]) {
-            dataMap[key] = {};
-            months.forEach(m => dataMap[key][m] = 0);
-          }
+          if (!dataMap[key]) { dataMap[key] = {}; months.forEach(m => dataMap[key][m] = 0); }
           dataMap[key][ym] += (Number(r[5]) || 0);
         }
       });
-      let monthlySums = new Array(months.length).fill(0);
-      let grandTotal = 0;
+      let monthlySums = new Array(months.length).fill(0); let grandTotal = 0;
       let sixHtml = `<h5>📅 依結束日期的近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
       months.forEach(m => sixHtml += `<th>${m}</th>`);
       sixHtml += `<th>總額</th></tr></thead><tbody>`;
       Object.keys(dataMap).forEach(item => {
-        let rSum = 0; 
-        sixHtml += `<tr><td>${item}</td>`;
+        let rSum = 0; sixHtml += `<tr><td>${item}</td>`;
         months.forEach((m, i) => { 
-          let val = dataMap[item][m] || 0; 
-          rSum += val; 
-          monthlySums[i] += val; 
+          let val = dataMap[item][m] || 0; rSum += val; monthlySums[i] += val; 
           sixHtml += `<td class="numeric">${val.toLocaleString()}</td>`; 
         });
         grandTotal += rSum; 
@@ -344,62 +302,52 @@ function renderResult(command, json) {
   document.getElementById("exportArea").style.display = "block";
 }
 
-// 新增函數：顯示下鑽明細資料流
 function showDrillDown(command, itemValue) {
   const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
   const idx = keyMap[command];
   const filterStart = new Date(document.getElementById("startDate").value + " 00:00:00");
   const filterEnd = new Date(document.getElementById("endDate").value + " 23:59:59");
-
   let filteredRows = lastFetchedRows.filter(r => {
     const d = new Date(r[4]);
     let v = (r[idx] && String(r[idx]).trim() !== "") ? String(r[idx]).trim() : "未知";
     return (d >= filterStart && d <= filterEnd) && (v === itemValue);
   });
-  
   let subTotal = filteredRows.reduce((sum, r) => sum + Number(r[5] || 0), 0);
   let subCount = filteredRows.length;
-
   let drillHtml = `<h5>📇 ${command}明細：<span style="color: blue; font-weight: bold;">${itemValue}</span> 📍 金額：${subTotal.toLocaleString()} 元 📝 筆數：${subCount.toLocaleString()} 筆</h5>`;
-  
   drillHtml += `<table id="drillTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th><th>ID</th><th>功能</th></tr></thead><tbody>`;
   
-  // 注意這裡：加入了 i 作為索引
-  filteredRows.forEach((r, i) => {
-    const isUser = (command === "記帳者");
-    const isStore = (command === "店家");
-    const isPay = (command === "付款");
-    const isType = (command === "分類");
-    const isCurr = (command === "幣別");
-    
-    // 取得 ID (第 15 欄)
+  filteredRows.forEach((r) => {
     const rowId = r[15] || '';
+    const dataInfo = {
+      user: r[3]||'', date: new Date(r[4]).toLocaleDateString(), store: r[8]||'',
+      amount: r[5]||0, pay: r[7]||'', type: r[6]||'', note: r[10]||'', curr: r[14]||''
+    };
+    const dataStr = JSON.stringify(dataInfo).replace(/"/g, '&quot;');
 
     drillHtml += `<tr>
-      <td style="${isUser ? 'color: blue; font-weight: bold;' : ''}">${r[3]||''}</td>
+      <td>${r[3]||''}</td>
       <td>${new Date(r[4]).toLocaleDateString()}</td>
-      <td style="${isStore ? 'color: blue; font-weight: bold;' : ''}">${r[8]||''}</td>
+      <td>${r[8]||''}</td>
       <td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
       <td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
       <td>${r[13]||1}</td>
       <td class="numeric">${(Number(r[5])||0).toLocaleString()}</td>
-      <td style="${isPay ? 'color: blue; font-weight: bold;' : ''}">${r[7]||''}</td>
-      <td style="${isType ? 'color: blue; font-weight: bold;' : ''}">${r[6]||''}</td>
+      <td>${r[7]||''}</td>
+      <td>${r[6]||''}</td>
       <td>${r[9]||''}</td>
       <td>${r[10]||''}</td>
-      <td style="${isCurr ? 'color: blue; font-weight: bold;' : ''}">${r[14]||''}</td>
+      <td>${r[14]||''}</td>
       <td>${rowId}</td>
       <td>
         <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#f0f0f0; border:1px solid #ccc; border-radius:4px;" onclick="editRow('${rowId}')">📝</button>
-        <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#d9534f; color:white; border:none; border-radius:4px; margin-left:5px;" onclick="deleteRow('${rowId}')">🗑️</button>
+        <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#d9534f; color:white; border:none; border-radius:4px; margin-left:5px;" onclick="deleteRow('${rowId}', ${dataStr})">🗑️</button>
       </td>
     </tr>`;
   });
-  
   drillHtml += `</tbody></table>`;
   const drillArea = document.getElementById("drillDownArea");
   drillArea.innerHTML = drillHtml;
-  
   makeTableSortable(document.getElementById("drillTable"), "明細");
   drillArea.scrollIntoView({ behavior: 'smooth' });
 }
@@ -416,10 +364,7 @@ function renderDetailChart(labels, sums, rates) {
       ]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      aspectRatio: 2,
-      animation: false,
+      responsive: true, maintainAspectRatio: true, aspectRatio: 2, animation: false,
       scales: {
         y: { type: 'linear', position: 'left', title: { display: true, text: '金額', font: {size:20} } },
         y1: { type: 'linear', position: 'right', title: { display: true, text: '匯率', font: {size:20}, color: "red" }, grid: { drawOnChartArea: false } }
@@ -429,72 +374,47 @@ function renderDetailChart(labels, sums, rates) {
   });
 }
 
-// 修改.刪除
-// 修改函數 (暫時以 Alert 代替，後續可開發 Modal 表單)
 function editRow(id) {
   if (!id) { alert("此筆資料無 ID，無法修改"); return; }
   alert("準備修改 ID 為 [" + id + "] 的資料");
-  // 這裡可以實作開啟一個小視窗填寫新內容
 }
 
-// 刪除函數
 async function deleteRow(id, dataObj = {}) {
   if (!id) { alert("此筆資料無 ID，無法刪除"); return; }
   
-  // 整理要顯示的資訊清單
-  // 假設 dataObj 內的 Key 根據你的表格欄位命名
-  const info = `
-  ⚠️ 確定要刪除此筆資料嗎？
-  --------------------------
-  👤 記帳者：${dataObj.displayName || '未登錄'}
-  📅 日期：${dataObj.date || '無'}
-  🏠 店家：${dataObj.store || '無'}
-  💰 金額：${dataObj.amount || 0} (${dataObj.currency || 'TWD'})
-  💳 付款：${dataObj.payment || '無'}
-  🏷️ 分類：${dataObj.type || '無'}
-  📝 備註：${dataObj.note || '無'}
-  --------------------------
-  此操作不可還原。`;
+  // 顯示詳細資訊確認
+  const confirmMsg = `⚠️ 確定要刪除此筆資料嗎？\n` +
+    `--------------------------\n` +
+    `👤 記帳者：${dataObj.user || '未知'}\n` +
+    `📅 日期：${dataObj.date || '無'}\n` +
+    `🏠 店家：${dataObj.store || '無'}\n` +
+    `💰 金額：${Number(dataObj.amount).toLocaleString()} (${dataObj.curr || '幣別'})\n` +
+    `💳 付款：${dataObj.pay || '無'}\n` +
+    `🏷️ 分類：${dataObj.type || '無'}\n` +
+    `📝 備註：${dataObj.note || '無'}\n` +
+    `--------------------------\n` +
+    `此操作不可還原。`;
 
-  if (confirm(info)) {
-    const loading = document.getElementById("loading");
-    if (loading) loading.style.display = "block";
-    
-    const body = {
-      type: "delete",
-      id: id.toString().trim(),
-      version: typeof VERSION !== 'undefined' ? VERSION : '1.0.0'
-    };
-
+  if (confirm(confirmMsg)) {
+    document.getElementById("loading").style.display = "block";
+    const body = { type: "delete", id: id, version: VERSION };
     try {
-      const res = await fetch(API_URL, { 
-        method: "POST", 
-        body: JSON.stringify(body) 
-      });
-      
-      // GAS 回傳可能是文字或 JSON，這裡確保解析正確
+      const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(body) });
       const result = await res.json();
-      
       if (result.success || result.ok) {
         alert("✅ 刪除成功！");
-        if (typeof sendQuery === "function") {
-          sendQuery(currentCommandName);
-        } else {
-          location.reload();
-        }
+        sendQuery(currentCommandName);
       } else {
-        // 這裡會抓到 GAS throw new Error 的內容
-        alert("❌ 刪除失敗：" + (result.message || result.error || "找不到該 ID"));
+        alert("❌ 刪除失敗：" + (result.message || "未知原因"));
       }
     } catch (e) {
-      console.error("Delete Error:", e);
-      alert("📡 連線失敗：請確認 GAS 已部署為最新版本並開放權限為 Anyone。");
+      alert("📡 連線後端失敗，請檢查網路或 API 設定");
     } finally {
-      if (loading) loading.style.display = "none";
+      document.getElementById("loading").style.display = "none";
     }
   }
 }
-  
+
 function renderChart(type, labels, values) {
   const ctx = document.getElementById("chartCanvas").getContext("2d");
   chartInstance = new Chart(ctx, {
@@ -507,10 +427,7 @@ function renderChart(type, labels, values) {
       }]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      aspectRatio: 1.5,
-      animation: false,
+      responsive: true, maintainAspectRatio: true, aspectRatio: 1.5, animation: false,
       plugins: {
         legend: { labels: { font: { size: 28, weight: 'bold' }, color: '#333' } },
         tooltip: { bodyFont: { size: 24 }, titleFont: { size: 26, weight: 'bold' } }
@@ -524,37 +441,17 @@ function renderCategoryTrend(months, map) {
   const datasets = Object.keys(map).map((k, i) => {
     const color = `hsl(${i * 360 / Object.keys(map).length}, 70%, 50%)`;
     return {
-      label: k,
-      data: months.map(m => map[k][m] || 0),
-      borderColor: color,
-      backgroundColor: color,
-      fill: false,
-      tension: 0.1,
-      pointRadius: 6,
-      pointStyle: 'circle'
+      label: k, data: months.map(m => map[k][m] || 0), borderColor: color,
+      backgroundColor: color, fill: false, tension: 0.1, pointRadius: 6, pointStyle: 'circle'
     };
   });
   trendChartInstance = new Chart(ctx, {
-    type: "line",
-    data: { labels: months, datasets },
+    type: "line", data: { labels: months, datasets },
     options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      aspectRatio: 1.8,
-      animation: false,
+      responsive: true, maintainAspectRatio: true, aspectRatio: 1.8, animation: false,
       plugins: {
-        legend: { 
-          labels: { 
-            font: { size: 24, weight: 'bold' },
-            usePointStyle: true,
-            boxWidth: 20
-          } 
-        },
-        tooltip: { 
-          bodyFont: { size: 22 },
-          intersect: false,
-          mode: 'index'
-        }
+        legend: { labels: { font: { size: 24, weight: 'bold' }, usePointStyle: true, boxWidth: 20 } },
+        tooltip: { bodyFont: { size: 22 }, intersect: false, mode: 'index' }
       },
       scales: {
         x: { ticks: { font: { size: 20, weight: 'bold' } } },
@@ -594,67 +491,34 @@ function makeTableSortable(table, currentCommand) {
 }
 
 function getExportFilename(type) {
-  const now = new Date();
-  const Y = now.getFullYear();
-  const M = String(now.getMonth() + 1).padStart(2, '0');
-  const D = String(now.getDate()).padStart(2, '0');
-  const h = String(now.getHours()).padStart(2, '0');
-  const m = String(now.getMinutes()).padStart(2, '0');
-  const s = String(now.getSeconds()).padStart(2, '0');
-  const ts = `${Y}-${M}-${D}-${h}-${m}-${s}`;
-  return `非匯不可${type}_${currentCommandName}統計_${ts}`;
+  const now = new Date(); const ts = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}-${now.getHours()}-${now.getMinutes()}`;
+  return `非匯不可${type}_${currentCommandName}_${ts}`;
 }
 
 function getExportHeader() {
-  const start = document.getElementById("startDate").value;
-  const end = document.getElementById("endDate").value;
-  return [["🔍 非匯不可統計報表"], [`匯出時間：${new Date().toLocaleString()}`], [`日期區間：${start} ~ ${end}`], [`統計報表：選擇${currentCommandName}統計`], []];
+  return [["🔍 非匯不可統計報表"], [`匯出時間：${new Date().toLocaleString()}`], [`日期區間：${document.getElementById("startDate").value} ~ ${document.getElementById("endDate").value}`], []];
 }
 
 function getTableData(tableId, isMain = false) {
-  const table = document.getElementById(tableId);
-  if (!table) return null;
-  const data = [];
-  const tbody = table.querySelector("tbody");
-  const headers = [];
+  const table = document.getElementById(tableId); if (!table) return null;
+  const data = []; const headers = [];
   for (let cell of table.querySelector("thead").rows[0].cells) headers.push(cell.innerText.replace(/[▲▼]/g, '').trim());
   data.push(headers);
-  Array.from(tbody.rows).forEach(row => {
-    const rowData = [];
-    for (let cell of row.cells) rowData.push(cell.innerText);
-    data.push(rowData);
+  Array.from(table.querySelector("tbody").rows).forEach(row => {
+    const rowData = []; for (let cell of row.cells) rowData.push(cell.innerText); data.push(rowData);
   });
-  if (isMain) {
-    data.push([`當期${currentCommandName}統計總額`, globalStats.total.toLocaleString()]);
-    data.push([`當期${currentCommandName}統計筆數`, globalStats.count]);
-  }
-  const tfoot = table.querySelector("tfoot");
-  if (tfoot) { for (let row of tfoot.rows) { const rowData = []; for (let cell of row.cells) rowData.push(cell.innerText); data.push(rowData); } }
+  if (isMain) { data.push([`總額`, globalStats.total.toLocaleString()], [`筆數`, globalStats.count]); }
   return data;
 }
 
 document.getElementById("exportExcelBtn").onclick = () => {
-  const header = getExportHeader();
-  const mainData = getTableData("mainTable", true);
-  const sixMonthData = getTableData("table6m");
-  let allRows = [...header];
-  if (mainData) { allRows.push([`[ 當期${currentCommandName}統計 ]`]); allRows = allRows.concat(mainData); }
-  if (sixMonthData) { allRows.push([], [`[ 最近 6 個月${currentCommandName}趨勢統計 ]`]); allRows = allRows.concat(sixMonthData); }
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet(allRows);
-  XLSX.utils.book_append_sheet(wb, ws, `${currentCommandName}統計`); 
-  XLSX.writeFile(wb, `${getExportFilename('EXCEL')}.xlsx`);
+  const allRows = [...getExportHeader(), ...getTableData("mainTable", true)];
+  const wb = XLSX.utils.book_new(); const ws = XLSX.utils.aoa_to_sheet(allRows);
+  XLSX.utils.book_append_sheet(wb, ws, `統計`); XLSX.writeFile(wb, `${getExportFilename('EXCEL')}.xlsx`);
 };
 
 document.getElementById("exportCsvBtn").onclick = () => {
-  let content = "\ufeff";
-  const header = getExportHeader();
-  const mainData = getTableData("mainTable", true);
-  const sixMonthData = getTableData("table6m");
-  let allRows = [...header];
-  if (mainData) { allRows.push([`[ 當前${currentCommandName}統計 ]`]); allRows = allRows.concat(mainData); }
-  if (sixMonthData) { allRows.push([], [`[ 最近 6 個月${currentCommandName}趨勢統計 ]`]); allRows = allRows.concat(sixMonthData); }
-  content += allRows.map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+  let content = "\ufeff" + [...getExportHeader(), ...getTableData("mainTable", true)].map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
   const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
   const link = document.createElement("a"); link.href = URL.createObjectURL(blob);
   link.download = `${getExportFilename('CSV')}.csv`; link.click();
@@ -662,24 +526,9 @@ document.getElementById("exportCsvBtn").onclick = () => {
 
 document.getElementById("exportPdfBtn").onclick = async () => {
   const originalTitle = document.title;
-  const now = new Date();
-  const Y = now.getFullYear();
-  const M = String(now.getMonth() + 1).padStart(2, '0');
-  const D = String(now.getDate()).padStart(2, '0');
-  const h = String(now.getHours()).padStart(2, '0');
-  const m = String(now.getMinutes()).padStart(2, '0');
-  const s = String(now.getSeconds()).padStart(2, '0');
-  const ts = `${Y}-${M}-${D}-${h}-${m}-${s}`;
-  const newTitle = `非匯不可PDF_${currentCommandName}統計_${ts}`;
-  document.title = newTitle;
-  setTimeout(() => {
-    window.print();
-    setTimeout(() => { document.title = originalTitle; }, 2000);
-  }, 250);
+  document.title = getExportFilename('PDF');
+  setTimeout(() => { window.print(); setTimeout(() => { document.title = originalTitle; }, 2000); }, 250);
 };
 </script>
 </body>
 </html>
-
-
-
