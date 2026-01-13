@@ -508,10 +508,20 @@ function renderDetailChart(labels, sums, rates) {
 
 async function deleteRow(id, dataObj = {}) {
   if (!id) { alert("此筆資料無 ID，無法刪除"); return; }
-  const confirmMsg = `⚠️ 此操作不可還原。確定要刪除${dataObj.id || ''}此筆資料嗎？\n` +
+
+  // 1. 處理日期格式 (移除 T16:00:00.000Z)
+  let formattedDate = "";
+  if (dataObj.date) {
+    const d = new Date(dataObj.date);
+    // 格式化為 YYYY/MM/DD
+    formattedDate = `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  // 2. 組合訊息 (修正帶入 ID 的邏輯並移除多餘符號)
+  const confirmMsg = `⚠️ 此操作不可還原。確定要刪除ID:${id}此筆資料嗎？\n` +
     `--------------------------\n` +
     `👤 記帳者：${dataObj.user || ''}\n` +
-    `📅 日期：${dataObj.date || ''}\n` +
+    `📅 日期：${formattedDate}\n` +
     `🏠 店家：${dataObj.store || ''}\n` +
     `💰 金額：${Number(dataObj.amount).toLocaleString()} (${dataObj.curr || '幣別'})\n` +
     `💳 付款：${dataObj.pay || ''}\n` +
@@ -656,5 +666,6 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
