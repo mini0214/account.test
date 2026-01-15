@@ -50,7 +50,7 @@
 
 <div id="editModal" class="modal">
   <div class="modal-content">
-    <h3>📝 修改資料 (ID: <span id="displayEditId"></span>)</h3>
+    <h3>📝 修改 ID: <span id="displayEditId"></span> 資料</h3>
     <input type="hidden" id="editId">
     
     <div class="form-group">
@@ -497,8 +497,8 @@ function showDrillDown(command, itemValue) {
       <td>${r[14]||''}</td>
       <td>${rowId}</td>
       <td>
-        <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#f0f0f0; border:1px solid #ccc; border-radius:4px;" onclick='editRow("${rowId}")'>📝</button>
-        <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#d9534f; color:white; border:none; border-radius:4px; margin-left:5px;" onclick='deleteRow("${rowId}", ${dataStr})'>🗑️</button>
+        <button class="edit-btn" onclick="editOther(${idx})">📝 修改</button>
+        <button class="action-btn" onclick="deleteOther(${idx})">🗑️ 刪除</button>
       </td>
     </tr>`;
   });
@@ -687,3 +687,4 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
