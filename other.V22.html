@@ -279,7 +279,7 @@ async function deleteOther(idx) {
   }
 
   // 2️⃣ 現在 row 已經存在，可以正確帶入 ${row.name}
-  if (!confirm(`❗確定要刪除$ {row.name} 這筆資料嗎？`)) return;
+  if (!confirm(`❗確定要刪除 ${row.name} 這筆資料嗎？`)) return;
   
   // 3️⃣ 後續邏輯：執行綁定檢查與刪除
   try {
@@ -346,3 +346,4 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
