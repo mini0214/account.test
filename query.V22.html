@@ -282,8 +282,8 @@ function renderResult(command, json) {
           <td>${r[14]||''}</td>
           <td>${rowId}</td>
           <td>
-            <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#f0f0f0; border:1px solid #ccc; border-radius:4px;" onclick='editRow("${rowId}")'>📝</button>
-            <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#d9534f; color:white; border:none; border-radius:4px; margin-left:5px;" onclick='deleteRow("${rowId}", ${dataStr})'>🗑️</button>
+            <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#28a745; border:1px solid #ccc; border-radius:4px;" onclick='editRow("${rowId}")'>📝 修改</button>
+            <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#d9534f; color:white; border:none; border-radius:4px; margin-left:5px;" onclick='deleteRow("${rowId}", ${dataStr})'>🗑️ 刪除</button>
           </td>
         </tr>`; 
       });
@@ -497,7 +497,7 @@ function showDrillDown(command, itemValue) {
       <td>${r[14]||''}</td>
       <td>${rowId}</td>
       <td>
-        <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#f0f0f0; border:1px solid #ccc; border-radius:4px;" onclick='editRow("${rowId}")'>📝 修改</button>
+        <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#28a745; border:1px solid #ccc; border-radius:4px;" onclick='editRow("${rowId}")'>📝 修改</button>
         <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#d9534f; color:white; border:none; border-radius:4px; margin-left:5px;" onclick='deleteRow("${rowId}", ${dataStr})'>🗑️ 刪除</button>
       </td>
     </tr>`;
@@ -687,5 +687,6 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
