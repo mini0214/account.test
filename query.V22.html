@@ -42,6 +42,36 @@
     .modal-footer { text-align: right; margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; }
     .save-btn { background-color: #28a745; margin-left: 20px; }
     .cancel-btn { background-color: #dc3545; }
+
+    /* 修改按鈕原始綠色 */
+    .btn-edit-row {
+      font-size: 24px;
+      padding: 5px 10px;
+      cursor: pointer;
+      background-color: #28a745;
+      color: white;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      transition: background-color 0.3s; /* 讓顏色變換變平滑 */
+    }
+    
+    /* 刪除按鈕原始紅色 */
+    .btn-delete-row {
+      font-size: 24px;
+      padding: 5px 10px;
+      cursor: pointer;
+      background-color: #d9534f;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      margin-left: 5px;
+      transition: background-color 0.3s;
+    }
+    
+    /* 共通：滑鼠移上去都變成藍色 */
+    .btn-edit-row:hover, .btn-delete-row:hover {
+      background-color: #007bff !important; /* 強制變藍色 */
+    }
   </style>
 </head>
 <body>
@@ -282,8 +312,13 @@ function renderResult(command, json) {
           <td>${r[14]||''}</td>
           <td>${rowId}</td>
           <td>
-            <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#28a745; border:1px solid #ccc; border-radius:4px;" onclick='editRow("${rowId}")'>📝 修改</button>
-            <button style="font-size:24px; padding:5px 10px; cursor:pointer; background-color:#d9534f; color:white; border:none; border-radius:4px; margin-left:5px;" onclick='deleteRow("${rowId}", ${dataStr})'>🗑️ 刪除</button>
+              // 修改後的 HTML 生成代碼
+              html += `
+                <td>
+                  <button class="btn-edit" onclick='editRow("${rowId}")'>📝 修改</button>
+                  <button class="btn-delete" onclick='deleteRow("${rowId}", ${dataStr})'>🗑️ 刪除</button>
+                </td>
+              `;
           </td>
         </tr>`; 
       });
@@ -687,6 +722,7 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
 
