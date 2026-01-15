@@ -271,11 +271,17 @@ function editOther(idx) {
 // 4️⃣ 刪除（加上currency/type/payment綁定檢查）
 // ----------------------------------------------------
 async function deleteOther(idx) {
-  if (!confirm("❗確定要刪除這筆資料嗎？")) return;
-  
+  // 1️⃣ 先定義 row（從快取取得資料）
   const row = window.otherDataCache[idx];
-  if (!row) return;
+  if (!row) {
+    alert("❌ 找不到該筆資料的快取");
+    return;
+  }
 
+  // 2️⃣ 現在 row 已經存在，可以正確帶入 ${row.name}
+  if (!confirm(`❗確定要刪除$ {row.name} 這筆資料嗎？`)) return;
+  
+  // 3️⃣ 後續邏輯：執行綁定檢查與刪除
   try {
     // 🔹 同時查詢「匯率(currency)」.「分類(type)」.「付款(payment)」清單
     const [exchangeRes, typeRes, paymentRes] = await Promise.all([
@@ -340,10 +346,3 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
