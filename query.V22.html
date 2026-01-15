@@ -437,18 +437,18 @@ async function confirmUpdate() {
     updatedRow: updatedRow // 這裡的名稱必須與 GAS 內的 data.updatedRow 對應
   };
 
-  if (!confirm('確定要儲存 ID: ${id}) 的修改嗎？')) return;
+  if (!confirm('確定要儲存 ID: ${id} 的修改嗎？')) return;
 
   document.getElementById("loading").style.display = "block";
   try {
     const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(body) });
     const result = await res.json();
     if (result.success || result.ok) {
-      alert('✅ ID: ${id}) 修改成功！');
+      alert('✅ ID: ${id} 修改成功！');
       closeEditModal();
       sendQuery(currentCommandName || "明細"); 
     } else {
-      alert("❌ 修改失敗：" + (result.message || "原因不明"));
+      alert('❌ ID: ${id} 修改失敗：' + (result.message || "原因不明"));
     }
   } catch (e) {
     alert("📡 連線後端失敗：" + e.message);
@@ -687,6 +687,7 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
 
