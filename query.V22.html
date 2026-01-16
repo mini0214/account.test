@@ -508,6 +508,7 @@ function showDrillDown(command, itemValue) {
   drillHtml += `<table id="drillTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th><th>ID</th><th>功能</th></tr></thead><tbody>`;
   
   filteredRows.forEach((r) => {
+    // 1. 取得 ID 與封裝資料 (供修改/刪除使用)
     const rowId = r[15] || '';
     const dataInfo = {
       user: r[3]||'', date: r[4], store: r[8]||'',
@@ -515,23 +516,31 @@ function showDrillDown(command, itemValue) {
     };
     const dataStr = JSON.stringify(dataInfo).replace(/"/g, '&quot;');
 
+    // 2. 判斷目前查詢的是哪一個欄位，決定誰要變藍色加粗
+    const isUser = (command === "記帳者");
+    const isStore = (command === "店家");
+    const isPay = (command === "付款");
+    const isType = (command === "分類");
+    const isCurr = (command === "幣別");
+
+    // 3. 組合 HTML
     drillHtml += `<tr>
-      <td>${r[3]||''}</td>
+      <td style="${isUser ? 'color: blue; font-weight: bold;' : ''}">${r[3]||''}</td>
       <td>${new Date(r[4]).toLocaleDateString()}</td>
-      <td>${r[8]||''}</td>
+      <td style="${isStore ? 'color: blue; font-weight: bold;' : ''}">${r[8]||''}</td>
       <td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
       <td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
       <td>${r[13]||1}</td>
       <td class="numeric">${(Number(r[5])||0).toLocaleString()}</td>
-      <td>${r[7]||''}</td>
-      <td>${r[6]||''}</td>
+      <td style="${isPay ? 'color: blue; font-weight: bold;' : ''}">${r[7]||''}</td>
+      <td style="${isType ? 'color: blue; font-weight: bold;' : ''}">${r[6]||''}</td>
       <td>${r[9]||''}</td>
       <td>${r[10]||''}</td>
-      <td>${r[14]||''}</td>
+      <td style="${isCurr ? 'color: blue; font-weight: bold;' : ''}">${r[14]||''}</td>
       <td>${rowId}</td>
       <td>
-            <button class="btn-edit" onclick='editRow("${rowId}")'>📝 修改</button>
-            <button class="btn-delete" onclick='deleteRow("${rowId}", ${dataStr})'>🗑️ 刪除</button>
+        <button class="btn-edit" onclick='editRow("${rowId}")'>📝 修改</button>
+        <button class="btn-delete" onclick='deleteRow("${rowId}", ${dataStr})'>🗑️ 刪除</button>
       </td>
     </tr>`;
   });
@@ -720,18 +729,3 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
