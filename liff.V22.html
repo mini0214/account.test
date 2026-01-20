@@ -163,33 +163,71 @@
       }
     }
 
-    // 4. 資料載入邏輯
+// 4. 資料載入邏輯 (含小數點自動篩選幣別功能)
     async function loadListData() {
-      const res = await fetch(`${API_URL}?type=query&command=清單`);
-      const data = await res.json();
-      if (data.ok) {
-        window.otherList = data.list;
-        const renderSelect = (id, items) => {
-          const el = document.getElementById(id);
-          el.innerHTML = `<option value="">請選擇${id}</option>`;
-          items.forEach(i => {
-            const opt = document.createElement("option");
-            opt.value = i.exchange || i.name;
-            opt.textContent = i.exchange ? `${i.name}:${i.exchange}` : i.name;
-            if(i.name) opt.dataset.name = i.name;
-            el.appendChild(opt);
-          });
-        };
-        renderSelect("currency", data.list.currency);
-        renderSelect("type", data.list.type);
-        renderSelect("payment", data.list.payment);
-      }
-    }
+      try {
+        const res = await fetch(`${API_URL}?type=query&command=清單`);
+        const data = await res.json();
+        if (data.ok && data.list) {
+          window.otherList = data.list;
+          const currencySelect = document.getElementById("currency");
+          const typeSelect = document.getElementById("type");
+          const paymentSelect = document.getElementById("payment");
+          const incomeInput = document.getElementById("income");
+          const payoutInput = document.getElementById("payout");
 
-    async function loadStoreList() {
-      const res = await fetch(`${API_URL}?type=query&command=店家`);
-      const data = await res.json();
-      if (data.ok) storeList = data.storeList;
+          // 為每個幣別加上是否允許小數的標記
+          window.otherList.currency.forEach(c => {
+            c.allowDecimal = c.exchange.toString().includes('.');
+          });
+
+          // ✅ 渲染幣別選項的函式
+          function renderCurrencyOptions(hasDecimal = false) {
+            const currentVal = currencySelect.value;
+            currencySelect.innerHTML = '<option value="">請選擇幣別</option>';
+            
+            window.otherList.currency.forEach(c => {
+              // 💡 關鍵邏輯：如果有小數點，只顯示匯率也有小數點的幣別
+              if (hasDecimal && !c.allowDecimal) return; 
+
+              const opt = document.createElement("option");
+              opt.value = c.exchange;
+              opt.textContent = `${c.name}:${c.exchange}`;
+              opt.dataset.name = c.name;
+              currencySelect.appendChild(opt);
+            });
+            // 盡量保留原本選取的項
+            if (currentVal) currencySelect.value = currentVal;
+          }
+
+          // ✅ 監聽金額輸入，決定是否篩選幣別
+          const handleAmountInput = (e) => {
+            const hasDecimal = e.target.value.includes(".");
+            renderCurrencyOptions(hasDecimal);
+          };
+
+          incomeInput.addEventListener("input", handleAmountInput);
+          payoutInput.addEventListener("input", handleAmountInput);
+
+          // 初始渲染
+          renderCurrencyOptions(false);
+
+          // 渲染 分類 與 付款
+          const fillSelect = (el, items) => {
+            el.innerHTML = `<option value="">請選擇${el.id === 'type' ? '分類' : '付款'}</option>`;
+            items.forEach(i => {
+              const opt = document.createElement("option");
+              opt.value = i.name;
+              opt.textContent = i.name;
+              el.appendChild(opt);
+            });
+          };
+          fillSelect(typeSelect, data.list.type);
+          fillSelect(paymentSelect, data.list.payment);
+        }
+      } catch (err) {
+        console.error("載入清單失敗", err);
+      }
     }
 
     // 5. 店家提示邏輯 (保持原有)
@@ -226,6 +264,16 @@
         const payoutVal = document.getElementById("payout").value || 0;
         const exchangeRate = Number(currencySelect.value);
 
+        // ✅ 手動格式化日期，固定為 YYYY-MM-DD HH:mm:ss
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        const ss = String(now.getSeconds()).padStart(2, '0');
+        const formattedTime = `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
+
         const payload = {
           version: VERSION,
           userId: profile.userId,
@@ -241,7 +289,7 @@
           note: document.getElementById("note").value,
           memo: document.getElementById("memo").value,
           exchange: currencySelect.selectedOptions[0]?.dataset.name || "",
-          createdAt: new Date().toLocaleString()
+          createdAt: formattedTime // ✅ 使用固定格式
         };
 
         const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
@@ -263,3 +311,4 @@
   </script>
 </body>
 </html>
+
