@@ -149,58 +149,85 @@
     let LIFF_IDa = "";   // ✅ 從設定檔 D11
 
     // ----------------------------------------------------
-    // ✅ 設定,設定載入
+    // ✅ 優化後的設定讀取：支援本地快取 (LocalStorage)
     // ----------------------------------------------------
-    async function tryFetchText(url){
-      const r = await fetch(url, { cache: 'no-store' });
-      const text = await r.text();
-      try { const j = JSON.parse(text); return { ok: true, json: j }; }
-      catch(e){ return { ok: false, text }; }
+    async function loadSettings() {
+      // 1. 先嘗試從本地快取讀取
+      const cached = localStorage.getItem("expense_main_settings");
+      if (cached) {
+        const data = JSON.parse(cached);
+        applySettings(data); // 立即套用
+        updateSettingsInBackground(); // 背景默默更新，確保下次是最新的
+        return data;
+      }
+    
+      // 2. 若無快取，才進行正式讀取 (第一次使用時)
+      return await updateSettingsInBackground();
     }
     
-    async function loadSettings(){
-      // 🔹 直接用 fallback 設定 GAS 查詢
-      const res = await tryFetchText(FALLBACK_GAS_SETTINGS_URL + "?type=query&command=設定");
-      if (!res.ok) throw new Error("設定 GAS 讀取失敗：" + res.text);
-    
-      const data = res.json;
-      if (!data.ok || !data.data) throw new Error("設定格式錯誤");
-    
-      return data.data;  // 只回傳 data
-    }
-    
-    // ----------------------------------------------------
-    // ✅ 設定,初始化
-    // ----------------------------------------------------
-    async function initApp(){
+    async function updateSettingsInBackground() {
       try {
-        const settings = await loadSettings();
-        if (!settings) throw new Error("設定格式錯誤");
-        
-         // 🔹 從設定帶入
-        FALLBACK_GAS_SETTINGS_URL = (settings.SETTINGS_URL || FALLBACK_GAS_SETTINGS_URL).trim();// 自動轉換成設定檔內的固定 D5
-        API_URL = (settings.API_URL || "").trim();
-        VERSION = (settings.D10 || "V").trim();
-        LIFF_IDa = (settings.D11 || "").trim();
+        const res = await tryFetchText(FALLBACK_GAS_SETTINGS_URL + "?type=query&command=設定");
+        if (res.ok && res.json.data) {
+          const data = res.json.data;
+          localStorage.setItem("expense_main_settings", JSON.stringify(data));
+          applySettings(data);
+          return data;
+        }
+      } catch (e) {
+        console.error("背景更新設定失敗", e);
+      }
+    }
     
-        document.getElementById("version").textContent = VERSION;
-        console.log("✅ 設定成功:", { FALLBACK_GAS_SETTINGS_URL, API_URL, LIFF_IDa, VERSION });
+    // 抽取出來的套用邏輯
+    function applySettings(settings) {
+      FALLBACK_GAS_SETTINGS_URL = (settings.SETTINGS_URL || FALLBACK_GAS_SETTINGS_URL).trim();
+      API_URL = (settings.API_URL || "").trim();
+      VERSION = (settings.D10 || "V").trim();
+      LIFF_IDa = (settings.D11 || "").trim(); // 注意這裡是 D11
+      
+      const vElem = document.getElementById("version");
+      if (vElem) vElem.textContent = VERSION;
+    }
     
-        if (!LIFF_IDa) throw new Error("❌ LIFF ID 尚未設定，請確認設定表 D11");
-    
-        await liff.init({ liffId: LIFF_IDa });
-        if (!liff.isLoggedIn()) liff.login();
-    
+    // ----------------------------------------------------
+    // ✅ 優化後的初始化：並行處理 (Promise.all)
+    // ----------------------------------------------------
+    async function initApp() {
+      try {
+        // 預設今天日期 (這個不需要等，先做)
         document.getElementById("date").valueAsDate = new Date();
     
+        // 💡 同時啟動所有「需要等」的任務
+        await Promise.all([
+          loadSettings(),
+          // 這裡建議直接填入您的 LIFF ID 字串，載入速度會最快
+          new Promise(async (resolve) => {
+            const checkID = setInterval(async () => {
+              if (LIFF_IDa) {
+                clearInterval(checkID);
+                await liff.init({ liffId: LIFF_IDa });
+                if (!liff.isLoggedIn()) liff.login();
+                resolve();
+              }
+            }, 50); // 每 0.05 秒檢查一次 settings 拿到了沒
+          })
+        ]);
+    
+        // 💡 幣別、店家等清單也可以「同時載入」，不需要一個等一個
         if (API_URL) {
-          await loadListData();   // 先載入幣別 / 付款 / 分類清單
-          await loadStoreList();  // 再載入店家清單
+          console.log("🚀 並行載入清單資料...");
+          await Promise.all([
+            loadListData(),  // 載入 幣別 / 付款 / 分類
+            loadStoreList()  // 載入 店家
+          ]);
         }
     
+        console.log("✅ 初始化完全完成");
+    
       } catch (err) {
-        console.error("初始化設定失敗：", err);
-        alert("初始化設定失敗：" + err.message);
+        console.error("初始化失敗：", err);
+        alert("初始化失敗：" + err.message);
       }
     }
 
@@ -571,5 +598,6 @@
   </script>
 </body>
 </html>
+
 
 
