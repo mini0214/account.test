@@ -118,7 +118,7 @@ async function initApp(){
     // 這樣兩個任務會同時進行，總時間取決於最慢的那一個，而不是相加
     await Promise.all([
       loadSettings(),
-      liff.init({ liffId: "您的實際LIFF_ID寫死在這裡最快" }).then(() => {
+      liff.init({ liffId: "2008096451-Olb1l39P" }).then(() => {
         if (!liff.isLoggedIn()) liff.login();
       })
     ]);
@@ -368,6 +368,7 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
 
 
