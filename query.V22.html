@@ -160,37 +160,68 @@
 </div>
 
 <script>
-let API_URL = ""; let VERSION = "V"; let LIFF_IDq = ""; let currentUser = null; 
-let chartInstance = null; let trendChartInstance = null;
+const LIFF_IDo = "2008096451-jPJ50MOY";
+const API_URL = "https://script.google.com/macros/s/AKfycbwxqIKuk4VqHeib3Mi_xxE6yS5R8V55wyiQVIS6VgF6PEnNa93lVSoBBiX4OYksDuaiUw/exec";
+const VERSION = "V29_#260126"; 
+
+let currentUser = null; 
+let chartInstance = null; 
+let trendChartInstance = null;
 let currentFullLabel = ""; 
 let currentCommandName = ""; 
 let globalStats = { total: 0, count: 0 };
 let orderMaps = { "付款": [], "分類": [], "幣別": [], "記帳者": [] };
 let lastFetchedRows = []; 
 
-const SETTINGS_URL = "https://script.google.com/macros/s/AKfycbw7BAhbPaHUND75cG4KTxAB5SAScYxVvC8gYuPiU1LXrVUL44kSKVGnrGotWJg_NwTe9Q/exec";
-
-async function initApp(){
+// ----------------------------------------------------
+// ✅ 優化後的初始化 (全速並行版)
+// ----------------------------------------------------
+async function initApp() {
   try {
-    const res = await fetch(SETTINGS_URL + "?type=query&command=設定");
-    const json = await res.json();
-    API_URL = json.data.API_URL.trim();
-    VERSION = json.data.D10.trim();
-    LIFF_IDq = json.data.D12.trim();
-    document.getElementById("version").textContent = VERSION;
-    await fetchOrderLists();
-    await liff.init({ liffId: LIFF_IDq });
-    if (!liff.isLoggedIn()) liff.login();
-    const profile = await liff.getProfile();
-    currentUser = profile.displayName;
-    setDefaultDateRange();
-  } catch (e) { console.error(e); }
-}
-initApp();
+    // 立即顯示版號，不用等
+    const versionEl = document.getElementById("version");
+    if (versionEl) versionEl.textContent = VERSION;
 
+    console.log("🚀 啟動全速並行載入...");
+
+    // 🔥 核心優化：LIFF 初始化與清單獲取「同時開始」
+    // 不再需要等待 SETTINGS_URL，直接使用 API_URL
+    await Promise.all([
+      liff.init({ liffId: LIFF_IDq }).then(async () => {
+        if (!liff.isLoggedIn()) {
+          liff.login();
+        } else {
+          const profile = await liff.getProfile();
+          currentUser = profile.displayName;
+          console.log("✅ LIFF 登入成功:", currentUser);
+        }
+      }),
+      fetchOrderLists() // 同時去抓「付款、分類、幣別」清單
+    ]);
+
+    // 設定預設日期範圍 (這是本地運算，放最後)
+    if (typeof setDefaultDateRange === "function") {
+      setDefaultDateRange();
+    }
+    
+    console.log("✨ 系統初始化完成");
+
+  } catch (e) {
+    console.error("❌ 初始化失敗:", e);
+    // 如果是 ID 錯誤或授權過期，嘗試強制重新整理
+    if (e.message.includes("authorization") || e.message.includes("code")) {
+       liff.logout();
+       location.reload();
+    }
+  }
+}
+
+// ----------------------------------------------------
+// ✅ 獲取順序清單 (API_URL 已寫死)
+// ----------------------------------------------------
 async function fetchOrderLists() {
   try {
-    const res = await fetch(API_URL + "?type=query&command=清單");
+    const res = await fetch(`${API_URL}?type=query&command=清單`);
     const json = await res.json();
     if (json.list) {
       orderMaps["付款"] = (json.list.payment || []).map(item => item.name);
@@ -198,9 +229,21 @@ async function fetchOrderLists() {
       orderMaps["幣別"] = (json.list.currency || []).map(item => item.name);
       orderMaps["記帳者"] = (json.list.user || []).map(item => item.name);
       
-      refreshSelects();
+      if (typeof refreshSelects === "function") {
+        refreshSelects();
+      }
+      console.log("✅ 順序清單載入完畢");
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error("❌ 獲取清單失敗:", e);
+  }
+}
+
+// 啟動應用
+if (document.readyState === "complete" || document.readyState === "interactive") {
+  initApp();
+} else {
+  window.addEventListener("load", initApp);
 }
 
 function refreshSelects() {
