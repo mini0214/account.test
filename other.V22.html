@@ -165,7 +165,7 @@ async function saveOther() {
     const result = await res.json();
 
     if (result.ok) {
-      alert(editIndex === -1 ? `✅ 已新增 ${payload.name}` : `✅ 已修改 ${payload.name}`);
+      alert(editIndex === -1 ? `✅ 已新增 ${payload.name} 此筆資料` : `✅ 已修改 ${payload.name} 此筆資料`);
       clearForm();
       loadOther();
     } else {
@@ -292,6 +292,7 @@ if (document.readyState === "complete" || document.readyState === "interactive")
 </script>
 </body>
 </html>
+
 
 
 
