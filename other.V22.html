@@ -61,9 +61,9 @@
     
 <script>
 // 🚀 直接寫死設定值，省去 loadSettings 的網路等待時間
-const API_URL = "https://script.google.com/macros/s/AKfycbwxqIKuk4VqHeib3Mi_xxE6yS5R8V55wyiQVIS6VgF6PEnNa93lVSoBBiX4OYksDuaiUw/exec";
 const LIFF_IDo = "2008096451-Olb1l39P";
-const VERSION = "V29_#196"; // 您的版次
+const API_URL = "https://script.google.com/macros/s/AKfycbwxqIKuk4VqHeib3Mi_xxE6yS5R8V55wyiQVIS6VgF6PEnNa93lVSoBBiX4OYksDuaiUw/exec";
+const VERSION = "V29_#197"; // 更新版號
 
 let userProfile = null;
 let editIndex = -1; 
@@ -108,9 +108,8 @@ async function initApp() {
     }
   }
 }
-
 // ----------------------------------------------------
-// 1️⃣ 儲存/修改
+// 1️⃣ 儲存/修改（加上curreny.type.payment綁定檢查）
 // ----------------------------------------------------
 async function saveOther() {
   const payload = {
@@ -121,7 +120,7 @@ async function saveOther() {
     name: document.getElementById("name").value.trim(),
     note: (document.getElementById("note")?.value || "").trim(),
     exchange: (document.getElementById("exchange")?.value || "").trim(),
-    oldNumber: window.oldNumber || undefined 
+    oldNumber: window.oldNumber || undefined // ✅ 修改時要帶上舊的編號
   };
 
   if (!payload.classify || !payload.number || !payload.name) {
@@ -129,13 +128,14 @@ async function saveOther() {
     return;
   }
 
+  // 🔹 如果是 currency，exchange 欄位必填
   if (payload.classify === "currency" && !payload.exchange) {
     alert("❗匯率 currency 類別，匯率欄位必填！");
     return;
   }
   
   try {
-    // 檢查名稱是否已被 cashdata 使用 (保留原本邏輯)
+    // 取得匯率.分類.付款方式列表
     const [exchangeRes, typeRes, paymentRes] = await Promise.all([
       fetch(API_URL + "?type=query&command=cashdate.exchange"),
       fetch(API_URL + "?type=query&command=cashdate.type"),
@@ -143,8 +143,11 @@ async function saveOther() {
     ]);
 
     const exchangeData = await exchangeRes.json();
+    //alert("💰 exchange query result: " + JSON.stringify(exchangeData)); //顯示cashdata的distinct的資料
     const typeData = await typeRes.json();
+    //alert("📂 type query result: " + JSON.stringify(typeData)); //顯示cashdata的distinct的資料
     const paymentData = await paymentRes.json();
+    //alert("💳 payment query result: " + JSON.stringify(paymentData)); //顯示cashdata的distinct的資料
 
     const allNames = [
       ...(exchangeData.exchanges || []),
@@ -152,32 +155,37 @@ async function saveOther() {
       ...(paymentData.payments || [])
     ];
 
+    // 如果正在修改，把自己的舊名稱排除
     const checkNames = (editIndex !== -1 && window.oldName) 
         ? allNames.filter(n => n !== window.oldName)
         : allNames;
 
+    // ⚠️ 檢查名稱重複
     if (checkNames.includes(payload.name)) {
-      alert(`⚠️「${payload.name}」已存在於系統歷史記錄中，無法新增/修改`);
+      alert(`⚠️「${payload.name}」已存在於系統匯率.分類.付款方式中，無法新增/修改`);
       return;
     }
 
+    // ✅ 送出新增/修改請求
     const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
     const result = await res.json();
 
     if (result.ok) {
-      alert(editIndex === -1 ? `✅ 已新增 ${payload.name} 此筆資料` : `✅ 已修改 ${payload.name} 此筆資料`);
+      alert(editIndex === -1 
+        ? `✅ 已新增 ${payload.name} 此筆資料` 
+        : `✅ 已修改 ${payload.name} 此筆資料`);
       clearForm();
       loadOther();
     } else {
-      alert(`❌ 失敗：${result.msg || "未知錯誤"}`);
+      alert(`❌ 失敗：${result.msg || result.error || JSON.stringify(result) || "未知錯誤"} (${payload.name})`);
     }
+
   } catch (err) {
-    alert(`⚠️ 發生錯誤：${err.message}`);
+    alert(`⚠️ 發生錯誤：${err} (${payload.name})`);
   }
 }
-
 // ----------------------------------------------------
-// 2️⃣ 查詢 (保留原本排序與統計功能)
+// 2️⃣ 查詢 (排序：classify → number)
 // ----------------------------------------------------
 async function loadOther() {
   try {
@@ -191,15 +199,19 @@ async function loadOther() {
     tbody.innerHTML = "";
 
     if (result.ok && Array.isArray(result.list)) {
-      // 排序邏輯
+      // ✅ 排序：先依 classify 排，再依 number 排
       result.list.sort((a, b) => {
+        // classify 排序
         if (a.classify < b.classify) return -1;
         if (a.classify > b.classify) return 1;
-        const numA = parseInt(a.number.replace(/[^\d]/g, ""), 10) || 0;
-        const numB = parseInt(b.number.replace(/[^\d]/g, ""), 10) || 0;
+
+        // classify 相同時依 number 排（數字部分比較）
+        const numA = parseInt(a.number.replace(/[^\d]/g, ""), 10);
+        const numB = parseInt(b.number.replace(/[^\d]/g, ""), 10);
         return numA - numB;
       });
 
+      // ✅ 渲染表格
       result.list.forEach((row, idx) => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
@@ -207,38 +219,41 @@ async function loadOther() {
           <td>${row.number}</td>
           <td>${row.name}</td>
           <td>${row.note || ""}</td>
-          <td>${row.exchange || ""}</td>
-          <td>
-            <button class="edit-btn" onclick="editOther(${idx})">📝</button>
-            <button class="action-btn" onclick="deleteOther(${idx})">🗑️</button>
+          <td>${row.exchange}</td>  <td>
+            <button class="edit-btn" onclick="editOther(${idx})">📝 修改</button>
+            <button class="action-btn" onclick="deleteOther(${idx})">🗑️ 刪除</button>
           </td>
         `;
         tbody.appendChild(tr);
       });
 
+      // ✅ 存最新資料
       window.otherDataCache = result.list;
       
-      // 統計區塊
+      // ✅ 統計筆數
       const currencys = result.list.filter(r => r.classify === "currency");
       const typeRows = result.list.filter(r => r.classify === "type");
       const paymentRows = result.list.filter(r => r.classify === "payment");
       document.getElementById("summary").innerHTML = `
       <table>
-        <tr>
-          <td>💰 匯率: ${currencys.length}</td>
-          <td>💳 付款: ${paymentRows.length}</td>
-          <td>📂 分類: ${typeRows.length}</td>
-          <td>📌 總計: ${result.list.length}</td>
+        <tr class=".total">
+          <td>匯率 currency<br>💰 ${currencys.length} 筆</td>     
+          <td>付款 payment<br>💳 ${paymentRows.length} 筆</td>
+          <td>分類 type<br>📂 ${typeRows.length} 筆</td>
+          <td>總計<br>📌 ${result.list.length} 筆</td>
         </tr>
-      </table>`;
+      </table>
+      `;
+    } else {
+      document.getElementById("summary").innerHTML = "⚠️ 沒有資料";
     }
   } catch (err) {
-    console.error("查詢失敗", err);
+    alert("⚠️ 查詢失敗：" + err.message);
+    console.error(err);
   }
 }
-
 // ----------------------------------------------------
-// 3️⃣ 修改 / 4️⃣ 刪除 / 🧹 清空 (功能皆完整保留)
+// 3️⃣ 修改
 // ----------------------------------------------------
 function editOther(idx) {
   const row = window.otherDataCache[idx];
@@ -246,33 +261,77 @@ function editOther(idx) {
   document.getElementById("classify").value = row.classify;
   document.getElementById("number").value = row.number;
   document.getElementById("name").value = row.name;
-  document.getElementById("note").value = row.note || "";
+  document.getElementById("note").value = row.note;
   document.getElementById("exchange").value = row.exchange || "";
   editIndex = idx;
-  window.oldNumber = row.number;
-  window.oldName = row.name;
-  window.scrollTo(0, 0); // 回到頂部方便修改
+  window.oldNumber = row.number; // ✅ 記錄原始編號
+  window.oldName = row.name;     // ✅ 新增保留舊名稱
 }
-
+// ----------------------------------------------------
+// 4️⃣ 刪除（加上currency/type/payment綁定檢查）
+// ----------------------------------------------------
 async function deleteOther(idx) {
+  // 1️⃣ 先定義 row（從快取取得資料）
   const row = window.otherDataCache[idx];
-  if (!row || !confirm(`❗確定要刪除 ${row.name} 這筆資料嗎？`)) return;
+  if (!row) {
+    alert("❌ 找不到該筆資料的快取");
+    return;
+  }
+
+  // 2️⃣ 現在 row 已經存在，可以正確帶入 ${row.name}
+  if (!confirm(`❗確定要刪除 ${row.name} 這筆資料嗎？`)) return;
   
+  // 3️⃣ 後續邏輯：執行綁定檢查與刪除
   try {
+    // 🔹 同時查詢「匯率(currency)」.「分類(type)」.「付款(payment)」清單
+    const [exchangeRes, typeRes, paymentRes] = await Promise.all([
+      fetch(API_URL + "?type=query&command=cashdate.exchange"),
+      fetch(API_URL + "?type=query&command=cashdate.type"),
+      fetch(API_URL + "?type=query&command=cashdate.payment")
+    ]);
+
+    const exchangeData = await exchangeRes.json();   
+    //alert("💰 exchange query result: " + JSON.stringify(exchangeData)); //顯示cashdata的distinct的資料
+    const typeData = await typeRes.json();
+    //alert("📂 type query result: " + JSON.stringify(typeData)); //顯示cashdata的distinct的資料
+    const paymentData = await paymentRes.json();
+    //alert("💳 payment query result: " + JSON.stringify(paymentData)); //顯示cashdata的distinct的資料
+
+    const allNames = [
+      ...(exchangeData.exchanges || []), 
+      ...(typeData.types || []),
+      ...(paymentData.payments || [])
+    ];
+
+    // ✅ 如果這筆名稱已存在於匯率.分類.付款方式，就禁止刪除
+    if (allNames.includes(row.name)) {
+      alert(`⚠️「${row.name}」已被使用於匯率.分類.付款方式中，無法刪除！`);
+      return;
+    }
+
+    // 🔹 執行刪除
     const res = await fetch(API_URL, {
       method: "POST",
       body: JSON.stringify({ type: "other", command: "delete", number: row.number })
     });
+
     const resDel = await res.json();
     if (resDel.ok) {
-      alert("✅ 刪除成功");
+      alert(`✅ ${row.name} 刪除成功！`);
+      clearForm();
       loadOther();
+    } else {
+      alert(`❌ ${row.name} 刪除失敗：${resDel.msg || "未知錯誤"} `);
     }
+
   } catch (err) {
-    alert("刪除失敗");
+    alert(`⚠️ 刪除過程發生錯誤：${err.message} (${row.name})`);
+    console.error(err);
   }
 }
-
+// ----------------------------------------------------
+// 🧹 清空表單
+// ----------------------------------------------------
 function clearForm() {
   document.getElementById("number").value = "";
   document.getElementById("name").value = "";
@@ -280,21 +339,10 @@ function clearForm() {
   document.getElementById("exchange").value = "";
   editIndex = -1;
   window.oldNumber = undefined;
-  window.oldName = undefined;
+  window.oldName = undefined; // ✅ 清掉舊名稱
 }
 
-// 🚀 啟動
-if (document.readyState === "complete" || document.readyState === "interactive") {
-  initApp();
-} else {
-  window.addEventListener("load", initApp);
-}
+initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
-
-
-
-
-
-
