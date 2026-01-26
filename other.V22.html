@@ -60,54 +60,48 @@
     <div id="summary" class="total"></div>
     
 <script>
-let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbw7BAhbPaHUND75cG4KTxAB5SAScYxVvC8gYuPiU1LXrVUL44kSKVGnrGotWJg_NwTe9Q/exec";
-let API_URL = "";
-let VERSION = "V";
-let LIFF_IDo = "";
+// 🚀 直接寫死設定值，省去 loadSettings 的網路等待時間
+const API_URL = "https://script.google.com/macros/s/AKfycbwxqIKuk4VqHeib3Mi_xxE6yS5R8V55wyiQVIS6VgF6PEnNa93lVSoBBiX4OYksDuaiUw/exec";
+const LIFF_IDo = "2008096451-Olb1l39P";
+const VERSION = "V29_#196"; // 您的版次
+
 let editIndex = -1; // 修改用
 
 // ----------------------------------------------------
-// ✅ 設定讀取
+// ✅ 初始化 (改為並行處理，速度最快)
 // ----------------------------------------------------
-async function tryFetchText(url){
-  const r = await fetch(url, { cache: 'no-store' });
-  const text = await r.text();
-  try { const j = JSON.parse(text); return { ok: true, json: j }; }
-  catch(e){ return { ok: false, text }; }
-}
-
-async function loadSettings(){
-  const res = await tryFetchText(FALLBACK_GAS_SETTINGS_URL + "?type=query&command=設定");
-  if (!res.ok) throw new Error("設定 GAS 讀取失敗：" + res.text);
-  const data = res.json;
-  if (!data.ok || !data.data) throw new Error("設定格式錯誤");
-  return data.data;
-}
-// ----------------------------------------------------
-// ✅ 初始化
-// ----------------------------------------------------
-async function initApp(){
+async function initApp() {
   try {
-    const settings = await loadSettings();
-    FALLBACK_GAS_SETTINGS_URL = (settings.SETTINGS_URL || FALLBACK_GAS_SETTINGS_URL).trim();
-    API_URL = (settings.API_URL || "").trim();
-    VERSION = (settings.D10 || "V").trim();
-    LIFF_IDo = (settings.D13 || "").trim();
-    
+    // 顯示版次
     document.getElementById("version").textContent = VERSION;
-    console.log("✅ 設定成功:", { FALLBACK_GAS_SETTINGS_URL, API_URL, LIFF_IDo, VERSION });
-    
-    if (!LIFF_IDo) throw new Error("❌ LIFF ID 尚未設定，請確認設定表 D13");
-    
-    await liff.init({ liffId: LIFF_IDo });
-    if (!liff.isLoggedIn()) liff.login();
+    console.log("✅ 採用寫死設定啟動:", { API_URL, LIFF_IDo, VERSION });
 
-    loadOther();
+    if (!LIFF_IDo) throw new Error("❌ LIFF ID 尚未設定");
+
+    // 🚀 優化：LIFF 初始化與資料載入「同時並行」
+    await Promise.all([
+      liff.init({ liffId: LIFF_IDo }).then(() => {
+        if (!liff.isLoggedIn()) {
+          liff.login();
+        } else {
+          console.log("✅ LIFF 登入成功");
+        }
+      }),
+      // 如果 loadOther 裡面有 fetch API_URL 的動作，放在這裡並行會更快
+      typeof loadOther === "function" ? loadOther() : Promise.resolve()
+    ]);
+
   } catch (err) {
     alert("❌ 初始化失敗：" + err.message);
     console.error(err);
   }
 }
+
+// ----------------------------------------------------
+// ✅ 頁面載入後立即執行
+// ----------------------------------------------------
+window.addEventListener("load", initApp);
+  
 // ----------------------------------------------------
 // 1️⃣ 儲存/修改（加上curreny.type.payment綁定檢查）
 // ----------------------------------------------------
@@ -346,4 +340,5 @@ initApp(); // 🚀 啟動應用
 </script>
 </body>
 </html>
+
 
