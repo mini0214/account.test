@@ -128,234 +128,178 @@
 
   <!-- LIFF 初始化 + 登錄送出 -->
   <script>  
-    //const LIFF_ID = "2008096451-3DobjEw8";   // 換成你的 LIFF ID test
-    //const VERSION = "V17_#43";                   // 固定版次
-    //const API_URL = "https://script.google.com/macros/s/AKfycbw7BAhbPaHUND75cG4KTxAB5SAScYxVvC8gYuPiU1LXrVUL44kSKVGnrGotWJg_NwTe9Q/exec";  // 換成你的 GAS PATH
+    const LIFF_IDa = "2008096451-3DobjEw8";
+    const API_URL = "https://script.google.com/macros/s/AKfycbwxqIKuk4VqHeib3Mi_xxE6yS5R8V55wyiQVIS6VgF6PEnNa93lVSoBBiX4OYksDuaiUw/exec";
+    const VERSION = "V29_#260126"; 
+    
+// 店家清單全域變數
+let storeList = []; 
+const input = document.getElementById("store");
+const sugg = document.getElementById("suggestions");
+const typeSelect = document.getElementById("type");
 
-    //let LIFF_ID = "default";   // 先放預設或空字串,從 D11 帶入 append
-    //let VERSION = "V";         // ✅ 預設顯示版本號，不要等API,從 D10 帶入 版次
-    
-    // ----------------------------------------------------
-    // ✅ 設定,全域設定
-    // ----------------------------------------------------
-    // 💡 說明：
-    // FALLBACK_GAS_SETTINGS_URL 是「啟動保底設定URL」。第一次啟動時用它讀取設定表。所以未來重新部署 GAS，不需修改此行，除非設定表失效。
-    // 若設定表內有 D5（SETTINGS_URL），會自動更新成 D5。
-    // 暫時用,後續會自動轉換成設定檔內的固定 D5。這行只是啟動用的臨時鑰匙，真的開門後會自動換成設定表的正式鑰匙。
-    let FALLBACK_GAS_SETTINGS_URL = "https://script.google.com/macros/s/AKfycbxRBB4WtTy1DTG57vQPQzNdX1NxF_RG-iMVGR28SrQlRqf7bkbtBbgmgAWJcFRgq01hAw/exec";
-     
-    let API_URL = "";    // ✅ 從設定檔 D6
-    let VERSION = "V";   // ✅ 從設定檔 D10
-    let LIFF_IDa = "";   // ✅ 從設定檔 D11
+// ----------------------------------------------------
+// ✅ 初始化 (全速並行模式)
+// ----------------------------------------------------
+async function initApp(){
+  try {
+    // 1. 立即顯示版號與設定日期 (不需等待)
+    document.getElementById("version").textContent = VERSION;
+    document.getElementById("date").valueAsDate = new Date();
 
-    // ----------------------------------------------------
-    // ✅ 設定,設定載入
-    // ----------------------------------------------------
-    async function tryFetchText(url){
-      const r = await fetch(url, { cache: 'no-store' });
-      const text = await r.text();
-      try { const j = JSON.parse(text); return { ok: true, json: j }; }
-      catch(e){ return { ok: false, text }; }
-    }
-    
-    async function loadSettings(){
-      // 🔹 直接用 fallback 設定 GAS 查詢
-      const res = await tryFetchText(FALLBACK_GAS_SETTINGS_URL + "?type=query&command=設定");
-      if (!res.ok) throw new Error("設定 GAS 讀取失敗：" + res.text);
-    
-      const data = res.json;
-      if (!data.ok || !data.data) throw new Error("設定格式錯誤");
-    
-      return data.data;  // 只回傳 data
-    }
-    
-    // ----------------------------------------------------
-    // ✅ 設定,初始化
-    // ----------------------------------------------------
-    async function initApp(){
-      try {
-        const settings = await loadSettings();
-        if (!settings) throw new Error("設定格式錯誤");
-        
-         // 🔹 從設定帶入
-        FALLBACK_GAS_SETTINGS_URL = (settings.SETTINGS_URL || FALLBACK_GAS_SETTINGS_URL).trim();// 自動轉換成設定檔內的固定 D5
-        API_URL = (settings.API_URL || "").trim();
-        VERSION = (settings.D10 || "V").trim();
-        LIFF_IDa = (settings.D11 || "").trim();
-    
-        document.getElementById("version").textContent = VERSION;
-        console.log("✅ 設定成功:", { FALLBACK_GAS_SETTINGS_URL, API_URL, LIFF_IDa, VERSION });
-    
-        if (!LIFF_IDa) throw new Error("❌ LIFF ID 尚未設定，請確認設定表 D11");
-    
-        await liff.init({ liffId: LIFF_IDa });
-        if (!liff.isLoggedIn()) liff.login();
-    
-        document.getElementById("date").valueAsDate = new Date();
-    
-        if (API_URL) {
-          await loadListData();   // 先載入幣別 / 付款 / 分類清單
-          await loadStoreList();  // 再載入店家清單
+    console.log("🚀 啟動並行初始化...");
+
+    // 2. ⚡ 核心優化：同時啟動 LIFF 初始化、載入清單、載入店家
+    // 不需要 loadSettings() 了，因為變數已寫死
+    await Promise.all([
+      liff.init({ liffId: LIFF_IDa }).then(() => {
+        if (!liff.isLoggedIn()) {
+          liff.login();
         }
-    
-      } catch (err) {
-        console.error("初始化設定失敗：", err);
-        alert("初始化設定失敗：" + err.message);
-      }
+        console.log("✅ LIFF 連線成功");
+      }),
+      loadListData(),
+      loadStoreList()
+    ]);
+
+    console.log("✨ 頁面所有資料準備就緒");
+
+  } catch (err) {
+    console.error("初始化失敗：", err);
+    if (err.message.includes("authorization")) {
+        liff.logout();
+        location.reload();
+    } else {
+        alert("初始化失敗：" + err.message);
     }
+  }
+}
 
-    //清單(currency/type/payment)
-    async function loadListData() {
-      try {
-        const res = await fetch(`${API_URL}?type=query&command=清單`);
-        const data = await res.json();
-        console.log("📦 清單回傳:", data);
+// ----------------------------------------------------
+// ✅ 載入幣別 / 分類 / 付款清單 (保持原功能不變)
+// ----------------------------------------------------
+async function loadListData() {
+  try {
+    const res = await fetch(`${API_URL}?type=query&command=清單`);
+    const data = await res.json();
+    if (!data.ok || !data.list) throw new Error("清單格式錯誤");
     
-        if (!data.ok || !data.list) throw new Error("清單資料格式錯誤");
-        
-        const list = data.list;
-        const currencySelect = document.getElementById("currency");
-        const typeSelect = document.getElementById("type");
-        const paymentSelect = document.getElementById("payment");
-        const incomeInput = document.getElementById("income");
-        const payoutInput = document.getElementById("payout");
+    const list = data.list;
+    const currencySelect = document.getElementById("currency");
+    const paymentSelect = document.getElementById("payment");
+    const incomeInput = document.getElementById("income");
+    const payoutInput = document.getElementById("payout");
 
-        // 🔹 加 allowDecimal 屬性，根據 exchange 判斷
-        list.currency.forEach(c => {
-          c.allowDecimal = c.exchange.toString().includes('.');
-        });        
-        
-        // ✅ 動態加入幣別(currency)
-        function renderCurrencyOptions(hasDecimal = false) {
-          const selectedName = currencySelect.selectedOptions[0]?.dataset.name || "";    // ✅ 記住原本選擇
-          currencySelect.innerHTML = '<option value="">請選擇幣別</option>';              // ✅ 先清空原本選項
-          list.currency.forEach(c => {
-            if (hasDecimal && !c.allowDecimal) return;    // 小數點時只顯示允許小數的幣別
-            const opt = document.createElement("option");
-            opt.value = c.exchange;                       // 🔑 value 存「換算值」
-            opt.textContent = `${c.name}:${c.exchange}`;  // 🔑 顯示「幣別:匯率」澳幣:20
-            opt.dataset.name = c.name;                    // 🔑 幣別名稱額外帶著
-            currencySelect.appendChild(opt);
-          });
-
-          // 🔹 如果原本選的幣別還在新的選項裡，保留選中
-          if (selectedName) {
-            const matched = [...currencySelect.options].find(opt => opt.dataset.name === selectedName);
-            if (matched) currencySelect.value = matched.value;
-          }
-        }
-
-        // 初始顯示全部幣別
-        renderCurrencyOptions(false);
-
-        // 🔹 收入欄位輸入時動態篩選
-        incomeInput.addEventListener("input", () => {
-          const hasDecimal = incomeInput.value.includes(".");
-          renderCurrencyOptions(hasDecimal);
-        });
-
-        // 🔹 支出欄位輸入時動態篩選
-        payoutInput.addEventListener("input", () => {
-          const hasDecimal = payoutInput.value.includes(".");
-          renderCurrencyOptions(hasDecimal);
-        });
-        
-        // ✅ 動態加入分類(type)
-        typeSelect.innerHTML = '<option value="">請選擇分類</option>';  // ✅ 先清空原本選項
-        list.type.forEach(t => {
-          const opt = document.createElement("option");
-          opt.value = t.name;
-          opt.textContent = t.name;
-          typeSelect.appendChild(opt);
-        });
-    
-        // ✅ 動態加入付款(payment)
-        paymentSelect.innerHTML = '<option value="">請選擇付款</option>';  // ✅ 先清空原本選項
-        list.payment.forEach(p => {
-          const opt = document.createElement("option");
-          opt.value = p.name;
-          opt.textContent = p.name;
-          paymentSelect.appendChild(opt);
-        });
-        
-        // ✅ 保存全域清單
-        window.otherList = list;  
-    
-        console.log("✅ 清單載入完成");    
-      } catch (err) {
-        console.error("❌ 載入清單失敗:", err);
-        alert("載入清單失敗：" + err.message);
-      }
-    }
-    
-    // 店家清單
-    let storeList = []; // [{store, type}]
-    const input = document.getElementById("store");
-    const sugg = document.getElementById("suggestions");
-    const typeSelect = document.getElementById("type");
-  
-    async function loadStoreList() {
-      try {
-        console.log("呼叫店家 API:", API_URL);
-        const res = await fetch(`${API_URL}?type=query&command=店家`);
-        const data = await res.json();
-        console.log("GAS 回傳:", data);
-  
-        if (data.ok && Array.isArray(data.storeList)) {
-          storeList = data.storeList; // [{store, type}]
-          console.log("載入店家清單成功:", storeList);
-        } else {
-          console.error("GAS 回傳格式不正確:", data);
-        }
-      } catch (err) {
-        console.error("載入店家清單失敗:", err);
-      }
-    }
-  
-    // 即時提示 + 自動帶入 type
-    input.addEventListener("input", () => {
-      const val = input.value.toLowerCase();
-      sugg.innerHTML = "";
-      if (!val) { sugg.style.display = "none"; return; }
-      
-      // 篩選符合的店家
-      const matches = storeList.filter(s => s.store && s.store.toLowerCase().includes(val));
-      if (matches.length === 0) { sugg.style.display = "none"; return; }
-      
-      // 顯示建議
-      matches.forEach(m => {
-        const div = document.createElement("div");
-        div.textContent = m.store + (m.type ? `（${m.type}）` : "");
-        div.onclick = () => {
-          input.value = m.store;
-          sugg.style.display = "none";
-          
-          // 自動選中對應 type
-          if (m.type) {
-            typeSelect.value = m.type;
-            if (!typeSelect.value) {
-              // 若下拉選單沒有這個分類，就新增
-              const opt = document.createElement("option");
-              opt.value = m.type;
-              opt.textContent = m.type;
-              typeSelect.appendChild(opt);
-              typeSelect.value = m.type;
-            }
-          } else {
-            typeSelect.value = "";
-          }
-        };
-        sugg.appendChild(div);
-      });
-  
-      sugg.style.display = "block";
-      const rect = input.getBoundingClientRect();
-      sugg.style.width = rect.width + "px";
-      sugg.style.top = (rect.bottom + window.scrollY) + "px";
-      sugg.style.left = (rect.left + window.scrollX) + "px";
+    // 功能保留：判斷小數點
+    list.currency.forEach(c => {
+      c.allowDecimal = c.exchange.toString().includes('.');
     });
-      
-    //document.getElementById("version").textContent = VERSION;
+
+    // 功能保留：動態渲染幣別
+    function renderCurrencyOptions(hasDecimal = false) {
+      const selectedName = currencySelect.selectedOptions[0]?.dataset.name || "";
+      currencySelect.innerHTML = '<option value="">請選擇幣別</option>';
+      list.currency.forEach(c => {
+        if (hasDecimal && !c.allowDecimal) return;
+        const opt = document.createElement("option");
+        opt.value = c.exchange;
+        opt.textContent = `${c.name}:${c.exchange}`;
+        opt.dataset.name = c.name;
+        currencySelect.appendChild(opt);
+      });
+      if (selectedName) {
+        const matched = [...currencySelect.options].find(opt => opt.dataset.name === selectedName);
+        if (matched) currencySelect.value = matched.value;
+      }
+    }
+
+    renderCurrencyOptions(false); // 初始渲染
+
+    // 功能保留：輸入偵測
+    const filterEvent = () => renderCurrencyOptions(incomeInput.value.includes(".") || payoutInput.value.includes("."));
+    incomeInput.addEventListener("input", filterEvent);
+    payoutInput.addEventListener("input", filterEvent);
+    
+    // 動態加入分類與付款
+    typeSelect.innerHTML = '<option value="">請選擇分類</option>';
+    list.type.forEach(t => {
+      const opt = document.createElement("option");
+      opt.value = opt.textContent = t.name;
+      typeSelect.appendChild(opt);
+    });
+
+    paymentSelect.innerHTML = '<option value="">請選擇付款</option>';
+    list.payment.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = opt.textContent = p.name;
+      paymentSelect.appendChild(opt);
+    });
+
+    window.otherList = list;
+    console.log("✅ 下拉清單載入完成");
+  } catch (err) {
+    console.error("載入清單失敗:", err);
+  }
+}
+
+// ----------------------------------------------------
+// ✅ 載入店家清單 (保持原功能不變)
+// ----------------------------------------------------
+async function loadStoreList() {
+  try {
+    const res = await fetch(`${API_URL}?type=query&command=店家`);
+    const data = await res.json();
+    if (data.ok && Array.isArray(data.storeList)) {
+      storeList = data.storeList;
+      console.log("✅ 店家清單載入完成");
+    }
+  } catch (err) {
+    console.error("載入店家失敗:", err);
+  }
+}
+
+// ----------------------------------------------------
+// ✅ 店家即時提示與自動帶入 (保持原邏輯)
+// ----------------------------------------------------
+input.addEventListener("input", () => {
+  const val = input.value.toLowerCase();
+  sugg.innerHTML = "";
+  if (!val) { sugg.style.display = "none"; return; }
+  
+  const matches = storeList.filter(s => s.store && s.store.toLowerCase().includes(val));
+  if (matches.length === 0) { sugg.style.display = "none"; return; }
+  
+  matches.forEach(m => {
+    const div = document.createElement("div");
+    div.textContent = m.store + (m.type ? `（${m.type}）` : "");
+    div.onclick = () => {
+      input.value = m.store;
+      sugg.style.display = "none";
+      if (m.type) {
+        typeSelect.value = m.type;
+        if (!typeSelect.value) { // 處理找不到分類的情況
+          const opt = document.createElement("option");
+          opt.value = opt.textContent = m.type;
+          typeSelect.appendChild(opt);
+          typeSelect.value = m.type;
+        }
+      } else {
+        typeSelect.value = "";
+      }
+    };
+    sugg.appendChild(div);
+  });
+
+  sugg.style.display = "block";
+  const rect = input.getBoundingClientRect();
+  Object.assign(sugg.style, {
+    width: rect.width + "px",
+    top: (rect.bottom + window.scrollY) + "px",
+    left: (rect.left + window.scrollX) + "px"
+  });
+});
+
+initApp(); // 啟動
     
     // 🚀 Step 2：主流程
     async function main() {
@@ -571,4 +515,5 @@
   </script>
 </body>
 </html>
+
 
