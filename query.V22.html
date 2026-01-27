@@ -146,7 +146,9 @@
   <button id="queryMonthStoreBtn">🏠 店家</button>
 </div>
 
-<div id="loading" style="display:none;">⏳ 正在載入中,請稍侯...</div>
+<div id="loadingMsg" style="display:none; color: blue; font-weight: bold;">
+    ⏳ 正在載入中，請稍候... <span id="timerSeconds">0</span>s
+</div>
 <div id="queryResult"></div>
 <div id="drillDownArea"></div>
 <div class="chart-container"><canvas id="chartCanvas"></canvas></div>
@@ -772,4 +774,5 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
 
