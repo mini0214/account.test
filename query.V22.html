@@ -146,43 +146,6 @@
   <button id="queryMonthStoreBtn">🏠 店家</button>
 </div>
 
-let timerInterval;
-let seconds = 0;
-
-function startLoading() {
-  const loadingDiv = document.getElementById('loading');
-  const resultDiv = document.getElementById('queryResult');
-  
-  // 初始化狀態
-  seconds = 0;
-  loadingDiv.style.display = 'block';
-  loadingDiv.innerText = `⏳ 正在載入中,請稍侯...${seconds}s`;
-  resultDiv.innerHTML = ''; // 清空舊資料
-
-  // 每秒更新一次
-  timerInterval = setInterval(() => {
-    seconds++;
-    loadingDiv.innerText = `⏳ 正在載入中,請稍侯...${seconds}s`;
-  }, 1000);
-}
-
-function stopLoading() {
-  clearInterval(timerInterval);
-  document.getElementById('loading').style.display = 'none';
-}
-
-// 修改你的按鈕事件監聽器範例
-document.getElementById('queryMonthBtn').addEventListener('click', () => {
-  startLoading();
-  
-  // 模擬非同步請求 (例如 fetch 或 Google Apps Script 調用)
-  setTimeout(() => {
-    // 請求完成後停止計時
-    stopLoading();
-    document.getElementById('queryResult').innerText = "載入完成！";
-  }, 3500); // 模擬 3.5 秒的延遲
-});
-  
 <div id="queryResult"></div>
 <div id="drillDownArea"></div>
 <div class="chart-container"><canvas id="chartCanvas"></canvas></div>
@@ -252,6 +215,44 @@ async function initApp() {
   }
 }
 
+//簡單的計時器（Timer）
+let timerInterval;
+let seconds = 0;
+
+function startLoading() {
+  const loadingDiv = document.getElementById('loading');
+  const resultDiv = document.getElementById('queryResult');
+  
+  // 初始化狀態
+  seconds = 0;
+  loadingDiv.style.display = 'block';
+  loadingDiv.innerText = `⏳ 正在載入中,請稍侯...${seconds}s`;
+  resultDiv.innerHTML = ''; // 清空舊資料
+
+  // 每秒更新一次
+  timerInterval = setInterval(() => {
+    seconds++;
+    loadingDiv.innerText = `⏳ 正在載入中,請稍侯...${seconds}s`;
+  }, 1000);
+}
+
+function stopLoading() {
+  clearInterval(timerInterval);
+  document.getElementById('loading').style.display = 'none';
+}
+
+// 修改你的按鈕事件監聽器範例
+document.getElementById('queryMonthBtn').addEventListener('click', () => {
+  startLoading();
+  
+  // 模擬非同步請求 (例如 fetch 或 Google Apps Script 調用)
+  setTimeout(() => {
+    // 請求完成後停止計時
+    stopLoading();
+    document.getElementById('queryResult').innerText = "載入完成！";
+  }, 3500); // 模擬 3.5 秒的延遲
+});
+  
 // ----------------------------------------------------
 // ✅ 獲取順序清單 (API_URL 已寫死)
 // ----------------------------------------------------
@@ -808,5 +809,6 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
