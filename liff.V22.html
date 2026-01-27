@@ -231,7 +231,7 @@
   // ----------------------------------------------------
   // ✅ 表單送出：修復並還原完整訊息
   // ----------------------------------------------------
-  getEl("expenseForm").addEventListener("submit", async (e) => {
+getEl("expenseForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const submitBtn = getEl("submitBtn");
     submitBtn.disabled = true;
@@ -255,92 +255,80 @@
         exchange: exchange
       };
 
-      // ⚡ 並行發送與查詢
-      // 1. 先發送 POST 請求儲存資料
+      // 1. 先執行儲存
       const saveRes = await fetch(API_URL, { 
         method: "POST", 
         body: JSON.stringify(payload) 
       });
-      
-      if (saveRes.ok) {
-        // 2. 確定儲存完成後，才發送查詢請求
-        const totalRes = await fetch(`${API_URL}?type=query&command=總額&user=${encodeURIComponent(profile.displayName)}`);
-        
-        if (totalRes.ok) {
-          const totalData = await totalRes.json();
-          console.log("包含新資料的總額：", totalData);
-      
-          // --- 這裡開始處理原本 result.ok 之後的邏輯 ---
-          // 因為現在資料都在 totalData 裡了
-          const thisTotal = totalData?.thisMonth?.total ?? 0;
-          const lastTotal = totalData?.lastMonth?.total ?? 0;
-          const changeText = totalData?.changeText || "";
-          const changetxt = totalData?.changetxt || "";
-          const types = totalData?.types || [];
-          const payments = totalData?.payments || [];
-          
-          // 這裡放你後續顯示 UI 或 LINE 訊息的代碼...
-        } else {
-          console.error("查詢總額失敗");
-        }
-      } else {
-        alert("送出失敗，請檢查網路連線");
+      if (!saveRes.ok) throw new Error("儲存資料失敗");
+
+      // 2. 儲存完成後，才發送查詢請求
+      const totalRes = await fetch(`${API_URL}?type=query&command=總額&user=${encodeURIComponent(profile.displayName)}`);
+      if (!totalRes.ok) throw new Error("查詢總額失敗");
+
+      // 3. 取得資料並定義變數 (確保這些變數在整個 try 區塊都可用)
+      const totalData = await totalRes.json();
+      const thisTotal = totalData?.thisMonth?.total ?? 0;
+      const lastTotal = totalData?.lastMonth?.total ?? 0;
+      const changeText = totalData?.changeText || "";
+      const changetxt = totalData?.changetxt || "";
+      const types = totalData?.types || [];
+      const payments = totalData?.payments || [];
+
+      // ✅ 4. 構建訊息
+      let msg =
+        `非記不可.記帳成功！\n` +
+        `👤 記帳者：${payload.displayName}\n` +
+        `📆 日期：${payload.inputDate}\n` +
+        `🏠 店家：${payload.store || " "}\n` +
+        `💰 收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
+        `💰 幣別：${payload.exchange}  ${payload.currency}\n` +
+        `💰 金額：${payload.amount}\n` +
+        `💳 付款：${payload.payment}\n` +
+        `📂 分類：${payload.type}\n` +
+        `📝 附註：${payload.note || " "}\n` +
+        `📝 備註：${payload.memo || " "}\n\n` +
+        `📆 本期總額：💰${thisTotal}\n`;
+
+      if (lastTotal !== 0) {
+        msg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}\n📢 ${changetxt}`;
       }
 
-        // ✅ 構建與原本一模一樣的完整訊息
-        let msg =
-          `非記不可.記帳成功！\n` +
-          `👤 記帳者：${payload.displayName}\n` +
-          `📆 日期：${payload.inputDate}\n` +
-          `🏠 店家：${payload.store || " "}\n` +
-          `💰 收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
-          `💰 幣別：${payload.exchange}  ${payload.currency}\n` +
-          `💰 金額：${payload.amount}\n` +
-          `💳 付款：${payload.payment}\n` +
-          `📂 分類：${payload.type}\n` +
-          `📝 附註：${payload.note || " "}\n` +
-          `📝 備註：${payload.memo || " "}\n\n` +
-          `📆 本期總額：💰${thisTotal}\n`;
-
-        if (lastTotal !== 0) {
-          msg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}\n📢 ${changetxt}`;
-        }
-
-        // 💳 付款統計
-        if (payments?.length && window.otherList?.payment) {
-          msg += `\n\n💳 付款本期總額:\n`;
-          const sortedP = [...window.otherList.payment].sort((a, b) => (Number(a.number) || 0) - (Number(b.number) || 0));
-          sortedP.forEach(ref => {
-            const found = payments.find(p => p.payment === ref.name);
-            if (found) msg += `▶︎ ${ref.name}：💰${found.thisTotal}\n`;
-          });
-        }
-
-        // 📂 分類統計
-        if (types?.length && window.otherList?.type) {
-          msg += `\n📂 分類本期總額:\n`;
-          const sortedT = [...window.otherList.type].sort((a, b) => (Number(a.number) || 0) - (Number(b.number) || 0));
-          sortedT.forEach(ref => {
-            const found = types.find(t => t.type === ref.name);
-            if (found) msg += `▶︎ ${ref.name}：💰${found.thisTotal}\n`;
-          });
-        }
-
-        // ✅ 顯示 Alert (與 LINE 內容完全一致)
-        alert(msg);
-
-        // ✅ 發送 LINE 訊息
-        if (liff.isInClient()) {
-          try {
-            await liff.sendMessages([{ type: "text", text: msg }]);
-          } catch (err) { console.warn("LINE 傳送失敗", err); }
-        }
-
-        getEl("expenseForm").reset();
-        getEl("date").valueAsDate = new Date();
+      // 💳 付款統計
+      if (payments?.length && window.otherList?.payment) {
+        msg += `\n\n💳 付款本期總額:\n`;
+        const sortedP = [...window.otherList.payment].sort((a, b) => (Number(a.number) || 0) - (Number(b.number) || 0));
+        sortedP.forEach(ref => {
+          const found = payments.find(p => p.payment === ref.name);
+          if (found) msg += `▶︎ ${ref.name}：💰${found.thisTotal}\n`;
+        });
       }
+
+      // 📂 分類統計
+      if (types?.length && window.otherList?.type) {
+        msg += `\n📂 分類本期總額:\n`;
+        const sortedT = [...window.otherList.type].sort((a, b) => (Number(a.number) || 0) - (Number(b.number) || 0));
+        sortedT.forEach(ref => {
+          const found = types.find(t => t.type === ref.name);
+          if (found) msg += `▶︎ ${ref.name}：💰${found.thisTotal}\n`;
+        });
+      }
+
+      // ✅ 5. 顯示 Alert 與發送 LINE
+      alert(msg);
+
+      if (liff.isInClient()) {
+        try {
+          await liff.sendMessages([{ type: "text", text: msg }]);
+        } catch (err) { console.warn("LINE 傳送失敗", err); }
+      }
+
+      getEl("expenseForm").reset();
+      getEl("date").valueAsDate = new Date();
+
     } catch (err) {
-      alert("❌ 送出失敗：" + err.message);
+      console.error(err);
+      alert("❌ 發生錯誤：" + err.message);
     } finally {
       submitBtn.disabled = false;
       submitBtn.innerText = "送出";
@@ -352,5 +340,3 @@
 </script>
 </body>
 </html>
-
-
