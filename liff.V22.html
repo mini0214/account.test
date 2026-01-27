@@ -256,13 +256,21 @@
       };
 
       // ⚡ 並行發送與查詢
-      const [saveRes, totalRes] = await Promise.all([
-        fetch(API_URL, { method: "POST", body: JSON.stringify(payload) }),
-        fetch(`${API_URL}?type=query&command=總額&user=${encodeURIComponent(profile.displayName)}`)
-      ]);
-
-      const result = await saveRes.json();
-      const totalData = await totalRes.json();
+      // 1. 先發送 POST 請求儲存資料
+      const saveRes = await fetch(API_URL, { 
+        method: "POST", 
+        body: JSON.stringify(payload) 
+      });
+      
+      // 建議檢查一下儲存是否成功
+      if (saveRes.ok) {
+        // 2. 確定儲存完成後，才發送查詢請求
+        const totalRes = await fetch(`${API_URL}?type=query&command=總額&user=${encodeURIComponent(profile.displayName)}`);
+        
+        // 接下來處理 totalRes 的邏輯...
+        const totalData = await totalRes.json();
+        console.log("包含新資料的總額：", totalData);
+      }
 
       if (result.ok) {
         // 解析統計值
@@ -338,3 +346,4 @@
 </script>
 </body>
 </html>
+
