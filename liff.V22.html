@@ -128,6 +128,7 @@
 
 <!-- LIFF 初始化 + 登錄送出 -->
 <script>  
+<script>  
   const LIFF_IDa = "2008096451-3DobjEw8";
   const API_URL = "https://script.google.com/macros/s/AKfycbwxqIKuk4VqHeib3Mi_xxE6yS5R8V55wyiQVIS6VgF6PEnNa93lVSoBBiX4OYksDuaiUw/exec";
   const VERSION = "V29_#260126"; 
@@ -154,7 +155,7 @@
     } catch (err) { console.error("初始化失敗：", err); }
   }
 
-  // --- 載入清單 (幣別/分類/付款) ---
+  // --- 載入清單 (幣別/分類/付款) 保持原功能 ---
   async function loadListData() {
     try {
       const res = await fetch(`${API_URL}?type=query&command=清單`);
@@ -199,7 +200,7 @@
     } catch (err) { console.error("店家載入失敗", err); }
   }
 
-  // --- 店家提示與自動分類 ---
+  // --- 店家提示邏輯 ---
   getEl("store").addEventListener("input", () => {
     const val = getEl("store").value.toLowerCase();
     const sugg = getEl("suggestions");
@@ -229,7 +230,7 @@
   });
 
   // ----------------------------------------------------
-  // ✅ 表單送出：修復統計資料與訊息
+  // ✅ 表單送出：修復並還原完整訊息
   // ----------------------------------------------------
   getEl("expenseForm").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -255,7 +256,7 @@
         exchange: exchange
       };
 
-      // ⚡ 核心優化：並行發送儲存與統計查詢
+      // ⚡ 並行發送與查詢
       const [saveRes, totalRes] = await Promise.all([
         fetch(API_URL, { method: "POST", body: JSON.stringify(payload) }),
         fetch(`${API_URL}?type=query&command=總額&user=${encodeURIComponent(profile.displayName)}`)
@@ -265,7 +266,7 @@
       const totalData = await totalRes.json();
 
       if (result.ok) {
-        // --- 解析統計資料 ---
+        // 解析統計值
         const thisTotal = totalData?.thisMonth?.total ?? 0;
         const lastTotal = totalData?.lastMonth?.total ?? 0;
         const changeText = totalData?.changeText || "";
@@ -273,48 +274,53 @@
         const types = totalData?.types || [];
         const payments = totalData?.payments || [];
 
-        // --- 構建完整訊息字串 ---
-        let msg = `非記不可.記帳成功！\n` +
-                  `👤 記帳者：${payload.displayName}\n` +
-                  `📆 日期：${payload.inputDate}\n` +
-                  `🏠 店家：${payload.store || " "}\n` +
-                  `💰 收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
-                  `💰 幣別：${payload.exchange}  ${payload.currency}\n` +
-                  `💰 金額：${payload.amount}\n` +
-                  `💳 付款：${payload.payment}\n` +
-                  `📂 分類：${payload.type}\n` +
-                  `📝 附註：${payload.note || " "}\n` +
-                  `📝 備註：${payload.memo || " "}\n\n` +
-                  `📆 本期總額：💰${thisTotal}\n`;
+        // ✅ 構建與原本一模一樣的完整訊息
+        let msg =
+          `非記不可.記帳成功！\n` +
+          `👤 記帳者：${payload.displayName}\n` +
+          `📆 日期：${payload.inputDate}\n` +
+          `🏠 店家：${payload.store || " "}\n` +
+          `💰 收支：${payload.payout ? `-${payload.payout}` : payload.income}\n` +
+          `💰 幣別：${payload.exchange}  ${payload.currency}\n` +
+          `💰 金額：${payload.amount}\n` +
+          `💳 付款：${payload.payment}\n` +
+          `📂 分類：${payload.type}\n` +
+          `📝 附註：${payload.note || " "}\n` +
+          `📝 備註：${payload.memo || " "}\n\n` +
+          `📆 本期總額：💰${thisTotal}\n`;
 
         if (lastTotal !== 0) {
           msg += `📆 上期總額：💰${lastTotal}\n🧮 總額佔比：${changeText}\n📢 ${changetxt}`;
         }
 
-        // 💳 付款本期總額
-        if (payments.length && window.otherList?.payment) {
+        // 💳 付款統計
+        if (payments?.length && window.otherList?.payment) {
           msg += `\n\n💳 付款本期總額:\n`;
-          const sortedP = [...window.otherList.payment].sort((a,b) => Number(a.number) - Number(b.number));
+          const sortedP = [...window.otherList.payment].sort((a, b) => (Number(a.number) || 0) - (Number(b.number) || 0));
           sortedP.forEach(ref => {
             const found = payments.find(p => p.payment === ref.name);
             if (found) msg += `▶︎ ${ref.name}：💰${found.thisTotal}\n`;
           });
         }
 
-        // 📂 分類本期總額
-        if (types.length && window.otherList?.type) {
+        // 📂 分類統計
+        if (types?.length && window.otherList?.type) {
           msg += `\n📂 分類本期總額:\n`;
-          const sortedT = [...window.otherList.type].sort((a,b) => Number(a.number) - Number(b.number));
+          const sortedT = [...window.otherList.type].sort((a, b) => (Number(a.number) || 0) - (Number(b.number) || 0));
           sortedT.forEach(ref => {
             const found = types.find(t => t.type === ref.name);
             if (found) msg += `▶︎ ${ref.name}：💰${found.thisTotal}\n`;
           });
         }
 
-        // --- 顯示與發送訊息 ---
+        // ✅ 顯示 Alert (與 LINE 內容完全一致)
         alert(msg);
+
+        // ✅ 發送 LINE 訊息
         if (liff.isInClient()) {
-          await liff.sendMessages([{ type: "text", text: msg }]);
+          try {
+            await liff.sendMessages([{ type: "text", text: msg }]);
+          } catch (err) { console.warn("LINE 傳送失敗", err); }
         }
 
         getEl("expenseForm").reset();
@@ -333,4 +339,5 @@
 </script>
 </body>
 </html>
+
 
