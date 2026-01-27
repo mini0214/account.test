@@ -216,44 +216,6 @@ async function initApp() {
   }
 }
 
-//簡單的計時器（Timer）
-let timerInterval;
-let seconds = 0;
-
-function startLoading() {
-  const loadingDiv = document.getElementById('loading');
-  const resultDiv = document.getElementById('queryResult');
-  
-  // 初始化狀態
-  seconds = 0;
-  loadingDiv.style.display = 'block';
-  loadingDiv.innerText = `⏳ 正在載入中,請稍侯...${seconds}s`;
-  resultDiv.innerHTML = ''; // 清空舊資料
-
-  // 每秒更新一次
-  timerInterval = setInterval(() => {
-    seconds++;
-    loadingDiv.innerText = `⏳ 正在載入中,請稍侯...${seconds}s`;
-  }, 1000);
-}
-
-function stopLoading() {
-  clearInterval(timerInterval);
-  document.getElementById('loading').style.display = 'none';
-}
-
-// 修改你的按鈕事件監聽器範例
-document.getElementById('queryMonthBtn').addEventListener('click', () => {
-  startLoading();
-  
-  // 模擬非同步請求 (例如 fetch 或 Google Apps Script 調用)
-  setTimeout(() => {
-    // 請求完成後停止計時
-    stopLoading();
-    document.getElementById('queryResult').innerText = "載入完成！";
-  }, 3500); // 模擬 3.5 秒的延遲
-});
-  
 // ----------------------------------------------------
 // ✅ 獲取順序清單 (API_URL 已寫死)
 // ----------------------------------------------------
@@ -276,7 +238,67 @@ async function fetchOrderLists() {
     console.error("❌ 獲取清單失敗:", e);
   }
 }
+  
+// 啟動簡單的計時器（Timer）
+let timerInterval;
+let seconds = 0;
 
+// --- 1. 定義啟動計時的函式 ---
+function startLoading() {
+  const loadingDiv = document.getElementById('loading');
+  
+  // 停止之前的計時器（防止疊加）並重設秒數
+  clearInterval(timerInterval);
+  seconds = 0;
+  
+  // 顯示 Loading 並初始化文字
+  loadingDiv.style.display = 'block';
+  loadingDiv.innerText = `⏳ 正在載入中,請稍侯...${seconds}s`;
+  
+  // 清空畫面上舊的資料與圖表（避免混淆）
+  document.getElementById('queryResult').innerHTML = '';
+  document.getElementById('drillDownArea').innerHTML = '';
+  if(document.getElementById('sixMonthArea')) document.getElementById('sixMonthArea').innerHTML = '';
+
+  // 每秒更新
+  timerInterval = setInterval(() => {
+    seconds++;
+    loadingDiv.innerText = `⏳ 正在載入中,請稍侯...${seconds}s`;
+  }, 1000);
+}
+
+// --- 2. 定義停止計時的函式 ---
+function stopLoading() {
+  clearInterval(timerInterval);
+  document.getElementById('loading').style.display = 'none';
+}
+
+// --- 3. 統一綁定所有按鈕事件 ---
+// 將所有按鈕 ID 放入陣列中
+const btnIds = [
+  'queryMonthBtn',         // 明細
+  'queryMonthExchangeBtn', // 幣別
+  'queryMonthPayBtn',      // 付款
+  'queryMonthTypeBtn',     // 分類
+  'queryMonthUserBtn',     // 記帳者
+  'queryMonthStoreBtn'     // 店家
+];
+
+btnIds.forEach(id => {
+  const btn = document.getElementById(id);
+  if (btn) {
+    btn.addEventListener('click', () => {
+      startLoading(); // 按下任何一個按鈕，都會從 0s 開始計時
+      
+      /* 這裡接你原本的查詢邏輯，例如：
+         google.script.run.withSuccessHandler(() => {
+            stopLoading(); // 收到資料後停止計時
+         }).yourBackendFunction();
+      */
+    });
+  }
+});
+  
 // 啟動應用
 if (document.readyState === "complete" || document.readyState === "interactive") {
   initApp();
@@ -810,7 +832,3 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
-
-
-
-
