@@ -228,6 +228,35 @@
     Object.assign(sugg.style, { width: rect.width + "px", top: (rect.bottom + window.scrollY) + "px", left: (rect.left + window.scrollX) + "px" });
   });
 
+  //簡單的計時器（Timer）
+  let sendingTimer;
+  let sendingSeconds = 0;
+  
+  // --- 啟動「資料送出中」計時 ---
+  function startSending() {
+    const msgDiv = document.getElementById('loadingMsg');
+    
+    // 初始化
+    clearInterval(sendingTimer);
+    sendingSeconds = 0;
+    
+    // 顯示區塊並設定初始文字
+    msgDiv.style.display = 'block';
+    msgDiv.innerText = `⏳ 資料送出中，請稍候...${sendingSeconds}s`;
+  
+    // 每秒更新
+    sendingTimer = setInterval(() => {
+      sendingSeconds++;
+      msgDiv.innerText = `⏳ 資料送出中，請稍候...${sendingSeconds}s`;
+    }, 1000);
+  }
+  
+  // --- 停止「資料送出中」計時 ---
+  function stopSending() {
+    clearInterval(sendingTimer);
+    document.getElementById('loadingMsg').style.display = 'none';
+  }
+  
   // ----------------------------------------------------
   // ✅ 表單送出：修復並還原完整訊息
   // ----------------------------------------------------
@@ -340,4 +369,5 @@ getEl("expenseForm").addEventListener("submit", async (e) => {
 </script>
 </body>
 </html>
+
 
