@@ -262,24 +262,30 @@
         body: JSON.stringify(payload) 
       });
       
-      // 建議檢查一下儲存是否成功
       if (saveRes.ok) {
         // 2. 確定儲存完成後，才發送查詢請求
         const totalRes = await fetch(`${API_URL}?type=query&command=總額&user=${encodeURIComponent(profile.displayName)}`);
         
-        // 接下來處理 totalRes 的邏輯...
-        const totalData = await totalRes.json();
-        console.log("包含新資料的總額：", totalData);
+        if (totalRes.ok) {
+          const totalData = await totalRes.json();
+          console.log("包含新資料的總額：", totalData);
+      
+          // --- 這裡開始處理原本 result.ok 之後的邏輯 ---
+          // 因為現在資料都在 totalData 裡了
+          const thisTotal = totalData?.thisMonth?.total ?? 0;
+          const lastTotal = totalData?.lastMonth?.total ?? 0;
+          const changeText = totalData?.changeText || "";
+          const changetxt = totalData?.changetxt || "";
+          const types = totalData?.types || [];
+          const payments = totalData?.payments || [];
+          
+          // 這裡放你後續顯示 UI 或 LINE 訊息的代碼...
+        } else {
+          console.error("查詢總額失敗");
+        }
+      } else {
+        alert("送出失敗，請檢查網路連線");
       }
-
-      if (result.ok) {
-        // 解析統計值
-        const thisTotal = totalData?.thisMonth?.total ?? 0;
-        const lastTotal = totalData?.lastMonth?.total ?? 0;
-        const changeText = totalData?.changeText || "";
-        const changetxt = totalData?.changetxt || "";
-        const types = totalData?.types || [];
-        const payments = totalData?.payments || [];
 
         // ✅ 構建與原本一模一樣的完整訊息
         let msg =
@@ -346,4 +352,5 @@
 </script>
 </body>
 </html>
+
 
