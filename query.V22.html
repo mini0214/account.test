@@ -399,7 +399,7 @@ function renderResult(command, json) {
         const rowId = r[15] || '';
         const dataInfo = {
           user: r[3]||'', date: r[4], store: r[8]||'',
-          amount: r[5]||0, pay: r[7]||'', type: r[6]||'', note: r[9]||'', memo: r[10] || '', curr: r[14]||''
+          amount: r[5]||0, curr: r[14]||'', pay: r[7]||'', type: r[6]||'', note: r[9]||'', memo: r[10] || ''
         };
         const dataStr = JSON.stringify(dataInfo).replace(/"/g, '&quot;');
 
@@ -530,9 +530,9 @@ function editRow(id) {
   document.getElementById("editDate").value = toInputDate(d);
   document.getElementById("editStore").value = row[8] || "";
   document.getElementById("editAmount").value = row[5] || 0;
-  document.getElementById("editType").value = row[6] || "";
   document.getElementById("editCurr").value = row[14] || "";
   document.getElementById("editPay").value = row[7] || "";
+  document.getElementById("editType").value = row[6] || "";
   document.getElementById("editNote").value = row[9] || "";
   document.getElementById("editMemo").value = row[10] || "";
 
@@ -559,9 +559,9 @@ async function confirmUpdate() {
   updatedRow[4]  = document.getElementById("editDate").value;
   updatedRow[8]  = document.getElementById("editStore").value;
   updatedRow[5]  = Number(document.getElementById("editAmount").value); // 轉為數字
-  updatedRow[6]  = document.getElementById("editType").value;
   updatedRow[14] = document.getElementById("editCurr").value;
   updatedRow[7]  = document.getElementById("editPay").value;
+  updatedRow[6]  = document.getElementById("editType").value;
   updatedRow[9]  = document.getElementById("editNote").value;
   updatedRow[10] = document.getElementById("editMemo").value;
   // 收入/支出通常由公式或後端計算，若需前端更新請在此指定 updatedRow[11] 或 [12]
@@ -608,7 +608,7 @@ function showDrillDown(command, itemValue) {
   let subTotal = filteredRows.reduce((sum, r) => sum + Number(r[5] || 0), 0);
   let subCount = filteredRows.length;
   let drillHtml = `<h5>📇 ${command}明細：<span style="color: blue; font-weight: bold;">${itemValue}</span> 📍 金額：${subTotal.toLocaleString()} 元 📝 筆數：${subCount.toLocaleString()} 筆</h5>`;
-  drillHtml += `<table id="drillTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>幣別</th><th>ID</th><th>功能</th></tr></thead><tbody>`;
+  drillHtml += `<table id="drillTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>幣別</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>ID</th><th>功能</th></tr></thead><tbody>`;
   
   filteredRows.forEach((r) => {
     // 1. 取得 ID 與封裝資料 (供修改/刪除使用)
@@ -832,5 +832,6 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
