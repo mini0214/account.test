@@ -172,6 +172,39 @@ let currentCommandName = "";
 let globalStats = { total: 0, count: 0 };
 let orderMaps = { "付款": [], "分類": [], "幣別": [], "記帳者": [] };
 let lastFetchedRows = []; 
+  
+function setDefaultDateRange() {
+  const now = new Date();
+  document.getElementById("startDate").value = toInputDate(new Date(now.getFullYear(), now.getMonth(), 1));
+  document.getElementById("endDate").value = toInputDate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+}
+function toInputDate(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+
+function changeMonth(offset) {
+  const current = new Date(document.getElementById("startDate").value);
+  const newFirst = new Date(current.getFullYear(), current.getMonth() + offset, 1);
+  const newLast = new Date(newFirst.getFullYear(), newFirst.getMonth() + 1, 0);
+  document.getElementById("startDate").value = toInputDate(newFirst);
+  document.getElementById("endDate").value = toInputDate(newLast);
+}
+document.getElementById("prevMonthBtn").onclick = () => changeMonth(-1);
+document.getElementById("nextMonthBtn").onclick = () => changeMonth(1);
+document.getElementById("thisYearBtn").onclick = () => {
+  const y = new Date().getFullYear();
+  document.getElementById("startDate").value = `${y}-01-01`; document.getElementById("endDate").value = `${y}-12-31`;
+};
+document.getElementById("lastYearBtn").onclick = () => {
+  const y = new Date().getFullYear() - 1;
+  document.getElementById("startDate").value = `${y}-01-01`; document.getElementById("endDate").value = `${y}-12-31`;
+};
+
+document.querySelectorAll("button[id^='queryMonth']").forEach(btn => {
+  btn.onclick = () => {
+    currentFullLabel = btn.innerText; 
+    currentCommandName = btn.innerText.replace(/[^\u4e00-\u9fa5]/g, '');
+    sendQuery(currentCommandName);
+  };
+});
 
 // ----------------------------------------------------
 // ✅ 優化後的初始化 (全速並行版)
@@ -322,39 +355,6 @@ function updateSelectOptions(elementId, list) {
         el.appendChild(opt);
     });
 }
-
-function setDefaultDateRange() {
-  const now = new Date();
-  document.getElementById("startDate").value = toInputDate(new Date(now.getFullYear(), now.getMonth(), 1));
-  document.getElementById("endDate").value = toInputDate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
-}
-function toInputDate(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
-
-function changeMonth(offset) {
-  const current = new Date(document.getElementById("startDate").value);
-  const newFirst = new Date(current.getFullYear(), current.getMonth() + offset, 1);
-  const newLast = new Date(newFirst.getFullYear(), newFirst.getMonth() + 1, 0);
-  document.getElementById("startDate").value = toInputDate(newFirst);
-  document.getElementById("endDate").value = toInputDate(newLast);
-}
-document.getElementById("prevMonthBtn").onclick = () => changeMonth(-1);
-document.getElementById("nextMonthBtn").onclick = () => changeMonth(1);
-document.getElementById("thisYearBtn").onclick = () => {
-  const y = new Date().getFullYear();
-  document.getElementById("startDate").value = `${y}-01-01`; document.getElementById("endDate").value = `${y}-12-31`;
-};
-document.getElementById("lastYearBtn").onclick = () => {
-  const y = new Date().getFullYear() - 1;
-  document.getElementById("startDate").value = `${y}-01-01`; document.getElementById("endDate").value = `${y}-12-31`;
-};
-
-document.querySelectorAll("button[id^='queryMonth']").forEach(btn => {
-  btn.onclick = () => {
-    currentFullLabel = btn.innerText; 
-    currentCommandName = btn.innerText.replace(/[^\u4e00-\u9fa5]/g, '');
-    sendQuery(currentCommandName);
-  };
-});
 
 async function sendQuery(command) {
   document.getElementById("loading").style.display = "block";
@@ -832,6 +832,7 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
 
