@@ -146,7 +146,7 @@
   <button id="queryMonthStoreBtn">🏠 店家</button>
 </div>
 
-<div id="loading" style="display:none; font-size:40px; color:red; text-align:center; margin-top:20px;">⏳ 正在載入中,請稍侯...</div>
+<div id="loading" style="display:none; font-size:40px; color:red; text-align:center; margin-top:20px;">⏳ 正在載入中，請稍侯...</div>
 <div id="queryResult"></div>
 <div id="drillDownArea"></div>
 <div class="chart-container"><canvas id="chartCanvas"></canvas></div>
@@ -253,7 +253,7 @@ function startLoading() {
   
   // 顯示 Loading 並初始化文字
   loadingDiv.style.display = 'block';
-  loadingDiv.innerText = `⏳ 正在載入中,請稍侯...${seconds}s`;
+  loadingDiv.innerText = `⏳ 正在載入中，請稍侯...${seconds}s`;
   
   // 清空畫面上舊的資料與圖表（避免混淆）
   document.getElementById('queryResult').innerHTML = '';
@@ -263,7 +263,7 @@ function startLoading() {
   // 每秒更新
   timerInterval = setInterval(() => {
     seconds++;
-    loadingDiv.innerText = `⏳ 正在載入中,請稍侯...${seconds}s`;
+    loadingDiv.innerText = `⏳ 正在載入中，請稍侯...${seconds}s`;
   }, 1000);
 }
 
@@ -832,6 +832,7 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
 
