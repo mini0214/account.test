@@ -8,6 +8,7 @@
 
   <style>
     body { font-family: Arial, sans-serif; padding: 50px; }
+    h2 { font-size: 40px; text-align: center; margin-bottom: 40px; }
     h3 { font-size: 50px; text-align: center; margin-bottom: 50px; }
     label { font-size: 50px; font-weight: bold; display: inline-block; /*比較不會被擠下去 */ margin-top: 25px; white-space: nowrap; }
     input, select  { font-size: 50px; padding: 25px; width: 70%; margin-top: 5px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
@@ -93,7 +94,17 @@
       ⏳ 資料送出中，請稍候...
     </div>
   </form>
-    
+
+  <div style="text-align: center; margin-top: 20px; padding: 20px; border-top: 1px solid #ccc;"> 
+      <div class="links">
+        <h2>
+          <a href="liff.html" target="_blank" style="margin: 0 10px;">💰非<span style="color: red;">記</span>不可</a> 
+          <a href="query.html" target="_blank" style="margin: 0 10px;">🔍非<span style="color: blue;">看</span><span>/</span><span style="color: green;">匯</span>不可</a> 
+          <a href="other.html" target="_blank" style="margin: 0 10px;">⚙️非<span style="color: gray;">設</span>不可</a>
+        </h2>
+      </div>
+  </div>
+  
     <script>      
       const btnIncome = document.getElementById("btnIncome");
       const btnPayout = document.getElementById("btnPayout");
@@ -358,4 +369,5 @@
 </script>
 </body>
 </html>
+
 
