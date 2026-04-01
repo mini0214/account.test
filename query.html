@@ -492,31 +492,49 @@ function renderResult(command, json) {
     }
 
     if (json.months_6m) {
-      const months = json.months_6m; const dataMap = {};
+      const months = json.months_6m; 
+      const mCount = months.length; // 取得月份數量 (通常是 6)
+      const dataMap = {};
+      
       rows.forEach(r => {
         let key = (r[idx] && String(r[idx]).trim() !== "") ? String(r[idx]).trim() : "未知";
-        const d = new Date(r[4]); const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const d = new Date(r[4]); 
+        const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         if (months.includes(ym)) {
           if (!dataMap[key]) { dataMap[key] = {}; months.forEach(m => dataMap[key][m] = 0); }
           dataMap[key][ym] += (Number(r[5]) || 0);
         }
       });
-      let monthlySums = new Array(months.length).fill(0); let grandTotal = 0;
+      
+      let monthlySums = new Array(months.length).fill(0); 
+      let grandTotal = 0;
+      
       let sixHtml = `<h5>📅 依結束日期的近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
       months.forEach(m => sixHtml += `<th>${m}</th>`);
-      sixHtml += `<th>總額</th></tr></thead><tbody>`;
+      sixHtml += `<th>總額</th><th>平均值</th></tr></thead><tbody>`;
+      
       Object.keys(dataMap).forEach(item => {
-        let rSum = 0; sixHtml += `<tr><td>${item}</td>`;
+        let rSum = 0; 
+        sixHtml += `<tr><td>${item}</td>`;
         months.forEach((m, i) => { 
-          let val = dataMap[item][m] || 0; rSum += val; monthlySums[i] += val; 
+          let val = dataMap[item][m] || 0; 
+          rSum += val; 
+          monthlySums[i] += val; 
           sixHtml += `<td class="numeric">${val.toLocaleString()}</td>`; 
         });
         grandTotal += rSum; 
-        sixHtml += `<td class="numeric"><strong>${rSum.toLocaleString()}</strong></td></tr>`;
+
+        let rAvg = mCount > 0 ? Math.round(rSum / mCount) : 0;
+        sixHtml += `<td class="numeric"><strong>${rSum.toLocaleString()}</strong></td>`;
+        sixHtml += `<td class="numeric" style="color: #2a7bde;">${rAvg.toLocaleString()}</td></tr>`;
       });
+
+      let grandAvg = mCount > 0 ? Math.round(grandTotal / mCount) : 0;
       sixHtml += `</tbody><tfoot><tr><td>每月總計</td>`;
       monthlySums.forEach(sum => sixHtml += `<td class="numeric">${sum.toLocaleString()}</td>`);
-      sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td></tr></tfoot></table>`;
+      sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td>;
+      sixHtml += `<td class="numeric"><strong>${grandAvg.toLocaleString()}</strong></td></tr></tfoot></table>`;
+      
       document.getElementById("sixMonthArea").innerHTML = sixHtml;
       makeTableSortable(document.getElementById("table6m"), command);
       document.getElementById("trendContainer").style.display = "block";
