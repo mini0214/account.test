@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>零用金支出帳簿</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 30px; background-color: #f9f9f9; }
+    h2 { font-size: 40px; text-align: center; margin-bottom: 40px; }
+    h3 { font-size: 50px; text-align: center; margin-bottom: 50px; }
+    .date-inputs { font-size: 50px; text-align: center; margin-bottom: 20px; }
+    .date-inputs input { font-size: 50px; margin: 0 10px; padding: 5px; }
+    button { font-size: 40px; margin: 5px; padding: 10px 20px; border-radius: 8px; cursor: pointer; background-color: #0056b3; color: white; border: none; }
+    .date-btn { background-color: #666; }
+    .green-btn { background-color: #28a745; }
+    .pdf-btn { background-color: #d9534f; }
+    .excel-btn { background-color: #1d6f42; }
+    .slogan { font-size: 36px; text-align: center; margin: 30px 0 10px 0; color: #333; font-weight: bold; }
+    h5 { font-size: 32px; margin: 20px 0 10px 0; padding: 0; }
+    table { font-size: 28px; border-collapse: collapse; width: 100%; margin-top: 15px; background: white; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+    th { background-color: #eee; cursor: pointer; white-space: nowrap; }
+    .total, tfoot { background-color: #eee !important; color: #000 !important; font-weight: bold; }
+    .total { font-size: 36px; margin: 20px 0; text-align: center; border: 1px solid #ddd; padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    tfoot td { border: 1px solid #ddd !important; color: #000 !important; }
+    .numeric { text-align: right; }
+    .chart-container { width: 95%; margin: 30px auto; background: white; border: 1px solid #eee; padding: 10px; }
+    canvas { width: 100% !important; height: auto !important; display: block; }
+    #loading { font-size: 32px; text-align: center; font-weight: bold; margin: 20px; }
+    .drill-down-link { color: #0056b3; text-decoration: underline; cursor: pointer; font-weight: bold; }
+    #drillDownArea { margin-top: 40px; padding-top: 20px; }
+    @media print { button, .date-inputs, h3 { display: none !important; } }
+
+    /* --- 新增修改視窗樣式 --- */
+    .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); }
+    .modal-content { background-color: white; margin: 2% auto; padding: 40px; border-radius: 20px; width: 85%; max-height: 90vh; overflow-y: auto; }
+    .modal-content h3 { font-size: 45px; margin-top: 0; }
+    .form-group { margin-bottom: 25px; text-align: left; }
+    .form-group label { display: block; font-size: 32px; margin-bottom: 10px; font-weight: bold; }
+    .form-group input, .form-group select { width: 100%; font-size: 35px; padding: 15px; border: 2px solid #ccc; border-radius: 10px; box-sizing: border-box; }
+    .modal-footer { text-align: right; margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; }
+    .save-btn { background-color: #28a745; margin-left: 20px; }
+    .cancel-btn { background-color: #dc3545; }
+
+    /* 修改鈕：預設綠底 */
+    .btn-edit {
+      font-size: 20px;
+      padding: 5px 10px;
+      cursor: pointer;
+      background-color: #28a745; /* 綠色 */
+      color: white;
+      border: none;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+    }
+    
+    /* 刪除鈕：預設紅底 */
+    .btn-delete {
+      font-size: 20px;
+      padding: 5px 10px;
+      cursor: pointer;
+      background-color: #d9534f; /* 紅色 */
+      color: white;
+      border: none;
+      border-radius: 4px;
+      margin-left: 5px;
+      transition: background-color 0.2s;
+    }
+    
+    /* 共通：懸停 (hover) 或 按下 (active) 時變藍底 */
+    .btn-edit:hover, .btn-edit:active, 
+    .btn-delete:hover, .btn-delete:active {
+      background-color: #0056b3 !important; /* 藍色 */
+      color: white;
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+
+<h3>🔍非<span style="color: blue;">看</span><span>/</span><span style="color: green;">匯</span>不可.[<span id="version"></span>]</h3>
+
+<div id="editModal" class="modal">
+  <div class="modal-content">
+    <h3>📝 修改 ID: <span id="displayEditId"></span> 資料</h3>
+    <input type="hidden" id="editId">
+    
+    <div class="form-group">
+      <label>日期</label>
+      <input type="date" id="editDate">
+    </div>
+    <div class="form-group">
+      <label>店家</label>
+      <input type="text" id="editStore">
+    </div>
+    <div class="form-group">
+      <label>金額 (支出)</label>
+      <input type="number" id="editAmount">
+    </div>
+    <div class="form-group">
+      <label>幣別</label>
+      <select id="editCurr"></select>
+    </div>
+    <div class="form-group">
+      <label>付款方式</label>
+      <select id="editPay"></select>
+    </div>
+    <div class="form-group">
+      <label>分類</label>
+      <select id="editType"></select>
+    </div>
+    <div class="form-group">
+      <label>附註</label>
+      <input type="text" id="editNote">
+    </div>
+    <div class="form-group">
+      <label>備註</label>
+      <input type="text" id="editMemo">
+    </div>
+
+    <div class="modal-footer">
+      <button class="cancel-btn" onclick="closeEditModal()">取消</button>
+      <button class="save-btn" onclick="confirmUpdate()">確定儲存</button>
+    </div>
+  </div>
+</div>
+
+<div class="date-inputs">
+  開始日期：<input type="date" id="startDate"><br>
+  結束日期：<input type="date" id="endDate"><br>
+  <button id="prevMonthBtn" class="date-btn">上月</button>
+  <button id="nextMonthBtn" class="date-btn">下月</button>
+  <button id="thisYearBtn" class="date-btn">整年</button>
+  <button id="lastYearBtn" class="date-btn">去年</button>
+</div>
+
+<div class="slogan">選擇您想要看的(直球對決)</div>
+    
+<div style="text-align:center">
+  <button id="queryMonthBtn">📊 明細</button>
+  <button id="queryMonthExchangeBtn">💰 幣別</button>
+  <button id="queryMonthPayBtn">💳 付款</button>
+  <button id="queryMonthTypeBtn">📂 分類</button>
+  <button id="queryMonthUserBtn">👤 記帳者</button>
+  <button id="queryMonthStoreBtn">🏠 店家</button>
+</div>
+
+<div id="loading" style="display:none; font-size:40px; color:red; text-align:center; margin-top:20px;">⏳ 正在載入中,請稍侯...</div>
+<div id="queryResult"></div>
+<div id="drillDownArea"></div>
+<div class="chart-container"><canvas id="chartCanvas"></canvas></div>
+<div id="sixMonthArea"></div>
+<div class="chart-container" id="trendContainer" style="display:none;"><canvas id="categoryTrendCanvas"></canvas></div>
+
+<div id="exportArea" style="text-align:center; margin-top:40px; display:none; padding-bottom: 100px;">
+  <button id="exportCsvBtn" class="green-btn">📤 匯出 CSV</button>
+  <button id="exportExcelBtn" class="excel-btn">📊 匯出 Excel</button>
+  <button id="exportPdfBtn" class="pdf-btn">📄 匯出 PDF</button>
+</div>
+
+  <div style="text-align: center; margin-top: 20px; padding: 20px; border-top: 1px solid #ccc;"> 
+      <div class="links">
+        <h2>
+          <a href="liff.html" target="_blank" style="margin: 0 10px;">💰非<span style="color: red;">記</span>不可</a> 
+          <a href="query.html" target="_blank" style="margin: 0 10px;">🔍非<span style="color: blue;">看</span><span>/</span><span style="color: green;">匯</span>不可</a> 
+          <a href="other.html" target="_blank" style="margin: 0 10px;">⚙️非<span style="color: gray;">設</span>不可</a>
+        </h2>
+      </div>
+
+    
+      <div style="font-size: 20px; text-align: center; color: #666; margin-top: 20px;">
+          Copyright © Betty Yi. All Right Reserved.
+      </div>
+  </div>
+
+<script>
+const LIFF_IDq = "2008096451-jPJ50MOY";
+const API_URL = "https://script.google.com/macros/s/AKfycbwxqIKuk4VqHeib3Mi_xxE6yS5R8V55wyiQVIS6VgF6PEnNa93lVSoBBiX4OYksDuaiUw/exec";
+const VERSION = "V29_#260129"; 
+
+let currentUser = null; 
+let chartInstance = null; 
+let trendChartInstance = null;
+let currentFullLabel = ""; 
+let currentCommandName = ""; 
+let globalStats = { total: 0, count: 0 };
+let orderMaps = { "付款": [], "分類": [], "幣別": [], "記帳者": [] };
+let lastFetchedRows = []; 
+  
+function setDefaultDateRange() {
+  const now = new Date();
+  document.getElementById("startDate").value = toInputDate(new Date(now.getFullYear(), now.getMonth(), 1));
+  document.getElementById("endDate").value = toInputDate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+}
+function toInputDate(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+
+function changeMonth(offset) {
+  const current = new Date(document.getElementById("startDate").value);
+  const newFirst = new Date(current.getFullYear(), current.getMonth() + offset, 1);
+  const newLast = new Date(newFirst.getFullYear(), newFirst.getMonth() + 1, 0);
+  document.getElementById("startDate").value = toInputDate(newFirst);
+  document.getElementById("endDate").value = toInputDate(newLast);
+}
+document.getElementById("prevMonthBtn").onclick = () => changeMonth(-1);
+document.getElementById("nextMonthBtn").onclick = () => changeMonth(1);
+document.getElementById("thisYearBtn").onclick = () => {
+  const y = new Date().getFullYear();
+  document.getElementById("startDate").value = `${y}-01-01`; document.getElementById("endDate").value = `${y}-12-31`;
+};
+document.getElementById("lastYearBtn").onclick = () => {
+  const y = new Date().getFullYear() - 1;
+  document.getElementById("startDate").value = `${y}-01-01`; document.getElementById("endDate").value = `${y}-12-31`;
+};
+
+document.querySelectorAll("button[id^='queryMonth']").forEach(btn => {
+  btn.onclick = () => {
+    currentFullLabel = btn.innerText; 
+    currentCommandName = btn.innerText.replace(/[^\u4e00-\u9fa5]/g, '');
+    sendQuery(currentCommandName);
+  };
+});
+
+// ----------------------------------------------------
+// ✅ 優化後的初始化 (全速並行版)
+// ----------------------------------------------------
+async function initApp() {
+  try {
+    // 立即顯示版號，不用等
+    const versionEl = document.getElementById("version");
+    if (versionEl) versionEl.textContent = VERSION;
+
+    console.log("🚀 啟動全速並行載入...");
+
+    // 🔥 核心優化：LIFF 初始化與清單獲取「同時開始」
+    // 不再需要等待 SETTINGS_URL，直接使用 API_URL
+    await Promise.all([
+      liff.init({ liffId: LIFF_IDq }).then(async () => {
+        if (!liff.isLoggedIn()) {
+          liff.login();
+        } else {
+          const profile = await liff.getProfile();
+          currentUser = profile.displayName;
+          console.log("✅ LIFF 登入成功:", currentUser);
+        }
+      }),
+      fetchOrderLists() // 同時去抓「付款、分類、幣別」清單
+    ]);
+
+    // 設定預設日期範圍 (這是本地運算，放最後)
+    if (typeof setDefaultDateRange === "function") {
+      setDefaultDateRange();
+    }
+    
+    console.log("✨ 系統初始化完成");
+
+  } catch (e) {
+    console.error("❌ 初始化失敗:", e);
+    // 如果是 ID 錯誤或授權過期，嘗試強制重新整理
+    if (e.message.includes("authorization") || e.message.includes("code")) {
+       liff.logout();
+       location.reload();
+    }
+  }
+}
+
+// ----------------------------------------------------
+// ✅ 獲取順序清單 (API_URL 已寫死)
+// ----------------------------------------------------
+async function fetchOrderLists() {
+  try {
+    const res = await fetch(`${API_URL}?type=query&command=清單`);
+    const json = await res.json();
+    if (json.list) {
+      orderMaps["付款"] = (json.list.payment || []).map(item => item.name);
+      orderMaps["分類"] = (json.list.type || []).map(item => item.name);
+      orderMaps["幣別"] = (json.list.currency || []).map(item => item.name);
+      orderMaps["記帳者"] = (json.list.user || []).map(item => item.name);
+      
+      if (typeof refreshSelects === "function") {
+        refreshSelects();
+      }
+      console.log("✅ 順序清單載入完畢");
+    }
+  } catch (e) {
+    console.error("❌ 獲取清單失敗:", e);
+  }
+}
+  
+// 啟動簡單的計時器（Timer）
+let timerInterval;
+let seconds = 0;
+
+// --- 1. 定義啟動計時的函式 ---
+function startLoading() {
+  const loadingDiv = document.getElementById('loading');
+  
+  // 停止之前的計時器（防止疊加）並重設秒數
+  clearInterval(timerInterval);
+  seconds = 0;
+  
+  // 顯示 Loading 並初始化文字
+  loadingDiv.style.display = 'block';
+  loadingDiv.innerText = `⏳ 正在載入中,請稍侯...${seconds}s`;
+  
+  // 清空畫面上舊的資料與圖表（避免混淆）
+  document.getElementById('queryResult').innerHTML = '';
+  document.getElementById('drillDownArea').innerHTML = '';
+  if(document.getElementById('sixMonthArea')) document.getElementById('sixMonthArea').innerHTML = '';
+
+  // 每秒更新
+  timerInterval = setInterval(() => {
+    seconds++;
+    loadingDiv.innerText = `⏳ 正在載入中,請稍侯...${seconds}s`;
+  }, 1000);
+}
+
+// --- 2. 定義停止計時的函式 ---
+function stopLoading() {
+  clearInterval(timerInterval);
+  document.getElementById('loading').style.display = 'none';
+}
+
+// --- 3. 統一綁定所有按鈕事件 ---
+// 將所有按鈕 ID 放入陣列中
+const btnIds = [
+  'queryMonthBtn',         // 明細
+  'queryMonthExchangeBtn', // 幣別
+  'queryMonthPayBtn',      // 付款
+  'queryMonthTypeBtn',     // 分類
+  'queryMonthUserBtn',     // 記帳者
+  'queryMonthStoreBtn'     // 店家
+];
+
+btnIds.forEach(id => {
+  const btn = document.getElementById(id);
+  if (btn) {
+    btn.addEventListener('click', () => {
+      startLoading(); // 按下任何一個按鈕，都會從 0s 開始計時
+      
+      /* 這裡接你原本的查詢邏輯，例如：
+         google.script.run.withSuccessHandler(() => {
+            stopLoading(); // 收到資料後停止計時
+         }).yourBackendFunction();
+      */
+    });
+  }
+});
+  
+// 啟動應用
+if (document.readyState === "complete" || document.readyState === "interactive") {
+  initApp();
+} else {
+  window.addEventListener("load", initApp);
+}
+
+function refreshSelects() {
+    updateSelectOptions("editType", orderMaps["分類"]);
+    updateSelectOptions("editPay", orderMaps["付款"]);
+    updateSelectOptions("editCurr", orderMaps["幣別"]);
+}
+
+function updateSelectOptions(elementId, list) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    el.innerHTML = "";
+    list.forEach(item => {
+        let opt = document.createElement("option");
+        opt.value = item; opt.innerText = item;
+        el.appendChild(opt);
+    });
+}
+
+async function sendQuery(command) {
+  document.getElementById("loading").style.display = "block";
+  document.getElementById("queryResult").innerHTML = "";
+  document.getElementById("drillDownArea").innerHTML = ""; 
+  document.getElementById("sixMonthArea").innerHTML = "";
+  document.getElementById("trendContainer").style.display = "none";
+  if(chartInstance) chartInstance.destroy();
+  if(trendChartInstance) trendChartInstance.destroy();
+
+  const body = { type: "query", command, version: VERSION, startDate: document.getElementById("startDate").value + " 00:00:00", endDate: document.getElementById("endDate").value + " 23:59:59" };
+  try {
+    const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(body) });
+    const json = await res.json();
+    renderResult(command, json);
+  } catch (e) { alert("讀取失敗"); }
+  finally { document.getElementById("loading").style.display = "none"; }
+}
+
+function renderResult(command, json) {
+  let mainHtml = "";
+  const adminUser = "Betty Yi";
+  let rows = (currentUser === adminUser) ? (json.rows || []) : (json.rows || []).filter(r => r[3] === currentUser);
+  lastFetchedRows = rows; 
+
+  const filterStart = new Date(document.getElementById("startDate").value + " 00:00:00");
+  const filterEnd = new Date(document.getElementById("endDate").value + " 23:59:59");
+  const allChartContainers = document.querySelectorAll(".chart-container");
+  const mainChartContainer = allChartContainers[0]; 
+
+  if (command === "明細") {
+    let displayRows = rows.filter(r => {
+      const d = new Date(r[4]);
+      return d >= filterStart && d <= filterEnd;
+    });
+
+    if (displayRows.length > 0) {
+      if (mainChartContainer) mainChartContainer.style.display = "block";
+      mainHtml += `<h5>${currentFullLabel}查詢;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>幣別</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>ID</th><th>功能</th></tr></thead><tbody>`;
+      
+      displayRows.forEach((r) => { 
+        const rowId = r[15] || '';
+        const dataInfo = {
+          user: r[3]||'', date: r[4], store: r[8]||'',
+          amount: r[5]||0, curr: r[14]||'', pay: r[7]||'', type: r[6]||'', note: r[9]||'', memo: r[10] || ''
+        };
+        const dataStr = JSON.stringify(dataInfo).replace(/"/g, '&quot;');
+
+        mainHtml += `<tr>
+          <td>${r[3]||''}</td>
+          <td>${new Date(r[4]).toLocaleDateString()}</td>
+          <td>${r[8]||''}</td>
+          <td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+          <td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+          <td>${r[13]||1}</td>
+          <td class="numeric">${(Number(r[5])||0).toLocaleString()}</td>
+          <td>${r[14]||''}</td>
+          <td>${r[7]||''}</td>
+          <td>${r[6]||''}</td>
+          <td>${r[9]||''}</td>
+          <td>${r[10]||''}</td>
+          <td>${rowId}</td>
+          <td>
+            <button class="btn-edit" onclick='editRow("${rowId}")'>📝 修改</button>
+            <button class="btn-delete" onclick='deleteRow("${rowId}", ${dataStr})'>🗑️ 刪除</button>
+          </td>
+        </tr>`; 
+      });
+      mainHtml += `</tbody></table>`;
+      globalStats.total = displayRows.reduce((s, r) => s + Number(r[5] || 0), 0);
+      globalStats.count = displayRows.length;
+      mainHtml += `<div class="total">📌 總金額：${globalStats.total.toLocaleString()} 元 📝 總筆數：${globalStats.count} 筆</div>`;
+
+      const dailyData = {};
+      displayRows.forEach(r => {
+        const d = new Date(r[4]).toLocaleDateString();
+        if(!dailyData[d]) dailyData[d] = { sum: 0, ex: Number(r[13]||1) };
+        dailyData[d].sum += Number(r[5]||0);
+      });
+      const sortedDates = Object.keys(dailyData).sort((a,b)=>new Date(a)-new Date(b));
+      renderDetailChart(sortedDates, sortedDates.map(d=>dailyData[d].sum), sortedDates.map(d=>dailyData[d].ex));
+    } else {
+      if (mainChartContainer) mainChartContainer.style.display = "none";
+      mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">🔘 所選區間 ${document.getElementById("startDate").value} 至 ${document.getElementById("endDate").value} 無明細資料</div>`;
+    }
+  } else {
+    const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
+    const idx = keyMap[command];
+    let counts = {}; let itemCounts = {}; let totalItems = 0;
+    
+    rows.forEach(r => { 
+      const d = new Date(r[4]);
+      if (d >= filterStart && d <= filterEnd) {
+        let v = (r[idx] && String(r[idx]).trim() !== "") ? String(r[idx]).trim() : "未知";
+        counts[v] = (counts[v] || 0) + Number(r[5] || 0); 
+        itemCounts[v] = (itemCounts[v] || 0) + 1;
+        totalItems++;
+      }
+    });
+    
+    let labels = Object.keys(counts);
+    let values = Object.values(counts);
+    let totalSum = values.reduce((a, b) => a + b, 0);
+
+    if (totalSum !== 0) {
+      if (mainChartContainer) mainChartContainer.style.display = "block";
+      mainHtml += `<h5>${currentFullLabel}分析統計;標題按下即可排序</h5><table id="mainTable"><thead><tr><th>${command}</th><th class="numeric">金額</th><th class="numeric">佔比</th><th class="numeric">筆數(明細)</th></tr></thead><tbody>`;
+      labels.forEach((l) => { 
+        let val = counts[l]; let count = itemCounts[l];
+        mainHtml += `<tr><td>${l}</td><td class="numeric">${val.toLocaleString()}</td><td class="numeric">${((val/totalSum)*100).toFixed(1)}%</td><td class="numeric"><span class="drill-down-link" onclick="showDrillDown('${command}', '${l}')">${count.toLocaleString()}</span></td></tr>`; 
+      });
+      mainHtml += `</tbody></table>`;
+      globalStats.total = totalSum; globalStats.count = labels.length; 
+      mainHtml += `<div class="total"> 🏷️ ${command}總項目：${globalStats.count} 項 📌 總金額：${globalStats.total.toLocaleString()} 元  📝 總筆數：${totalItems.toLocaleString()} 筆  </div>`;
+      renderChart("pie", labels, values);
+    } else {
+      if (mainChartContainer) mainChartContainer.style.display = "none";
+      mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">🔘 所選區間 ${document.getElementById("startDate").value} 至 ${document.getElementById("endDate").value} 無統計數據</div>`;
+    }
+
+    if (json.months_6m) {
+      const months = json.months_6m; const dataMap = {};
+      rows.forEach(r => {
+        let key = (r[idx] && String(r[idx]).trim() !== "") ? String(r[idx]).trim() : "未知";
+        const d = new Date(r[4]); const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (months.includes(ym)) {
+          if (!dataMap[key]) { dataMap[key] = {}; months.forEach(m => dataMap[key][m] = 0); }
+          dataMap[key][ym] += (Number(r[5]) || 0);
+        }
+      });
+      let monthlySums = new Array(months.length).fill(0); let grandTotal = 0;
+      let sixHtml = `<h5>📅 依結束日期的近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
+      months.forEach(m => sixHtml += `<th>${m}</th>`);
+      sixHtml += `<th>總額</th></tr></thead><tbody>`;
+      Object.keys(dataMap).forEach(item => {
+        let rSum = 0; sixHtml += `<tr><td>${item}</td>`;
+        months.forEach((m, i) => { 
+          let val = dataMap[item][m] || 0; rSum += val; monthlySums[i] += val; 
+          sixHtml += `<td class="numeric">${val.toLocaleString()}</td>`; 
+        });
+        grandTotal += rSum; 
+        sixHtml += `<td class="numeric"><strong>${rSum.toLocaleString()}</strong></td></tr>`;
+      });
+      sixHtml += `</tbody><tfoot><tr><td>每月總計</td>`;
+      monthlySums.forEach(sum => sixHtml += `<td class="numeric">${sum.toLocaleString()}</td>`);
+      sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td></tr></tfoot></table>`;
+      document.getElementById("sixMonthArea").innerHTML = sixHtml;
+      makeTableSortable(document.getElementById("table6m"), command);
+      document.getElementById("trendContainer").style.display = "block";
+      renderCategoryTrend(months, dataMap);
+    }
+  }
+  document.getElementById("queryResult").innerHTML = mainHtml;
+  makeTableSortable(document.getElementById("mainTable"), command);
+  document.getElementById("exportArea").style.display = "block";
+}
+
+// --- 修改功能核心 ---
+
+function editRow(id) {
+  const row = lastFetchedRows.find(r => r[15] == id);
+  if (!row) { alert("找不到該筆資料"); return; }
+
+  // 確保彈出視窗前下拉選單有值
+  refreshSelects();
+
+  // 填入視窗資料
+  document.getElementById("editId").value = id;
+  document.getElementById("displayEditId").innerText = id;
+  
+  // 日期處理
+  const d = new Date(row[4]);
+  document.getElementById("editDate").value = toInputDate(d);
+  document.getElementById("editStore").value = row[8] || "";
+  document.getElementById("editAmount").value = row[5] || 0;
+  document.getElementById("editCurr").value = row[14] || "";
+  document.getElementById("editPay").value = row[7] || "";
+  document.getElementById("editType").value = row[6] || "";
+  document.getElementById("editNote").value = row[9] || "";
+  document.getElementById("editMemo").value = row[10] || "";
+
+  document.getElementById("editModal").style.display = "block";
+}
+
+function closeEditModal() {
+  document.getElementById("editModal").style.display = "none";
+}
+
+//交易修改
+async function confirmUpdate() {
+  const id = document.getElementById("editId").value;
+  
+  // 1. 取得原本那列的所有原始資料 (為了保留不修改的欄位，如：記帳者、收入等)
+  const row = lastFetchedRows.find(r => r[15] == id);
+  if (!row) return;
+
+  // 2. 構建「整列」陣列 (對應試算表 A 到 P 欄)
+  // 假設結構：[0]?, [1]?, [2]?, [3]記帳者, [4]日期, [5]金額, [6]分類, [7]付款, [8]店家, [9]附註, [10]備註, [11]收入, [12]支出, [13]匯率, [14]幣別, [15]ID
+  let updatedRow = [...row]; // 先複製原始資料
+  
+  // 3. 更新使用者在視窗修改的欄位 (請根據您試算表實際欄位位置調整索引)
+  updatedRow[4]  = document.getElementById("editDate").value;
+  updatedRow[8]  = document.getElementById("editStore").value;
+  updatedRow[5]  = Number(document.getElementById("editAmount").value); // 轉為數字
+  updatedRow[14] = document.getElementById("editCurr").value;
+  updatedRow[7]  = document.getElementById("editPay").value;
+  updatedRow[6]  = document.getElementById("editType").value;
+  updatedRow[9]  = document.getElementById("editNote").value;
+  updatedRow[10] = document.getElementById("editMemo").value;
+  // 收入/支出通常由公式或後端計算，若需前端更新請在此指定 updatedRow[11] 或 [12]
+
+  const body = {
+    type: "update",
+    id: id,
+    version: VERSION,
+    updatedRow: updatedRow // 這裡的名稱必須與 GAS 內的 data.updatedRow 對應
+  };
+
+  if (!confirm(`確定要儲存 ID: ${id} 的修改嗎？`)) return;
+
+  document.getElementById("loading").style.display = "block";
+  try {
+    const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(body) });
+    const result = await res.json();
+    if (result.success || result.ok) {
+      alert(`✅ ID: ${id} 修改成功！`);
+      closeEditModal();
+      sendQuery(currentCommandName || "明細"); 
+    } else {
+      alert(`❌ ID: ${id} 修改失敗：` + (result.message || "原因不明"));
+    }
+  } catch (e) {
+    alert("📡 連線後端失敗：" + e.message);
+  } finally {
+    document.getElementById("loading").style.display = "none";
+  }
+}
+
+// --- 以下為原始其他功能函數 ---
+
+function showDrillDown(command, itemValue) {
+  const keyMap = { "分類":6, "付款":7, "店家":8, "幣別":14, "記帳者":3 };
+  const idx = keyMap[command];
+  const filterStart = new Date(document.getElementById("startDate").value + " 00:00:00");
+  const filterEnd = new Date(document.getElementById("endDate").value + " 23:59:59");
+  let filteredRows = lastFetchedRows.filter(r => {
+    const d = new Date(r[4]);
+    let v = (r[idx] && String(r[idx]).trim() !== "") ? String(r[idx]).trim() : "未知";
+    return (d >= filterStart && d <= filterEnd) && (v === itemValue);
+  });
+  let subTotal = filteredRows.reduce((sum, r) => sum + Number(r[5] || 0), 0);
+  let subCount = filteredRows.length;
+  let drillHtml = `<h5>📇 ${command}明細：<span style="color: blue; font-weight: bold;">${itemValue}</span> 📍 金額：${subTotal.toLocaleString()} 元 📝 筆數：${subCount.toLocaleString()} 筆</h5>`;
+  drillHtml += `<table id="drillTable"><thead><tr><th>記帳者</th><th>日期</th><th>店家</th><th>收入</th><th>支出</th><th>匯率</th><th>金額</th><th>幣別</th><th>付款</th><th>分類</th><th>附註</th><th>備註</th><th>ID</th><th>功能</th></tr></thead><tbody>`;
+  
+  filteredRows.forEach((r) => {
+    // 1. 取得 ID 與封裝資料 (供修改/刪除使用)
+    const rowId = r[15] || '';
+    const dataInfo = {
+      user: r[3]||'', date: r[4], store: r[8]||'',
+      amount: r[5]||0, curr: r[14]||'', pay: r[7]||'', type: r[6]||'', note: r[9]||'', memo: r[10]||''
+    };
+    const dataStr = JSON.stringify(dataInfo).replace(/"/g, '&quot;');
+
+    // 2. 判斷目前查詢的是哪一個欄位，決定誰要變藍色加粗
+    const isUser = (command === "記帳者");
+    const isStore = (command === "店家");
+    const isPay = (command === "付款");
+    const isType = (command === "分類");
+    const isCurr = (command === "幣別");
+
+    // 3. 組合 HTML
+    drillHtml += `<tr>
+      <td style="${isUser ? 'color: blue; font-weight: bold;' : ''}">${r[3]||''}</td>
+      <td>${new Date(r[4]).toLocaleDateString()}</td>
+      <td style="${isStore ? 'color: blue; font-weight: bold;' : ''}">${r[8]||''}</td>
+      <td class="numeric">${(Number(r[11])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+      <td class="numeric">${(Number(r[12])||0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+      <td>${r[13]||1}</td>
+      <td class="numeric">${(Number(r[5])||0).toLocaleString()}</td>
+      <td style="${isCurr ? 'color: blue; font-weight: bold;' : ''}">${r[14]||''}</td>
+      <td style="${isPay ? 'color: blue; font-weight: bold;' : ''}">${r[7]||''}</td>
+      <td style="${isType ? 'color: blue; font-weight: bold;' : ''}">${r[6]||''}</td>
+      <td>${r[9]||''}</td>
+      <td>${r[10]||''}</td>
+      <td>${rowId}</td>
+      <td>
+        <button class="btn-edit" onclick='editRow("${rowId}")'>📝 修改</button>
+        <button class="btn-delete" onclick='deleteRow("${rowId}", ${dataStr})'>🗑️ 刪除</button>
+      </td>
+    </tr>`;
+  });
+  drillHtml += `</tbody></table>`;
+  const drillArea = document.getElementById("drillDownArea");
+  drillArea.innerHTML = drillHtml;
+  makeTableSortable(document.getElementById("drillTable"), "明細");
+  drillArea.scrollIntoView({ behavior: 'smooth' });
+}
+
+function renderDetailChart(labels, sums, rates) {
+  const ctx = document.getElementById("chartCanvas").getContext("2d");
+  chartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: '金額合計', data: sums, backgroundColor: 'rgba(54, 162, 235, 0.6)', yAxisID: 'y' },
+        { label: '每日匯率最大值', data: rates, type: 'line', borderColor: '#d9534f', borderWidth: 4, yAxisID: 'y1', pointRadius: 5 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true, aspectRatio: 2, animation: false,
+      scales: {
+        y: { type: 'linear', position: 'left', title: { display: true, text: '金額', font: {size:20} } },
+        y1: { type: 'linear', position: 'right', title: { display: true, text: '匯率', font: {size:20}, color: "red" }, grid: { drawOnChartArea: false } }
+      },
+      plugins: { legend: { labels: { font: { size: 24, weight: 'bold' } } } }
+    }
+  });
+}
+
+async function deleteRow(id, dataObj = {}) {
+  if (!id) { alert("此筆資料無 ID，無法刪除"); return; }
+  let formattedDate = "";
+  if (dataObj.date) {
+    const d = new Date(dataObj.date);
+    formattedDate = `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  const confirmMsg = `⚠️ 此操作不可還原。確定要刪除 ID:${id} 此筆資料嗎？\n` +
+    `--------------------------\n` +
+    `👤 記帳者：${dataObj.user || ''}\n` +
+    `📅 日期：${formattedDate}\n` +
+    `🏠 店家：${dataObj.store || ''}\n` +
+    `💰 金額：${Number(dataObj.amount).toLocaleString()} (${dataObj.curr || '幣別'})\n` +
+    `💳 付款：${dataObj.pay || ''}\n` +
+    `📂 分類：${dataObj.type || ''}\n` +
+    `🏷️ 附註：${dataObj.note || ''}\n` +
+    `📝 備註：${dataObj.memo || ''}`;
+
+  if (confirm(confirmMsg)) {
+    document.getElementById("loading").style.display = "block";
+    const body = { type: "delete", id: id, version: VERSION };
+    try {
+      const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(body) });
+      const result = await res.json();
+      if (result.success || result.ok) {
+        alert(`✅ ID: ${id} 刪除成功！`);
+        sendQuery(currentCommandName);
+      } else {
+        alert(`❌ ID: ${id} 刪除失敗：` + (result.message || "未知原因"));
+      }
+    } catch (e) {
+      alert("📡 連線後端失敗");
+    } finally {
+      document.getElementById("loading").style.display = "none";
+    }
+  }
+}
+
+function renderChart(type, labels, values) {
+  const ctx = document.getElementById("chartCanvas").getContext("2d");
+  chartInstance = new Chart(ctx, {
+    type,
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: labels.map((_, i) => `hsl(${i * 360 / labels.length}, 70%, 60%)`)
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true, aspectRatio: 1.5, animation: false,
+      plugins: {
+        legend: { labels: { font: { size: 28, weight: 'bold' }, color: '#333' } },
+        tooltip: { bodyFont: { size: 24 }, titleFont: { size: 26, weight: 'bold' } }
+      }
+    }
+  });
+}
+
+function renderCategoryTrend(months, map) {
+  const ctx = document.getElementById("categoryTrendCanvas").getContext("2d");
+  const datasets = Object.keys(map).map((k, i) => {
+    const color = `hsl(${i * 360 / Object.keys(map).length}, 70%, 50%)`;
+    return {
+      label: k, data: months.map(m => map[k][m] || 0), borderColor: color,
+      backgroundColor: color, fill: false, tension: 0.1, pointRadius: 6, pointStyle: 'circle'
+    };
+  });
+  trendChartInstance = new Chart(ctx, {
+    type: "line", data: { labels: months, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: true, aspectRatio: 1.8, animation: false,
+      plugins: {
+        legend: { labels: { font: { size: 24, weight: 'bold' }, usePointStyle: true, boxWidth: 20 } },
+        tooltip: { bodyFont: { size: 22 }, intersect: false, mode: 'index' }
+      },
+      scales: {
+        x: { ticks: { font: { size: 20, weight: 'bold' } } },
+        y: { ticks: { font: { size: 20, weight: 'bold' } } }
+      }
+    }
+  });
+}
+
+function makeTableSortable(table, currentCommand) { 
+  if (!table) return; 
+  const headers = table.querySelectorAll("thead th"); 
+  headers.forEach((th, i) => { 
+    th.addEventListener("click", () => { 
+      const tbody = table.querySelector("tbody"); 
+      const rows = Array.from(tbody.querySelectorAll("tr")); 
+      const isAsc = th.dataset.order !== "asc"; 
+      th.dataset.order = isAsc ? "asc" : "desc"; 
+      const colTitle = th.innerText.replace(/[▲▼]/g, '').trim(); 
+      rows.sort((a, b) => { 
+        let v1 = a.cells[i].innerText.replace(/,/g, '').replace('%',''); 
+        let v2 = b.cells[i].innerText.replace(/,/g, '').replace('%',''); 
+        const orderList = orderMaps[colTitle] || (colTitle === currentCommand ? orderMaps[currentCommand] : null); 
+        if (orderList && orderList.length > 0) { 
+          let idx1 = orderList.indexOf(v1); let idx2 = orderList.indexOf(v2); 
+          idx1 = idx1 === -1 ? 999 : idx1; idx2 = idx2 === -1 ? 999 : idx2; 
+          return isAsc ? idx1 - idx2 : idx2 - idx1; 
+        } 
+        if (!isNaN(parseFloat(v1)) && !isNaN(parseFloat(v2))) return isAsc ? parseFloat(v1) - parseFloat(v2) : parseFloat(v2) - parseFloat(v1); 
+        return isAsc ? v1.localeCompare(v2) : v2.localeCompare(v1); 
+      }); 
+      rows.forEach(r => tbody.appendChild(r)); 
+      headers.forEach(h => h.innerText = h.innerText.replace(/[▲▼]/g, '')); 
+      th.innerText += isAsc ? " ▲" : " ▼"; 
+    }); 
+  }); 
+}
+
+function getExportFilename(type) {
+  const now = new Date(); const ts = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}-${now.getHours()}-${now.getMinutes()}`;
+  return `非匯不可${type}_${currentCommandName}_${ts}`;
+}
+
+function getExportHeader() {
+  return [["🔍 非匯不可統計報表"], [`匯出時間：${new Date().toLocaleString()}`], [`日期區間：${document.getElementById("startDate").value} ~ ${document.getElementById("endDate").value}`], []];
+}
+
+function getTableData(tableId, isMain = false) {
+  const table = document.getElementById(tableId); if (!table) return null;
+  const data = []; const headers = [];
+  for (let cell of table.querySelector("thead").rows[0].cells) headers.push(cell.innerText.replace(/[▲▼]/g, '').trim());
+  data.push(headers);
+  Array.from(table.querySelector("tbody").rows).forEach(row => {
+    const rowData = []; for (let cell of row.cells) rowData.push(cell.innerText); data.push(rowData);
+  });
+  if (isMain) { data.push([`總額`, globalStats.total.toLocaleString()], [`筆數`, globalStats.count]); }
+  return data;
+}
+
+document.getElementById("exportExcelBtn").onclick = () => {
+  const allRows = [...getExportHeader(), ...getTableData("mainTable", true)];
+  const wb = XLSX.utils.book_new(); const ws = XLSX.utils.aoa_to_sheet(allRows);
+  XLSX.utils.book_append_sheet(wb, ws, `統計`); XLSX.writeFile(wb, `${getExportFilename('EXCEL')}.xlsx`);
+};
+
+document.getElementById("exportCsvBtn").onclick = () => {
+  let content = "\ufeff" + [...getExportHeader(), ...getTableData("mainTable", true)].map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+  const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a"); link.href = URL.createObjectURL(blob);
+  link.download = `${getExportFilename('CSV')}.csv`; link.click();
+};
+
+document.getElementById("exportPdfBtn").onclick = async () => {
+  const originalTitle = document.title;
+  document.title = getExportFilename('PDF');
+  setTimeout(() => { window.print(); setTimeout(() => { document.title = originalTitle; }, 2000); }, 250);
+};
+</script>
+</body>
+</html>
+
