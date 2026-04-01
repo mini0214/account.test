@@ -493,15 +493,30 @@ function renderResult(command, json) {
 
 if (json.months_6m) {
       const months = json.months_6m;
-      const mCount = months.length; // 取得月份數量 (通常是 6)
+      const mCount = months.length;
       const dataMap = {};
       
+      // 先確保 dataMap 結構完整，避免迴圈內重複判斷
+      const categoryNames = [...new Set(rows.map(r => (r[idx] && String(r[idx]).trim() !== "") ? String(r[idx]).trim() : "未知"))];
+      
       rows.forEach(r => {
+        // 🛡️ 防呆 1：確保 rows 有資料且欄位存在
+        if (!r || r.length < 6) return; 
+
         let key = (r[idx] && String(r[idx]).trim() !== "") ? String(r[idx]).trim() : "未知";
+        
+        // 🛡️ 防呆 2：日期處理 (避免 3 萬筆中有髒資料導致當機)
+        if (!r[4]) return; 
         const d = new Date(r[4]);
+        if (isNaN(d.getTime())) return; // 無效日期就跳過
+
         const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        
         if (months.includes(ym)) {
-          if (!dataMap[key]) { dataMap[key] = {}; months.forEach(m => dataMap[key][m] = 0); }
+          if (!dataMap[key]) { 
+            dataMap[key] = {}; 
+            months.forEach(m => dataMap[key][m] = 0); 
+          }
           dataMap[key][ym] += (Number(r[5]) || 0);
         }
       });
@@ -509,12 +524,15 @@ if (json.months_6m) {
       let monthlySums = new Array(mCount).fill(0);
       let grandTotal = 0;
       
-      // 1. 修改標頭：增加「平均值」
-      let sixHtml = `<h5>📅 依結束日期的近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
+      // 1. 組合 HTML 標頭
+      let sixHtml = `<h5>📅 近 ${mCount} 個月 ${currentCommandName || '分類'} 統計</h5>`;
+      sixHtml += `<table id="table6m"><thead><tr><th>${currentCommandName || '項目'}</th>`;
       months.forEach(m => sixHtml += `<th>${m}</th>`);
-      sixHtml += `<th>總額</th><th>平均值</th></tr></thead><tbody>`; // ✅ 增加平均值標題
+      sixHtml += `<th>總額</th><th>平均值</th></tr></thead><tbody>`;
 
-      Object.keys(dataMap).forEach(item => {
+      // 2. 組合資料列
+      const sortedKeys = Object.keys(dataMap).sort(); // 讓項目按名稱排序，畫面比較整齊
+      sortedKeys.forEach(item => {
         let rSum = 0;
         sixHtml += `<tr><td>${item}</td>`;
         months.forEach((m, i) => { 
@@ -525,25 +543,37 @@ if (json.months_6m) {
         });
         grandTotal += rSum; 
         
-        // 2. 修改資料列：計算該列平均值 (總額 / 月份數)
         let rAvg = mCount > 0 ? Math.round(rSum / mCount) : 0;
         sixHtml += `<td class="numeric"><strong>${rSum.toLocaleString()}</strong></td>`;
-        sixHtml += `<td class="numeric" style="color: #2a7bde;">${rAvg.toLocaleString()}</td></tr>`; // ✅ 增加平均值數據
+        sixHtml += `<td class="numeric" style="color: #2a7bde;">${rAvg.toLocaleString()}</td></tr>`;
       });
 
-      // 3. 修改頁尾：計算總計的平均值
+      // 3. 組合頁尾
       let grandAvg = mCount > 0 ? Math.round(grandTotal / mCount) : 0;
       sixHtml += `</tbody><tfoot><tr><td>每月總計</td>`;
       monthlySums.forEach(sum => sixHtml += `<td class="numeric">${sum.toLocaleString()}</td>`);
       sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td>`;
-      sixHtml += `<td class="numeric"><strong>${grandAvg.toLocaleString()}</strong></td></tr></tfoot></table>`; // ✅ 增加總平均
+      sixHtml += `<td class="numeric"><strong>${grandAvg.toLocaleString()}</strong></td></tr></tfoot></table>`;
 
-      document.getElementById("sixMonthArea").innerHTML = sixHtml;
-      makeTableSortable(document.getElementById("table6m"), command);
-      document.getElementById("trendContainer").style.display = "block";
-      renderCategoryTrend(months, dataMap);
+      // 4. 渲染到頁面
+      const targetArea = document.getElementById("sixMonthArea");
+      if (targetArea) {
+        targetArea.innerHTML = sixHtml;
+        // 確保表格排序功能可用
+        if (typeof makeTableSortable === "function") {
+          makeTableSortable(document.getElementById("table6m"), command);
+        }
+      }
+
+      if (document.getElementById("trendContainer")) {
+        document.getElementById("trendContainer").style.display = "block";
+      }
+      
+      // 確保圖表渲染函式存在再執行
+      if (typeof renderCategoryTrend === "function") {
+        renderCategoryTrend(months, dataMap);
+      }
     }
-
 // --- 修改功能核心 ---
 
 function editRow(id) {
