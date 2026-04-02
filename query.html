@@ -531,20 +531,26 @@ if (json.months_6m) {
         grandTotal += rSum; 
         let rAvg = mCount > 0 ? Math.round(rSum / mCount) : 0;
         
-        // ✨ 核心修正：排外 0 之後再計算高低差
+        // ✨ 強化版高低差區分邏輯
         let validValues = rowValues.filter(v => v !== 0);
-        let diff = 0;
+        let diffDisplay = ""; // 用於 HTML 顯示的字串
+        
         if (validValues.length >= 2) {
-          // 有兩個月以上有資料才計算落差
-          diff = Math.max(...validValues) - Math.min(...validValues);
+          // 案例 B & C：有 2 個月以上資料，計算數字
+          let diff = Math.max(...validValues) - Math.min(...validValues);
+          diffDisplay = diff.toLocaleString(); // 可能是 0 (穩定) 或 數字 (波動)
+        } else if (validValues.length === 1) {
+          // 案例 A：只有一個月有值
+          diffDisplay = "-"; // 顯示橫線，代表「無從比較」
         } else {
-          // 只有一個月有資料或都沒資料，落差計為 0
-          diff = 0;
+          // 全月皆為 0
+          diffDisplay = "0"; 
         }
 
         sixHtml += `<td class="numeric"><strong>${rSum.toLocaleString()}</strong></td>`;
         sixHtml += `<td class="numeric" style="color: #006400; font-weight: bold;">${rAvg.toLocaleString()}</td>`;
-        sixHtml += `<td class="numeric" style="color: #d32f2f; font-weight: bold;">${diff.toLocaleString()}</td></tr>`;
+        // ✅ 顯示區分後的結果
+        sixHtml += `<td class="numeric" style="color: #d32f2f; font-weight: bold;">${diffDisplay}</td></tr>`;
       });
 
       // 3. 處理「每月總計」列
