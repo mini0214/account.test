@@ -516,13 +516,13 @@ function renderResult(command, json) {
         grandTotal += rSum; 
         let rAvg = mCount > 0 ? Math.round(rSum / mCount) : 0;
         sixHtml += `<td class="numeric"><strong>${rSum.toLocaleString()}</strong></td>`;
-        sixHtml += `<td class="numeric" style="color: #2a7bde;">${rAvg.toLocaleString()}</td></tr>`;
+        sixHtml += `<td class="numeric" style="color: #2e7d32; font-weight: bold;">${rAvg.toLocaleString()}</td></tr>`;
       });
       let grandAvg = mCount > 0 ? Math.round(grandTotal / mCount) : 0;
       sixHtml += `</tbody><tfoot><tr><td>每月總計</td>`;
       monthlySums.forEach(sum => sixHtml += `<td class="numeric">${sum.toLocaleString()}</td>`);
       sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td>`;
-      sixHtml += `<td class="numeric"><strong>${grandAvg.toLocaleString()}</strong></td></tr></tfoot></table>`;
+      sixHtml += `<td class="numeric">style="color: #2e7d32;"><strong>${grandAvg.toLocaleString()}</strong></td></tr></tfoot></table>`;
       document.getElementById("sixMonthArea").innerHTML = sixHtml;
       makeTableSortable(document.getElementById("table6m"), command);
       document.getElementById("trendContainer").style.display = "block";
