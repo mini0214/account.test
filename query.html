@@ -491,87 +491,42 @@ function renderResult(command, json) {
       mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">🔘 所選區間 ${document.getElementById("startDate").value} 至 ${document.getElementById("endDate").value} 無統計數據</div>`;
     }
 
-if (json.months_6m) {
+    if (json.months_6m) {
       const months = json.months_6m; 
-      const mCount = months.length; 
+      const mCount = months.length; // 取得實際月份數量 (通常為 6)
       const dataMap = {};
-      
       rows.forEach(r => {
         let key = (r[idx] && String(r[idx]).trim() !== "") ? String(r[idx]).trim() : "未知";
-        if (!r[4]) return;
-        const d = new Date(r[4]); 
-        const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const d = new Date(r[4]); const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         if (months.includes(ym)) {
           if (!dataMap[key]) { dataMap[key] = {}; months.forEach(m => dataMap[key][m] = 0); }
           dataMap[key][ym] += (Number(r[5]) || 0);
         }
       });
-
-      let monthlySums = new Array(mCount).fill(0); 
-      let grandTotal = 0;
-      
-      let sixHtml = `<h5>📅 依結束日期的近 ${mCount} 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
+      let monthlySums = new Array(months.length).fill(0); let grandTotal = 0;
+      let sixHtml = `<h5>📅 依結束日期的近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
       months.forEach(m => sixHtml += `<th>${m}</th>`);
-      sixHtml += `<th>總額</th><th style="color: #006400; font-weight: bold;">平均值</th>`;
-      sixHtml += `<th style="color: #d32f2f; font-weight: bold;">高低差</th></tr></thead><tbody>`;
-
+      sixHtml += `<th>總額</th><th style="color: #006400; font-weight: bold;">平均值</th></tr></thead><tbody>`;
       Object.keys(dataMap).forEach(item => {
-        let rSum = 0; 
-        let rowValues = []; 
-        sixHtml += `<tr><td>${item}</td>`;
-        
+        let rSum = 0; sixHtml += `<tr><td>${item}</td>`;
         months.forEach((m, i) => { 
-          let val = Number(dataMap[item][m]) || 0; 
-          rSum += val; 
-          monthlySums[i] += val; 
-          rowValues.push(val); 
+          let val = dataMap[item][m] || 0; rSum += val; monthlySums[i] += val; 
           sixHtml += `<td class="numeric">${val.toLocaleString()}</td>`; 
         });
-        
         grandTotal += rSum; 
         let rAvg = mCount > 0 ? Math.round(rSum / mCount) : 0;
-        
-        // ✨ 強化版高低差區分邏輯 (納入全 0 判斷)
-        let validValues = rowValues.filter(v => v !== 0);
-        let diffDisplay = ""; 
-        
-        if (validValues.length >= 2) {
-          // ✅ 案例 B & C：有 2 個月以上資料
-          let diff = Math.max(...validValues) - Math.min(...validValues);
-          diffDisplay = diff.toLocaleString(); // 顯示 0 或 波動數字
-        } else {
-          // ✅ 案例 A (單月有值) 或 案例 D (全月皆為 0)
-          // 只要有效資料少於 2 筆，一律顯示 "-" 代表無從比較波動
-          diffDisplay = "-"; 
-        }
-
         sixHtml += `<td class="numeric"><strong>${rSum.toLocaleString()}</strong></td>`;
-        sixHtml += `<td class="numeric" style="color: #006400; font-weight: bold;">${rAvg.toLocaleString()}</td>`;
-        sixHtml += `<td class="numeric" style="color: #d32f2f; font-weight: bold;">${diffDisplay}</td></tr>`;
+        sixHtml += `<td class="numeric" style="color: #2e7d32; font-weight: bold;">${rAvg.toLocaleString()}</td></tr>`;
       });
-
-      // 3. 處理「每月總計」列
       let grandAvg = mCount > 0 ? Math.round(grandTotal / mCount) : 0;
-      
-      // 每月總計通常不會是 0，但保險起見也過濾一下
-      let validMonthlySums = monthlySums.filter(v => v !== 0);
-      let totalDiff = (validMonthlySums.length >= 2) 
-                      ? Math.max(...validMonthlySums) - Math.min(...validMonthlySums) 
-                      : 0;
-
       sixHtml += `</tbody><tfoot><tr><td>每月總計</td>`;
       monthlySums.forEach(sum => sixHtml += `<td class="numeric">${sum.toLocaleString()}</td>`);
-      
       sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td>`;
-      sixHtml += `<td class="numeric"><strong style="color: #006400 !important;">${grandAvg.toLocaleString()}</strong></td>`;
-      sixHtml += `<td class="numeric"><strong style="color: #d32f2f !important;">${totalDiff.toLocaleString()}</strong></td>`;
-      sixHtml += `</tr></tfoot></table>`;
-
+      sixHtml += `<td class="numeric"><strong style="color: #006400 !important;">${grandAvg.toLocaleString()}</strong></td></tr></tfoot></table>`;
       document.getElementById("sixMonthArea").innerHTML = sixHtml;
-      
-      if (typeof makeTableSortable === "function") makeTableSortable(document.getElementById("table6m"), command);
+      makeTableSortable(document.getElementById("table6m"), command);
       document.getElementById("trendContainer").style.display = "block";
-      if (typeof renderCategoryTrend === "function") renderCategoryTrend(months, dataMap);
+      renderCategoryTrend(months, dataMap);
     }
   }
   document.getElementById("queryResult").innerHTML = mainHtml;
@@ -899,4 +854,3 @@ document.getElementById("exportPdfBtn").onclick = async () => {
 </script>
 </body>
 </html>
-
