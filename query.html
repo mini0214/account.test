@@ -507,24 +507,21 @@ if (json.months_6m) {
         }
       });
 
-      let monthlySums = new Array(months.length).fill(0); 
+      let monthlySums = new Array(mCount).fill(0); 
       let grandTotal = 0;
       
-      // 1. 建立標題
       let sixHtml = `<h5>📅 依結束日期的近 ${mCount} 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
       months.forEach(m => sixHtml += `<th>${m}</th>`);
-      sixHtml += `<th>總額</th>`;
-      sixHtml += `<th style="color: #006400; font-weight: bold;">平均值</th>`;
+      sixHtml += `<th>總額</th><th style="color: #006400; font-weight: bold;">平均值</th>`;
       sixHtml += `<th style="color: #d32f2f; font-weight: bold;">高低差</th></tr></thead><tbody>`;
 
-      // 2. 處理每一行資料
       Object.keys(dataMap).forEach(item => {
         let rSum = 0; 
         let rowValues = []; 
         sixHtml += `<tr><td>${item}</td>`;
         
         months.forEach((m, i) => { 
-          let val = dataMap[item][m] || 0; 
+          let val = Number(dataMap[item][m]) || 0; 
           rSum += val; 
           monthlySums[i] += val; 
           rowValues.push(val); 
@@ -534,34 +531,39 @@ if (json.months_6m) {
         grandTotal += rSum; 
         let rAvg = mCount > 0 ? Math.round(rSum / mCount) : 0;
         
-        // 計算該行的最大落差
-        let absValues = rowValues.map(v => Math.abs(v)); 
-        let maxV = Math.max(...rowValues);
-        let minV = Math.min(...rowValues);
-        let diff = maxV - minV;
+        // ✨ 核心修正：排外 0 之後再計算高低差
+        let validValues = rowValues.filter(v => v !== 0);
+        let diff = 0;
+        if (validValues.length >= 2) {
+          // 有兩個月以上有資料才計算落差
+          diff = Math.max(...validValues) - Math.min(...validValues);
+        } else {
+          // 只有一個月有資料或都沒資料，落差計為 0
+          diff = 0;
+        }
 
         sixHtml += `<td class="numeric"><strong>${rSum.toLocaleString()}</strong></td>`;
         sixHtml += `<td class="numeric" style="color: #006400; font-weight: bold;">${rAvg.toLocaleString()}</td>`;
-        // ✅ 修正：這裡應該用 diff (該行的差額)，而不是 totalDiff
         sixHtml += `<td class="numeric" style="color: #d32f2f; font-weight: bold;">${diff.toLocaleString()}</td></tr>`;
       });
 
       // 3. 處理「每月總計」列
       let grandAvg = mCount > 0 ? Math.round(grandTotal / mCount) : 0;
-      let totalMax = Math.max(...monthlySums);
-      let totalMin = Math.min(...monthlySums);
-      let totalDiff = totalMax - totalMin;
+      
+      // 每月總計通常不會是 0，但保險起見也過濾一下
+      let validMonthlySums = monthlySums.filter(v => v !== 0);
+      let totalDiff = (validMonthlySums.length >= 2) 
+                      ? Math.max(...validMonthlySums) - Math.min(...validMonthlySums) 
+                      : 0;
 
       sixHtml += `</tbody><tfoot><tr><td>每月總計</td>`;
       monthlySums.forEach(sum => sixHtml += `<td class="numeric">${sum.toLocaleString()}</td>`);
       
       sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td>`;
-      // ✅ 修正：使用 inline-style 確保顏色能覆蓋 strong 標籤
       sixHtml += `<td class="numeric"><strong style="color: #006400 !important;">${grandAvg.toLocaleString()}</strong></td>`;
       sixHtml += `<td class="numeric"><strong style="color: #d32f2f !important;">${totalDiff.toLocaleString()}</strong></td>`;
       sixHtml += `</tr></tfoot></table>`;
 
-      // 4. 渲染到畫面
       document.getElementById("sixMonthArea").innerHTML = sixHtml;
       
       if (typeof makeTableSortable === "function") makeTableSortable(document.getElementById("table6m"), command);
