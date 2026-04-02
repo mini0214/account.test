@@ -535,7 +535,7 @@ if (json.months_6m) {
         let rAvg = mCount > 0 ? Math.round(rSum / mCount) : 0;
         
         // 計算該行的最大落差
-        let absValues = rowValues.map(v => Math.abs(v));  let absValues = rowValues.map(v => Math.abs(v));
+        let absValues = rowValues.map(v => Math.abs(v)); 
         let maxV = Math.max(...rowValues);
         let minV = Math.min(...rowValues);
         let diff = maxV - minV;
