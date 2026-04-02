@@ -522,7 +522,7 @@ function renderResult(command, json) {
       sixHtml += `</tbody><tfoot><tr><td>每月總計</td>`;
       monthlySums.forEach(sum => sixHtml += `<td class="numeric">${sum.toLocaleString()}</td>`);
       sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td>`;
-      sixHtml += `<td class="numeric" style="color: #006400; font-weight: bold;"><strong>${grandAvg.toLocaleString()}</strong></td></tr></tfoot></table>`;
+      sixHtml += `<td class="numeric"><strong style="color: #006400 !important;">${grandAvg.toLocaleString()}</strong></td></tr></tfoot></table>`;
       document.getElementById("sixMonthArea").innerHTML = sixHtml;
       makeTableSortable(document.getElementById("table6m"), command);
       document.getElementById("trendContainer").style.display = "block";
