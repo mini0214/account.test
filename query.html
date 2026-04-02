@@ -491,54 +491,78 @@ function renderResult(command, json) {
       mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">🔘 所選區間 ${document.getElementById("startDate").value} 至 ${document.getElementById("endDate").value} 無統計數據</div>`;
     }
 
-    if (json.months_6m) {
+if (json.months_6m) {
       const months = json.months_6m; 
-      const mCount = months.length; // 取得實際月份數量 (通常為 6)
+      const mCount = months.length; 
       const dataMap = {};
+      
       rows.forEach(r => {
         let key = (r[idx] && String(r[idx]).trim() !== "") ? String(r[idx]).trim() : "未知";
-        const d = new Date(r[4]); const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (!r[4]) return;
+        const d = new Date(r[4]); 
+        const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         if (months.includes(ym)) {
           if (!dataMap[key]) { dataMap[key] = {}; months.forEach(m => dataMap[key][m] = 0); }
           dataMap[key][ym] += (Number(r[5]) || 0);
         }
       });
-      let monthlySums = new Array(months.length).fill(0); let grandTotal = 0;
-      let sixHtml = `<h5>📅 依結束日期的近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
+
+      let monthlySums = new Array(months.length).fill(0); 
+      let grandTotal = 0;
+      
+      // 1. 建立標題
+      let sixHtml = `<h5>📅 依結束日期的近 ${mCount} 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
       months.forEach(m => sixHtml += `<th>${m}</th>`);
       sixHtml += `<th>總額</th>`;
       sixHtml += `<th style="color: #006400; font-weight: bold;">平均值</th>`;
-      sixHtml += `<th style="color: #d32f2f; font-weight: bold;">高低差</th></tr></thead><tbody>`; // 紅色標題
+      sixHtml += `<th style="color: #d32f2f; font-weight: bold;">高低差</th></tr></thead><tbody>`;
+
+      // 2. 處理每一行資料
       Object.keys(dataMap).forEach(item => {
         let rSum = 0; 
-        let rowValues = []; // 用來存放這 6 個月的數值以計算最大/最小
+        let rowValues = []; 
         sixHtml += `<tr><td>${item}</td>`;
+        
         months.forEach((m, i) => { 
-          let val = dataMap[item][m] || 0; rSum += val; monthlySums[i] += val; 
-          rowValues.push(val); // 收集數值
+          let val = dataMap[item][m] || 0; 
+          rSum += val; 
+          monthlySums[i] += val; 
+          rowValues.push(val); 
           sixHtml += `<td class="numeric">${val.toLocaleString()}</td>`; 
         });
+        
         grandTotal += rSum; 
         let rAvg = mCount > 0 ? Math.round(rSum / mCount) : 0;
-        // ⚡️ 計算最大值與最小值的差額
+        
+        // 計算該行的最大落差
         let maxV = Math.max(...rowValues);
         let minV = Math.min(...rowValues);
         let diff = maxV - minV;
+
         sixHtml += `<td class="numeric"><strong>${rSum.toLocaleString()}</strong></td>`;
         sixHtml += `<td class="numeric" style="color: #006400; font-weight: bold;">${rAvg.toLocaleString()}</td>`;
-        sixHtml += `<td class="numeric" style="color: #d32f2f; font-weight: bold;">${totalDiff.toLocaleString()}</td></tr>`;        
+        // ✅ 修正：這裡應該用 diff (該行的差額)，而不是 totalDiff
+        sixHtml += `<td class="numeric" style="color: #d32f2f; font-weight: bold;">${diff.toLocaleString()}</td></tr>`;
       });
+
+      // 3. 處理「每月總計」列
       let grandAvg = mCount > 0 ? Math.round(grandTotal / mCount) : 0;
       let totalMax = Math.max(...monthlySums);
       let totalMin = Math.min(...monthlySums);
       let totalDiff = totalMax - totalMin;
+
       sixHtml += `</tbody><tfoot><tr><td>每月總計</td>`;
       monthlySums.forEach(sum => sixHtml += `<td class="numeric">${sum.toLocaleString()}</td>`);
+      
       sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td>`;
+      // ✅ 修正：使用 inline-style 確保顏色能覆蓋 strong 標籤
       sixHtml += `<td class="numeric"><strong style="color: #006400 !important;">${grandAvg.toLocaleString()}</strong></td>`;
       sixHtml += `<td class="numeric"><strong style="color: #d32f2f !important;">${totalDiff.toLocaleString()}</strong></td>`;
       sixHtml += `</tr></tfoot></table>`;
+
+      // 4. 渲染到畫面
       document.getElementById("sixMonthArea").innerHTML = sixHtml;
+      
       if (typeof makeTableSortable === "function") makeTableSortable(document.getElementById("table6m"), command);
       document.getElementById("trendContainer").style.display = "block";
       if (typeof renderCategoryTrend === "function") renderCategoryTrend(months, dataMap);
