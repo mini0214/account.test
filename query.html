@@ -507,16 +507,26 @@ function renderResult(command, json) {
       let sixHtml = `<h5>📅 依結束日期的近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
       months.forEach(m => sixHtml += `<th>${m}</th>`);
       sixHtml += `<th>總額</th><th style="color: #006400; font-weight: bold;">平均值</th></tr></thead><tbody>`;
+      sixHtml += `<th style="color: #d32f2f; font-weight: bold;">高低差</th></tr></thead><tbody>`; // 紅色標題
       Object.keys(dataMap).forEach(item => {
-        let rSum = 0; sixHtml += `<tr><td>${item}</td>`;
+        let rSum = 0; 
+        let rowValues = []; // 用來存放這 6 個月的數值以計算最大/最小
+        sixHtml += `<tr><td>${item}</td>`;
         months.forEach((m, i) => { 
           let val = dataMap[item][m] || 0; rSum += val; monthlySums[i] += val; 
+          rowValues.push(val); // 收集數值
           sixHtml += `<td class="numeric">${val.toLocaleString()}</td>`; 
         });
         grandTotal += rSum; 
         let rAvg = mCount > 0 ? Math.round(rSum / mCount) : 0;
+        // ⚡️ 計算最大值與最小值的差額
+        let maxV = Math.max(...rowValues);
+        let minV = Math.min(...rowValues);
+        let diff = maxV - minV;
         sixHtml += `<td class="numeric"><strong>${rSum.toLocaleString()}</strong></td>`;
-        sixHtml += `<td class="numeric" style="color: #2e7d32; font-weight: bold;">${rAvg.toLocaleString()}</td></tr>`;
+        sixHtml += `<td class="numeric" style="color: #006400; font-weight: bold;">${rAvg.toLocaleString()}</td></tr>`;
+        sixHtml += `<td class="numeric" style="color: #d32f2f; font-weight: bold;">${totalDiff.toLocaleString()}</td></tr></tfoot></table>`;
+        document.getElementById("sixMonthArea").innerHTML = sixHtml;
       });
       let grandAvg = mCount > 0 ? Math.round(grandTotal / mCount) : 0;
       sixHtml += `</tbody><tfoot><tr><td>每月總計</td>`;
