@@ -531,25 +531,22 @@ if (json.months_6m) {
         grandTotal += rSum; 
         let rAvg = mCount > 0 ? Math.round(rSum / mCount) : 0;
         
-        // ✨ 強化版高低差區分邏輯
+        // ✨ 強化版高低差區分邏輯 (納入全 0 判斷)
         let validValues = rowValues.filter(v => v !== 0);
-        let diffDisplay = ""; // 用於 HTML 顯示的字串
+        let diffDisplay = ""; 
         
         if (validValues.length >= 2) {
-          // 案例 B & C：有 2 個月以上資料，計算數字
+          // ✅ 案例 B & C：有 2 個月以上資料
           let diff = Math.max(...validValues) - Math.min(...validValues);
-          diffDisplay = diff.toLocaleString(); // 可能是 0 (穩定) 或 數字 (波動)
-        } else if (validValues.length === 1) {
-          // 案例 A：只有一個月有值
-          diffDisplay = "-"; // 顯示橫線，代表「無從比較」
+          diffDisplay = diff.toLocaleString(); // 顯示 0 或 波動數字
         } else {
-          // 全月皆為 0
-          diffDisplay = "0"; 
+          // ✅ 案例 A (單月有值) 或 案例 D (全月皆為 0)
+          // 只要有效資料少於 2 筆，一律顯示 "-" 代表無從比較波動
+          diffDisplay = "-"; 
         }
 
         sixHtml += `<td class="numeric"><strong>${rSum.toLocaleString()}</strong></td>`;
         sixHtml += `<td class="numeric" style="color: #006400; font-weight: bold;">${rAvg.toLocaleString()}</td>`;
-        // ✅ 顯示區分後的結果
         sixHtml += `<td class="numeric" style="color: #d32f2f; font-weight: bold;">${diffDisplay}</td></tr>`;
       });
 
