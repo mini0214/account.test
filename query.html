@@ -506,7 +506,8 @@ function renderResult(command, json) {
       let monthlySums = new Array(months.length).fill(0); let grandTotal = 0;
       let sixHtml = `<h5>📅 依結束日期的近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
       months.forEach(m => sixHtml += `<th>${m}</th>`);
-      sixHtml += `<th>總額</th><th style="color: #006400; font-weight: bold;">平均值</th></tr></thead><tbody>`;
+      sixHtml += `<th>總額</th>`;
+      sixHtml += `<th style="color: #006400; font-weight: bold;">平均值</th>`;
       sixHtml += `<th style="color: #d32f2f; font-weight: bold;">高低差</th></tr></thead><tbody>`; // 紅色標題
       Object.keys(dataMap).forEach(item => {
         let rSum = 0; 
@@ -524,19 +525,23 @@ function renderResult(command, json) {
         let minV = Math.min(...rowValues);
         let diff = maxV - minV;
         sixHtml += `<td class="numeric"><strong>${rSum.toLocaleString()}</strong></td>`;
-        sixHtml += `<td class="numeric" style="color: #006400; font-weight: bold;">${rAvg.toLocaleString()}</td></tr>`;
-        sixHtml += `<td class="numeric" style="color: #d32f2f; font-weight: bold;">${totalDiff.toLocaleString()}</td></tr></tfoot></table>`;
-        document.getElementById("sixMonthArea").innerHTML = sixHtml;
+        sixHtml += `<td class="numeric" style="color: #006400; font-weight: bold;">${rAvg.toLocaleString()}</td>`;
+        sixHtml += `<td class="numeric" style="color: #d32f2f; font-weight: bold;">${totalDiff.toLocaleString()}</td></tr>`;        
       });
       let grandAvg = mCount > 0 ? Math.round(grandTotal / mCount) : 0;
+      let totalMax = Math.max(...monthlySums);
+      let totalMin = Math.min(...monthlySums);
+      let totalDiff = totalMax - totalMin;
       sixHtml += `</tbody><tfoot><tr><td>每月總計</td>`;
       monthlySums.forEach(sum => sixHtml += `<td class="numeric">${sum.toLocaleString()}</td>`);
       sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td>`;
-      sixHtml += `<td class="numeric"><strong style="color: #006400 !important;">${grandAvg.toLocaleString()}</strong></td></tr></tfoot></table>`;
+      sixHtml += `<td class="numeric"><strong style="color: #006400 !important;">${grandAvg.toLocaleString()}</strong></td>`;
+      sixHtml += `<td class="numeric"><strong style="color: #d32f2f !important;">${totalDiff.toLocaleString()}</strong></td>`;
+      sixHtml += `</tr></tfoot></table>`;
       document.getElementById("sixMonthArea").innerHTML = sixHtml;
-      makeTableSortable(document.getElementById("table6m"), command);
+      if (typeof makeTableSortable === "function") makeTableSortable(document.getElementById("table6m"), command);
       document.getElementById("trendContainer").style.display = "block";
-      renderCategoryTrend(months, dataMap);
+      if (typeof renderCategoryTrend === "function") renderCategoryTrend(months, dataMap);
     }
   }
   document.getElementById("queryResult").innerHTML = mainHtml;
