@@ -533,15 +533,15 @@ function renderResult(command, json) {
         sixHtml += `<td class="numeric" style="color: #d32f2f; font-weight: bold;">${diffDisplay}</td></tr>`;
       });
       let grandAvg = mCount > 0 ? Math.round(grandTotal / mCount) : 0; // 3. 處理「每月總計」列
-      // ✨ 修正：只過濾出「支出(負數)」來計算落差，避免收入(正數)干擾
-      let negativeMonthlySums = monthlySums.filter(v => v < 0);
-      let totalDiffDisplay = "-"; // 預設為橫線
+      // ✅ 修改這裡：不再只看負數，而是看所有「非 0」的數值 (包含 7533)
+      let validMonthlySums = monthlySums.filter(v => v !== 0);
+      let totalDiffDisplay = "-";
 
-      if (negativeMonthlySums.length >= 2) {
-        // 算出支出中最接近 0 的(maxExp) 與 最遠離 0 的(minExp)
-        let maxExp = Math.max(...negativeMonthlySums); 
-        let minExp = Math.min(...negativeMonthlySums); 
-        totalDiffDisplay = (maxExp - minExp).toLocaleString();
+      if (validMonthlySums.length >= 2) {
+        // 算出所有數值中的絕對最大與絕對最小
+        let tMax = Math.max(...validMonthlySums); 
+        let tMin = Math.min(...validMonthlySums); 
+        totalDiffDisplay = (tMax - tMin).toLocaleString();
       }
       sixHtml += `</tbody><tfoot><tr><td>每月總計</td>`;
       monthlySums.forEach(sum => sixHtml += `<td class="numeric">${sum.toLocaleString()}</td>`);
