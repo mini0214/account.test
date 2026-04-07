@@ -533,11 +533,16 @@ function renderResult(command, json) {
         sixHtml += `<td class="numeric" style="color: #d32f2f; font-weight: bold;">${diffDisplay}</td></tr>`;
       });
       let grandAvg = mCount > 0 ? Math.round(grandTotal / mCount) : 0; // 3. 處理「每月總計」列
-      // 每月總計通常不會是 0，但保險起見也過濾一下
-      let validMonthlySums = monthlySums.filter(v => v !== 0);
-      let totalDiff = (validMonthlySums.length >= 2) 
-                      ? Math.max(...validMonthlySums) - Math.min(...validMonthlySums) 
-                      : 0;
+      // ✨ 修正：只過濾出「支出(負數)」來計算落差，避免收入(正數)干擾
+      let negativeMonthlySums = monthlySums.filter(v => v < 0);
+      let totalDiffDisplay = "-"; // 預設為橫線
+
+      if (negativeMonthlySums.length >= 2) {
+        // 算出支出中最接近 0 的(maxExp) 與 最遠離 0 的(minExp)
+        let maxExp = Math.max(...negativeMonthlySums); 
+        let minExp = Math.min(...negativeMonthlySums); 
+        totalDiffDisplay = (maxExp - minExp).toLocaleString();
+      }
       sixHtml += `</tbody><tfoot><tr><td>每月總計</td>`;
       monthlySums.forEach(sum => sixHtml += `<td class="numeric">${sum.toLocaleString()}</td>`);
       sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td>`;
