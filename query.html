@@ -547,7 +547,7 @@ function renderResult(command, json) {
       monthlySums.forEach(sum => sixHtml += `<td class="numeric">${sum.toLocaleString()}</td>`);
       sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td>`;
       sixHtml += `<td class="numeric"><strong style="color: #006400 !important;">${grandAvg.toLocaleString()}</strong></td>`;
-      sixHtml += `<td class="numeric"><strong style="color: #d32f2f !important;">${totalDiff.toLocaleString()}</strong></td>`;
+      sixHtml += `<td class="numeric"><strong style="color: #d32f2f !important;">${totalDiffDisplay}</strong></td>`;
       sixHtml += `</tr></tfoot></table>`;
       document.getElementById("sixMonthArea").innerHTML = sixHtml;
       
