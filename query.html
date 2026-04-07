@@ -507,9 +507,7 @@ function renderResult(command, json) {
       // 1. 先計算這段期間的總金額
       let totalAll = 0;
       Object.keys(dataMap).forEach(item => {
-        months.forEach(m => {
-          totalAll += dataMap[item][m];
-        });
+        months.forEach(m => { totalAll += dataMap[item][m]; });
       });
       // 2. 判斷是否顯示表格
       if (totalAll === 0) {
@@ -518,30 +516,22 @@ function renderResult(command, json) {
         document.getElementById("trendContainer").style.display = "none"; // 隱藏趨勢圖
       } else {
         // 如果有數據，則執行原本產生表格的邏輯
-      let monthlySums = new Array(mCount).fill(0); let grandTotal = 0;
-      let sixHtml = `<h5>📅 依結束日期的近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
-      months.forEach(m => sixHtml += `<th>${m}</th>`);
-      sixHtml += `<th>總額</th><th style="color: #006400; font-weight: bold;">平均值</th><th style="color: #d32f2f; font-weight: bold;">高低差</th></tr></thead><tbody>`;
-      Object.keys(dataMap).forEach(item => {
-        let rSum = 0; let rowValues = []; sixHtml += `<tr><td>${item}</td>`;
-        months.forEach((m, i) => { 
-          let val = Number(dataMap[item][m]) || 0; rSum += val; monthlySums[i] += val; rowValues.push(val); 
-          sixHtml += `<td class="numeric">${val.toLocaleString()}</td>`; 
-        });
+        let monthlySums = new Array(mCount).fill(0); let grandTotal = 0;
+        let sixHtml = `<h5>📅 依結束日期的近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
+        months.forEach(m => sixHtml += `<th>${m}</th>`);
+        sixHtml += `<th>總額</th><th style="color: #006400; font-weight: bold;">平均值</th><th style="color: #d32f2f; font-weight: bold;">高低差</th></tr></thead><tbody>`;
+        Object.keys(dataMap).forEach(item => {
+          let rSum = 0; let rowValues = []; sixHtml += `<tr><td>${item}</td>`;
+          months.forEach((m, i) => { 
+            let val = Number(dataMap[item][m]) || 0; rSum += val; monthlySums[i] += val; rowValues.push(val); 
+            sixHtml += `<td class="numeric">${val.toLocaleString()}</td>`; 
+          });
         grandTotal += rSum; 
         let rAvg = mCount > 0 ? Math.round(rSum / mCount) : 0;
          // ✨ 強化版高低差區分邏輯 (納入全 0 判斷)
         let validValues = rowValues.filter(v => v !== 0);
-        let diffDisplay = "";         
-        if (validValues.length >= 2) {
-          // ✅ 案例 B & C：有 2 個月以上資料
-          let diff = Math.max(...validValues) - Math.min(...validValues);
-          diffDisplay = diff.toLocaleString(); // 顯示 0 或 波動數字
-        } else {
-          // ✅ 案例 A (單月有值) 或 案例 D (全月皆為 0)
-          // 只要有效資料少於 2 筆，一律顯示 "-" 代表無從比較波動
-          diffDisplay = "-"; 
-        }
+        let diffDisplay = (validValues.length >= 2) ? (Math.max(...validValues) - Math.min(...validValues)).toLocaleString() : "-";      
+
         sixHtml += `<td class="numeric"><strong>${rSum.toLocaleString()}</strong></td>`;
         sixHtml += `<td class="numeric" style="color: #006400; font-weight: bold;">${rAvg.toLocaleString()}</td>`;
         sixHtml += `<td class="numeric" style="color: #d32f2f; font-weight: bold;">${diffDisplay}</td></tr>`;
@@ -549,14 +539,7 @@ function renderResult(command, json) {
       let grandAvg = mCount > 0 ? Math.round(grandTotal / mCount) : 0; // 3. 處理「每月總計」列
       // ✅ 修改這裡：不再只看負數，而是看所有「非 0」的數值 (包含 7533)
       let validMonthlySums = monthlySums.filter(v => v !== 0);
-      let totalDiffDisplay = "-";
-
-      if (validMonthlySums.length >= 2) {
-        // 算出所有數值中的絕對最大與絕對最小
-        let tMax = Math.max(...validMonthlySums); 
-        let tMin = Math.min(...validMonthlySums); 
-        totalDiffDisplay = (tMax - tMin).toLocaleString();
-      }
+      let totalDiffDisplay = (validMonthlySums.length >= 2) ? (Math.max(...validMonthlySums) - Math.min(...validMonthlySums)).toLocaleString() : "-";
       sixHtml += `</tbody><tfoot><tr><td>每月總計</td>`;
       monthlySums.forEach(sum => sixHtml += `<td class="numeric">${sum.toLocaleString()}</td>`);
       sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td>`;
@@ -570,7 +553,7 @@ function renderResult(command, json) {
     }
   }
   document.getElementById("queryResult").innerHTML = mainHtml;
-  makeTableSortable(document.getElementById("mainTable"), command);
+  if (typeof makeTableSortable === "function") makeTableSortable(document.getElementById("mainTable"), command);
   document.getElementById("exportArea").style.display = "block";
 }
 
