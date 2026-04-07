@@ -504,6 +504,20 @@ function renderResult(command, json) {
           dataMap[key][ym] += (Number(r[5]) || 0);
         }
       });
+      // 1. 先計算這段期間的總金額
+      let totalAll = 0;
+      Object.keys(dataMap).forEach(item => {
+        months.forEach(m => {
+          totalAll += dataMap[item][m];
+        });
+      });
+      // 2. 判斷是否顯示表格
+      if (totalAll === 0) {
+        // 如果 6 個月總和為 0，顯示文字一行
+        document.getElementById("sixMonthArea").innerHTML = `<p style="color: #666; padding: 10px;">📅 依結束日期的近 ${mCount} 個月，無統計數據</p>`;
+        document.getElementById("trendContainer").style.display = "none"; // 隱藏趨勢圖
+      } else {
+        // 如果有數據，則執行原本產生表格的邏輯
       let monthlySums = new Array(mCount).fill(0); let grandTotal = 0;
       let sixHtml = `<h5>📅 依結束日期的近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
       months.forEach(m => sixHtml += `<th>${m}</th>`);
@@ -550,9 +564,8 @@ function renderResult(command, json) {
       sixHtml += `<td class="numeric"><strong style="color: #d32f2f !important;">${totalDiffDisplay}</strong></td>`;
       sixHtml += `</tr></tfoot></table>`;
       document.getElementById("sixMonthArea").innerHTML = sixHtml;
-      
-      if (typeof makeTableSortable === "function") makeTableSortable(document.getElementById("table6m"), command);
       document.getElementById("trendContainer").style.display = "block";
+      if (typeof makeTableSortable === "function") makeTableSortable(document.getElementById("table6m"), command);      
       if (typeof renderCategoryTrend === "function") renderCategoryTrend(months, dataMap);
     }
   }
