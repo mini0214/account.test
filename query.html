@@ -529,7 +529,7 @@ function renderResult(command, json) {
           diffDisplay = "-"; 
         }
         sixHtml += `<td class="numeric"><strong>${rSum.toLocaleString()}</strong></td>`;
-        sixHtml += `<td class="numeric" style="color: #006400; font-weight: bold;">${rAvg.toLocaleString()}</td>
+        sixHtml += `<td class="numeric" style="color: #006400; font-weight: bold;">${rAvg.toLocaleString()}</td>`;
         sixHtml += `<td class="numeric" style="color: #d32f2f; font-weight: bold;">${diffDisplay}</td></tr>`;
       });
       let grandAvg = mCount > 0 ? Math.round(grandTotal / mCount) : 0; // 3. 處理「每月總計」列
