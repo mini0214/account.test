@@ -492,39 +492,40 @@ function renderResult(command, json) {
     }
 
 // --- 近 6 個月統計邏輯開始 ---
-  if (json.months_6m) {
-    const months = json.months_6m;
-    const mCount = months.length;
-    const dataMap = {};
+if (json && json.months_6m) {
+  const months = json.months_6m;
+  const mCount = months.length;
+  const dataMap = {};
+  const area6m = document.getElementById("sixMonthArea");
+  const trendBox = document.getElementById("trendContainer");
 
-    // 1. 建立資料 Map
-    rows.forEach(r => {
-      let key = (r[idx] && String(r[idx]).trim() !== "") ? String(r[idx]).trim() : "未知";
-      if (!r[4]) return;
-      const d = new Date(r[4]);
-      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      if (months.includes(ym)) {
-        if (!dataMap[key]) {
-          dataMap[key] = {};
-          months.forEach(m => dataMap[key][m] = 0);
-        }
-        dataMap[key][ym] += (Number(r[5]) || 0);
+  // 1. 建立資料 Map
+  rows.forEach(r => {
+    let key = (r[idx] && String(r[idx]).trim() !== "") ? String(r[idx]).trim() : "未知";
+    if (!r[4]) return;
+    const d = new Date(r[4]);
+    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    if (months.includes(ym)) {
+      if (!dataMap[key]) {
+        dataMap[key] = {};
+        months.forEach(m => dataMap[key][m] = 0);
       }
-    });
+      dataMap[key][ym] += (Number(r[5]) || 0);
+    }
+  });
 
-    // 2. 計算總額判斷是否有數據 (totalAll)
-    let totalAll = 0;
-    Object.keys(dataMap).forEach(item => {
-      months.forEach(m => { totalAll += dataMap[item][m]; });
-    });
+  // 2. 計算總額判斷是否有數據
+  let totalAll = 0;
+  Object.keys(dataMap).forEach(item => {
+    months.forEach(m => { totalAll += dataMap[item][m]; });
+  });
 
-    // 3. 根據 totalAll 決定顯示表格還是顯示提示文字
+  // 3. 執行渲染 (僅當容器存在時才執行)
+  if (area6m) {
     if (totalAll === 0) {
-      // 🟢 總額為 0 時顯示指定文字
-      document.getElementById("sixMonthArea").innerHTML = `<p style="color: #666; padding: 15px; font-weight: bold;">🔘 依結束日期的近 ${mCount} 個月${currentCommandName}無統計數據</p>`;
-      document.getElementById("trendContainer").style.display = "none"; 
+      area6m.innerHTML = `<p style="color: #666; padding: 15px; font-weight: bold;">🔘 依結束日期的近 ${mCount} 個月${currentCommandName}無統計數據</p>`;
+      if (trendBox) trendBox.style.display = "none";
     } else {
-      // 🔵 有數據時執行表格渲染
       let monthlySums = new Array(mCount).fill(0);
       let grandTotal = 0;
       let sixHtml = `<h5>📅 依結束日期的近 ${mCount} 個月${currentCommandName}統計</h5>`;
@@ -543,18 +544,15 @@ function renderResult(command, json) {
           rowValues.push(val);
           sixHtml += `<td class="numeric">${val.toLocaleString()}</td>`;
         });
-
         grandTotal += rSum;
         let rAvg = mCount > 0 ? Math.round(rSum / mCount) : 0;
         let validValues = rowValues.filter(v => v !== 0);
         let diffDisplay = (validValues.length >= 2) ? (Math.max(...validValues) - Math.min(...validValues)).toLocaleString() : "-";
-
         sixHtml += `<td class="numeric"><strong>${rSum.toLocaleString()}</strong></td>`;
         sixHtml += `<td class="numeric" style="color: #006400; font-weight: bold;">${rAvg.toLocaleString()}</td>`;
         sixHtml += `<td class="numeric" style="color: #d32f2f; font-weight: bold;">${diffDisplay}</td></tr>`;
       });
 
-      // 頁尾總計列
       let grandAvg = mCount > 0 ? Math.round(grandTotal / mCount) : 0;
       let validMonthlySums = monthlySums.filter(v => v !== 0);
       let totalDiffDisplay = (validMonthlySums.length >= 2) ? (Math.max(...validMonthlySums) - Math.min(...validMonthlySums)).toLocaleString() : "-";
@@ -566,20 +564,20 @@ function renderResult(command, json) {
       sixHtml += `<td class="numeric"><strong style="color: #d32f2f !important;">${totalDiffDisplay}</strong></td>`;
       sixHtml += `</tr></tfoot></table>`;
 
-      // 更新畫面與執行後續函式
-      document.getElementById("sixMonthArea").innerHTML = sixHtml;
-      document.getElementById("trendContainer").style.display = "block";
+      area6m.innerHTML = sixHtml;
+      if (trendBox) trendBox.style.display = "block";
       if (typeof makeTableSortable === "function") makeTableSortable(document.getElementById("table6m"), command);
       if (typeof renderCategoryTrend === "function") renderCategoryTrend(months, dataMap);
     }
   }
-  // --- 近 6 個月統計邏輯結束 ---
+}
+// --- 近 6 個月統計邏輯結束 ---
 
-  // 最後處理主頁面顯示 (原本的邏輯)
-  document.getElementById("queryResult").innerHTML = mainHtml;
-  if (typeof makeTableSortable === "function") makeTableSortable(document.getElementById("mainTable"), command);
-  document.getElementById("exportArea").style.display = "block";
-  
+// 主頁面顯示
+document.getElementById("queryResult").innerHTML = mainHtml;
+if (typeof makeTableSortable === "function") makeTableSortable(document.getElementById("mainTable"), command);
+document.getElementById("exportArea").style.display = "block";
+    
 // --- 修改功能核心 ---
 
 function editRow(id) {
