@@ -579,7 +579,8 @@ function renderResult(command, json) {
   document.getElementById("queryResult").innerHTML = mainHtml;
   if (typeof makeTableSortable === "function") makeTableSortable(document.getElementById("mainTable"), command);
   document.getElementById("exportArea").style.display = "block";
-
+}
+  
 // --- 修改功能核心 ---
 
 function editRow(id) {
