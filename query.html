@@ -572,7 +572,13 @@ function renderResult(command, json) {
       if (typeof makeTableSortable === "function") makeTableSortable(document.getElementById("table6m"), command);
       if (typeof renderCategoryTrend === "function") renderCategoryTrend(months, dataMap);
     }
-}
+  }
+  // --- 近 6 個月統計邏輯結束 ---
+
+  // 最後處理主頁面顯示 (原本的邏輯)
+  document.getElementById("queryResult").innerHTML = mainHtml;
+  if (typeof makeTableSortable === "function") makeTableSortable(document.getElementById("mainTable"), command);
+  document.getElementById("exportArea").style.display = "block";
   
 // --- 修改功能核心 ---
 
