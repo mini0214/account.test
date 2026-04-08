@@ -491,75 +491,94 @@ function renderResult(command, json) {
       mainHtml = `<div class="total" style="background-color: #f8f9fa !important; color: #666 !important;">🔘 所選區間 ${document.getElementById("startDate").value} 至 ${document.getElementById("endDate").value} 無統計數據</div>`;
     }
 
-    if (json.months_6m) {
-      const months = json.months_6m; 
-      const mCount = months.length; // 取得實際月份數量 (通常為 6)
-      const dataMap = {};
-      rows.forEach(r => {
-        let key = (r[idx] && String(r[idx]).trim() !== "") ? String(r[idx]).trim() : "未知";
-        if (!r[4]) return;
-        const d = new Date(r[4]); const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        if (months.includes(ym)) {
-          if (!dataMap[key]) { dataMap[key] = {}; months.forEach(m => dataMap[key][m] = 0); }
-          dataMap[key][ym] += (Number(r[5]) || 0);
+// --- 近 6 個月統計邏輯開始 ---
+  if (json.months_6m) {
+    const months = json.months_6m;
+    const mCount = months.length;
+    const dataMap = {};
+
+    // 1. 建立資料 Map
+    rows.forEach(r => {
+      let key = (r[idx] && String(r[idx]).trim() !== "") ? String(r[idx]).trim() : "未知";
+      if (!r[4]) return;
+      const d = new Date(r[4]);
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (months.includes(ym)) {
+        if (!dataMap[key]) {
+          dataMap[key] = {};
+          months.forEach(m => dataMap[key][m] = 0);
         }
-      });
-      let monthlySums = new Array(mCount).fill(0); let grandTotal = 0;
-      let sixHtml = `<h5>📅 依結束日期的近 6 個月${currentCommandName}統計</h5><table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
-      months.forEach(m => sixHtml += `<th>${m}</th>`);
+        dataMap[key][ym] += (Number(r[5]) || 0);
+      }
+    });
+
+    // 2. 計算總額判斷是否有數據 (totalAll)
+    let totalAll = 0;
+    Object.keys(dataMap).forEach(item => {
+      months.forEach(m => { totalAll += dataMap[item][m]; });
+    });
+
+    // 3. 根據 totalAll 決定顯示表格還是顯示提示文字
+    if (totalAll === 0) {
+      // 🟢 總額為 0 時顯示指定文字
+      document.getElementById("sixMonthArea").innerHTML = `<p style="color: #666; padding: 15px; font-weight: bold;">🔘 依結束日期的近 ${mCount} 個月${currentCommandName}無統計數據</p>`;
+      document.getElementById("trendContainer").style.display = "none"; 
+    } else {
+      // 🔵 有數據時執行表格渲染
+      let monthlySums = new Array(mCount).fill(0);
+      let grandTotal = 0;
+      let sixHtml = `<h5>📅 依結束日期的近 ${mCount} 個月${currentCommandName}統計</h5>`;
+      sixHtml += `<table id="table6m"><thead><tr><th>${currentCommandName}</th>`;
+      months.forEach(m => { sixHtml += `<th>${m}</th>`; });
       sixHtml += `<th>總額</th><th style="color: #006400; font-weight: bold;">平均值</th><th style="color: #d32f2f; font-weight: bold;">高低差</th></tr></thead><tbody>`;
+
       Object.keys(dataMap).forEach(item => {
-        let rSum = 0; let rowValues = []; sixHtml += `<tr><td>${item}</td>`;
-        months.forEach((m, i) => { 
-          let val = Number(dataMap[item][m]) || 0; rSum += val; monthlySums[i] += val; rowValues.push(val); 
-          sixHtml += `<td class="numeric">${val.toLocaleString()}</td>`; 
+        let rSum = 0;
+        let rowValues = [];
+        sixHtml += `<tr><td>${item}</td>`;
+        months.forEach((m, i) => {
+          let val = Number(dataMap[item][m]) || 0;
+          rSum += val;
+          monthlySums[i] += val;
+          rowValues.push(val);
+          sixHtml += `<td class="numeric">${val.toLocaleString()}</td>`;
         });
-        grandTotal += rSum; 
+
+        grandTotal += rSum;
         let rAvg = mCount > 0 ? Math.round(rSum / mCount) : 0;
-         // ✨ 強化版高低差區分邏輯 (納入全 0 判斷)
         let validValues = rowValues.filter(v => v !== 0);
-        let diffDisplay = "";         
-        if (validValues.length >= 2) {
-          // ✅ 案例 B & C：有 2 個月以上資料
-          let diff = Math.max(...validValues) - Math.min(...validValues);
-          diffDisplay = diff.toLocaleString(); // 顯示 0 或 波動數字
-        } else {
-          // ✅ 案例 A (單月有值) 或 案例 D (全月皆為 0)
-          // 只要有效資料少於 2 筆，一律顯示 "-" 代表無從比較波動
-          diffDisplay = "-"; 
-        }
+        let diffDisplay = (validValues.length >= 2) ? (Math.max(...validValues) - Math.min(...validValues)).toLocaleString() : "-";
+
         sixHtml += `<td class="numeric"><strong>${rSum.toLocaleString()}</strong></td>`;
         sixHtml += `<td class="numeric" style="color: #006400; font-weight: bold;">${rAvg.toLocaleString()}</td>`;
         sixHtml += `<td class="numeric" style="color: #d32f2f; font-weight: bold;">${diffDisplay}</td></tr>`;
       });
-      let grandAvg = mCount > 0 ? Math.round(grandTotal / mCount) : 0; // 3. 處理「每月總計」列
-      // ✅ 修改這裡：不再只看負數，而是看所有「非 0」的數值 (包含 7533)
-      let validMonthlySums = monthlySums.filter(v => v !== 0);
-      let totalDiffDisplay = "-";
 
-      if (validMonthlySums.length >= 2) {
-        // 算出所有數值中的絕對最大與絕對最小
-        let tMax = Math.max(...validMonthlySums); 
-        let tMin = Math.min(...validMonthlySums); 
-        totalDiffDisplay = (tMax - tMin).toLocaleString();
-      }
+      // 頁尾總計列
+      let grandAvg = mCount > 0 ? Math.round(grandTotal / mCount) : 0;
+      let validMonthlySums = monthlySums.filter(v => v !== 0);
+      let totalDiffDisplay = (validMonthlySums.length >= 2) ? (Math.max(...validMonthlySums) - Math.min(...validMonthlySums)).toLocaleString() : "-";
+
       sixHtml += `</tbody><tfoot><tr><td>每月總計</td>`;
-      monthlySums.forEach(sum => sixHtml += `<td class="numeric">${sum.toLocaleString()}</td>`);
+      monthlySums.forEach(sum => { sixHtml += `<td class="numeric">${sum.toLocaleString()}</td>`; });
       sixHtml += `<td class="numeric">${grandTotal.toLocaleString()}</td>`;
       sixHtml += `<td class="numeric"><strong style="color: #006400 !important;">${grandAvg.toLocaleString()}</strong></td>`;
       sixHtml += `<td class="numeric"><strong style="color: #d32f2f !important;">${totalDiffDisplay}</strong></td>`;
       sixHtml += `</tr></tfoot></table>`;
+
+      // 更新畫面與執行後續函式
       document.getElementById("sixMonthArea").innerHTML = sixHtml;
-      
-      if (typeof makeTableSortable === "function") makeTableSortable(document.getElementById("table6m"), command);
       document.getElementById("trendContainer").style.display = "block";
+      if (typeof makeTableSortable === "function") makeTableSortable(document.getElementById("table6m"), command);
       if (typeof renderCategoryTrend === "function") renderCategoryTrend(months, dataMap);
     }
   }
+  // --- 近 6 個月統計邏輯結束 ---
+
+  // 最後處理主頁面顯示 (原本的邏輯)
   document.getElementById("queryResult").innerHTML = mainHtml;
-  makeTableSortable(document.getElementById("mainTable"), command);
+  if (typeof makeTableSortable === "function") makeTableSortable(document.getElementById("mainTable"), command);
   document.getElementById("exportArea").style.display = "block";
-}
 
 // --- 修改功能核心 ---
 
