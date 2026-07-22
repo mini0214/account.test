@@ -157,6 +157,7 @@
   const quickParams = new URLSearchParams(window.location.search);
   const quickText = quickParams.get("quick");
 
+  console.log("quickText =", quickText);
   // ================================
   // LINE 快速記帳參數
   // 格式：-30 全家 現金 食
@@ -240,24 +241,27 @@
 // ================================
 function loadQuickInput() {
 
-  if (!quickText) return;
+  if (!quickText) {
+    console.log("沒有 quick 參數");
+    return;
+  }
 
-  console.log("快速記帳：", quickText);
+  console.log("收到快速記帳：", quickText);
 
   const parts = quickText.trim().split(/\s+/);
 
-  if (parts.length < 4) {
-    alert("快速記帳格式錯誤\n\n正確格式：\n-30 全家 現金 食");
-    return;
-  }
+  //if (parts.length < 4) {
+  //  alert("快速記帳格式錯誤\n\n正確格式：\n-30 全家 現金 食");
+  //  return;
+  //}
 
   const amount = Number(parts[0]);
   const store = parts[1];
   const payment = parts[2];
   const type = parts[3];
 
-  if (isNaN(amount) || amount === 0) {
-    alert("金額格式錯誤");
+  if (isNaN(amount)) {
+    alert("金額錯誤：" + parts[0]);
     return;
   }
 
@@ -267,46 +271,30 @@ function loadQuickInput() {
   // 店家
   getEl("store").value = store;
 
-  // 負數 = 支出
+  // 金額
   if (amount < 0) {
-
     btnPayout.click();
-
     getEl("payout").value = Math.abs(amount);
-
   } else {
-
-    // 正數 = 收入
     btnIncome.click();
-
     getEl("income").value = amount;
   }
 
   // 付款
-  const paymentOption = [...getEl("payment").options]
-    .find(o => o.value === payment);
-
-  if (paymentOption) {
-    getEl("payment").value = payment;
-  }
+  getEl("payment").value = payment;
 
   // 分類
-  const typeOption = [...getEl("type").options]
-    .find(o => o.value === type);
-
-  if (typeOption) {
-    getEl("type").value = type;
-  }
+  getEl("type").value = type;
 
   // 台幣
-  const currencyOption = [...getEl("currency").options]
+  const twd = [...getEl("currency").options]
     .find(o => o.dataset.name === "台幣");
 
-  if (currencyOption) {
-    getEl("currency").value = currencyOption.value;
+  if (twd) {
+    getEl("currency").value = twd.value;
   }
 
-  console.log("快速記帳帶入完成");
+  console.log("快速記帳完成");
 }
  
   // --- 店家提示邏輯 ---
