@@ -152,6 +152,10 @@
   window.otherList = null; 
 
   const getEl = (id) => document.getElementById(id);
+  
+  // 保留 LIFF 開啟時傳入的快速記帳資料
+  const quickParams = new URLSearchParams(window.location.search);
+  const quickInput = quickParams.get("quick");
 
 // =====================================================
 // LINE 快速記帳
@@ -165,17 +169,16 @@
 // =====================================================
 function loadQuickInput() {
 
-  const params = new URLSearchParams(window.location.search);
-  const quick = params.get("quick");
+  // 使用頁面一開始保存的 quick 參數
+  const quick = quickInput;
 
-  // 沒有 quick 參數
-  // 就維持原本手動輸入功能
-  if (!quick) return;
+  if (!quick) {
+    console.log("沒有快速記帳資料，使用一般記帳模式");
+    return;
+  }
 
   console.log("LINE 快速記帳內容：", quick);
 
-  // 例如：
-  // -30 全家 現金 食
   const parts = quick.trim().split(/\s+/);
 
   if (parts.length < 4) {
@@ -198,7 +201,7 @@ function loadQuickInput() {
   }
 
   // =========================
-  // 日期：預帶今天
+  // 日期：今天
   // =========================
   getEl("date").valueAsDate = new Date();
 
@@ -209,33 +212,55 @@ function loadQuickInput() {
 
   // =========================
   // 負數 = 支出
-  // 正數 = 收入
   // =========================
   if (amount < 0) {
 
-    // 點擊「支出」
     btnPayout.click();
 
-    // 欄位只放正數 30
     getEl("payout").value = Math.abs(amount);
 
-  } else {
+  }
 
-    // 點擊「收入」
+  // =========================
+  // 正數 = 收入
+  // =========================
+  else {
+
     btnIncome.click();
 
     getEl("income").value = amount;
+
   }
 
   // =========================
   // 付款
   // =========================
-  getEl("payment").value = payment;
+  const paymentSelect = getEl("payment");
+
+  const paymentOption = [...paymentSelect.options].find(
+    option => option.value === payment
+  );
+
+  if (paymentOption) {
+    paymentSelect.value = payment;
+  } else {
+    console.warn("找不到付款方式：", payment);
+  }
 
   // =========================
   // 分類
   // =========================
-  getEl("type").value = type;
+  const typeSelect = getEl("type");
+
+  const typeOption = [...typeSelect.options].find(
+    option => option.value === type
+  );
+
+  if (typeOption) {
+    typeSelect.value = type;
+  } else {
+    console.warn("找不到分類：", type);
+  }
 
   // =========================
   // 幣別：台幣
@@ -248,6 +273,8 @@ function loadQuickInput() {
 
   if (twdOption) {
     currencySelect.value = twdOption.value;
+  } else {
+    console.warn("找不到台幣幣別");
   }
 
   console.log("快速記帳完成：", {
@@ -256,41 +283,6 @@ function loadQuickInput() {
     payment,
     type
   });
-}
-  
-  // --- 初始化啟動 ---
-  async function initApp(){
-  try {
-
-    getEl("version").textContent = VERSION;
-
-    await Promise.all([
-
-      liff.init({ liffId: LIFF_IDa }).then(async () => {
-
-        if (!liff.isLoggedIn()) {
-          liff.login();
-        }
-
-        userProfile = await liff.getProfile();
-      }),
-
-      loadListData(),
-
-      loadStoreList()
-    ]);
-
-    // 預設日期為今天
-    getEl("date").valueAsDate = new Date();
-
-    // 解析 LINE 快速記帳
-    loadQuickInput();
-
-  } catch (err) {
-
-    console.error("初始化失敗：", err);
-
-  }
 }
 
   // --- 載入清單 (幣別/分類/付款) 保持原功能 ---
