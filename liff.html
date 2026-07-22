@@ -158,13 +158,6 @@
   const quickText = quickParams.get("quick");
 
   console.log("quickText =", quickText);
-  // ================================
-  // LINE 快速記帳參數
-  // 格式：-30 全家 現金 食
-  // ================================
-  const quickParams = new URLSearchParams(window.location.search);
-  const quickText = quickParams.get("quick");
-
   // --- 初始化啟動 ---
   async function initApp(){
     try {
@@ -226,14 +219,6 @@
       if (data.ok) storeList = data.storeList;
     } catch (err) { console.error("店家載入失敗", err); }
   }
-
-  async function loadStoreList() {
-  try {
-    const res = await fetch(`${API_URL}?type=query&command=店家`);
-    const data = await res.json();
-    if (data.ok) storeList = data.storeList;
-  } catch (err) { console.error("店家載入失敗", err); }
-}
 
 // ================================
 // LINE 快速記帳
