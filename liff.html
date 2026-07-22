@@ -152,138 +152,22 @@
   window.otherList = null; 
 
   const getEl = (id) => document.getElementById(id);
-  
-  // 保留 LIFF 開啟時傳入的快速記帳資料
-  const quickParams = new URLSearchParams(window.location.search);
-  const quickInput = quickParams.get("quick");
 
-// =====================================================
-// LINE 快速記帳
-// 格式：
-// -30 全家 現金 食
-//
-// 金額  店家  付款  分類
-//
-// 負數 = 支出
-// 正數 = 收入
-// =====================================================
-function loadQuickInput() {
-
-  // 使用頁面一開始保存的 quick 參數
-  const quick = quickInput;
-
-  if (!quick) {
-    console.log("沒有快速記帳資料，使用一般記帳模式");
-    return;
+  // --- 初始化啟動 ---
+  async function initApp(){
+    try {
+      getEl("version").textContent = VERSION;
+      getEl("date").valueAsDate = new Date();
+      await Promise.all([
+        liff.init({ liffId: LIFF_IDa }).then(async () => {
+          if (!liff.isLoggedIn()) { liff.login(); }
+          userProfile = await liff.getProfile();
+        }),
+        loadListData(),
+        loadStoreList()
+      ]);
+    } catch (err) { console.error("初始化失敗：", err); }
   }
-
-  console.log("LINE 快速記帳內容：", quick);
-
-  const parts = quick.trim().split(/\s+/);
-
-  if (parts.length < 4) {
-    alert(
-      "❌ 快速記帳格式錯誤\n\n" +
-      "正確格式：\n" +
-      "-30 全家 現金 食"
-    );
-    return;
-  }
-
-  const amount = Number(parts[0]);
-  const store = parts[1];
-  const payment = parts[2];
-  const type = parts[3];
-
-  if (isNaN(amount) || amount === 0) {
-    alert("❌ 金額格式錯誤");
-    return;
-  }
-
-  // =========================
-  // 日期：今天
-  // =========================
-  getEl("date").valueAsDate = new Date();
-
-  // =========================
-  // 店家
-  // =========================
-  getEl("store").value = store;
-
-  // =========================
-  // 負數 = 支出
-  // =========================
-  if (amount < 0) {
-
-    btnPayout.click();
-
-    getEl("payout").value = Math.abs(amount);
-
-  }
-
-  // =========================
-  // 正數 = 收入
-  // =========================
-  else {
-
-    btnIncome.click();
-
-    getEl("income").value = amount;
-
-  }
-
-  // =========================
-  // 付款
-  // =========================
-  const paymentSelect = getEl("payment");
-
-  const paymentOption = [...paymentSelect.options].find(
-    option => option.value === payment
-  );
-
-  if (paymentOption) {
-    paymentSelect.value = payment;
-  } else {
-    console.warn("找不到付款方式：", payment);
-  }
-
-  // =========================
-  // 分類
-  // =========================
-  const typeSelect = getEl("type");
-
-  const typeOption = [...typeSelect.options].find(
-    option => option.value === type
-  );
-
-  if (typeOption) {
-    typeSelect.value = type;
-  } else {
-    console.warn("找不到分類：", type);
-  }
-
-  // =========================
-  // 幣別：台幣
-  // =========================
-  const currencySelect = getEl("currency");
-
-  const twdOption = [...currencySelect.options].find(
-    option => option.dataset.name === "台幣"
-  );
-
-  if (twdOption) {
-    currencySelect.value = twdOption.value;
-  } else {
-    console.warn("找不到台幣幣別");
-  }
-
-  console.log("快速記帳完成：", {
-    amount,
-    store,
-    payment,
-    type
-  });
-}
 
   // --- 載入清單 (幣別/分類/付款) 保持原功能 ---
   async function loadListData() {
