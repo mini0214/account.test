@@ -153,21 +153,145 @@
 
   const getEl = (id) => document.getElementById(id);
 
+// =====================================================
+// LINE 快速記帳
+// 格式：
+// -30 全家 現金 食
+//
+// 金額  店家  付款  分類
+//
+// 負數 = 支出
+// 正數 = 收入
+// =====================================================
+function loadQuickInput() {
+
+  const params = new URLSearchParams(window.location.search);
+  const quick = params.get("quick");
+
+  // 沒有 quick 參數
+  // 就維持原本手動輸入功能
+  if (!quick) return;
+
+  console.log("LINE 快速記帳內容：", quick);
+
+  // 例如：
+  // -30 全家 現金 食
+  const parts = quick.trim().split(/\s+/);
+
+  if (parts.length < 4) {
+    alert(
+      "❌ 快速記帳格式錯誤\n\n" +
+      "正確格式：\n" +
+      "-30 全家 現金 食"
+    );
+    return;
+  }
+
+  const amount = Number(parts[0]);
+  const store = parts[1];
+  const payment = parts[2];
+  const type = parts[3];
+
+  if (isNaN(amount) || amount === 0) {
+    alert("❌ 金額格式錯誤");
+    return;
+  }
+
+  // =========================
+  // 日期：預帶今天
+  // =========================
+  getEl("date").valueAsDate = new Date();
+
+  // =========================
+  // 店家
+  // =========================
+  getEl("store").value = store;
+
+  // =========================
+  // 負數 = 支出
+  // 正數 = 收入
+  // =========================
+  if (amount < 0) {
+
+    // 點擊「支出」
+    btnPayout.click();
+
+    // 欄位只放正數 30
+    getEl("payout").value = Math.abs(amount);
+
+  } else {
+
+    // 點擊「收入」
+    btnIncome.click();
+
+    getEl("income").value = amount;
+  }
+
+  // =========================
+  // 付款
+  // =========================
+  getEl("payment").value = payment;
+
+  // =========================
+  // 分類
+  // =========================
+  getEl("type").value = type;
+
+  // =========================
+  // 幣別：台幣
+  // =========================
+  const currencySelect = getEl("currency");
+
+  const twdOption = [...currencySelect.options].find(
+    option => option.dataset.name === "台幣"
+  );
+
+  if (twdOption) {
+    currencySelect.value = twdOption.value;
+  }
+
+  console.log("快速記帳完成：", {
+    amount,
+    store,
+    payment,
+    type
+  });
+}
+  
   // --- 初始化啟動 ---
   async function initApp(){
-    try {
-      getEl("version").textContent = VERSION;
-      getEl("date").valueAsDate = new Date();
-      await Promise.all([
-        liff.init({ liffId: LIFF_IDa }).then(async () => {
-          if (!liff.isLoggedIn()) { liff.login(); }
-          userProfile = await liff.getProfile();
-        }),
-        loadListData(),
-        loadStoreList()
-      ]);
-    } catch (err) { console.error("初始化失敗：", err); }
+  try {
+
+    getEl("version").textContent = VERSION;
+
+    await Promise.all([
+
+      liff.init({ liffId: LIFF_IDa }).then(async () => {
+
+        if (!liff.isLoggedIn()) {
+          liff.login();
+        }
+
+        userProfile = await liff.getProfile();
+      }),
+
+      loadListData(),
+
+      loadStoreList()
+    ]);
+
+    // 預設日期為今天
+    getEl("date").valueAsDate = new Date();
+
+    // 解析 LINE 快速記帳
+    loadQuickInput();
+
+  } catch (err) {
+
+    console.error("初始化失敗：", err);
+
   }
+}
 
   // --- 載入清單 (幣別/分類/付款) 保持原功能 ---
   async function loadListData() {
