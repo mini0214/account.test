@@ -505,7 +505,7 @@ function loadQuickData() {
               // ========================================
               try {
           
-                  // 先傳送訊息到 LINE
+                  // 1. 先傳送訊息到 LINE
                   await liff.sendMessages([
                       {
                           type: "text",
@@ -515,11 +515,11 @@ function loadQuickData() {
           
                   console.log("LINE 訊息傳送成功");
           
-                  // 再顯示完成訊息
+                  // 2. 顯示完成訊息
                   alert(msg);
           
-                  // 使用者按下確定後關閉 LIFF
-                  liff.closeWindow();
+                  // 3. 確定後回到 quick.html
+                  window.location.href = "quick.html";
           
               } catch (err) {
           
@@ -539,9 +539,8 @@ function loadQuickData() {
           
               alert(msg);
           
-              // 按下確定後，轉到 quick.html
+              // 確定後回到 quick.html
               window.location.href = "quick.html";
-          
           }
   
       } catch (err) {
