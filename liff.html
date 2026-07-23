@@ -500,45 +500,41 @@ function loadQuickData() {
           
           if (liff.isInClient()) {
           
-              // =========================
-              // LINE 內開啟 LIFF
-              // =========================
-          
               try {
           
-                  // 先顯示訊息
+                  // 先顯示完成訊息
                   alert(msg);
           
-                  // 使用者按下確定後，傳回 LINE
-                  await liff.sendMessages([
+                  // 使用者按下確定後
+                  // 傳送到 LINE
+                  const result = await liff.sendMessages([
                       {
                           type: "text",
                           text: msg
                       }
                   ]);
           
-                  // 傳送成功後關閉 LIFF
+                  console.log("LINE 訊息傳送成功", result);
+          
+                  // 傳送完成後關閉 LIFF
                   liff.closeWindow();
           
               } catch (err) {
           
-                  console.error("LINE 傳送失敗：", err);
+                  console.error("LINE 傳送失敗", err);
           
                   alert(
-                      "訊息無法傳回 LINE。\n\n" +
-                      "錯誤：" + err.message
+                      "❌ LINE 訊息傳送失敗\n\n" +
+                      err.message
                   );
           
               }
           
           } else {
           
-              // =========================
-              // WEB 瀏覽器
-              // =========================
-          
               alert(msg);
           
+              // WEB 可能無法關閉
               window.close();
           
           }
