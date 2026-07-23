@@ -5,10 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   
   <style>
-    h3 { font-size: 50px; text-align: center; margin-bottom: 50px; }
-  </style>
 
-  <style>
+    h3 { font-size: 50px; text-align: center; margin-bottom: 50px; }
+
     body {
       font-family: Arial, sans-serif;
       padding: 30px 20px;
@@ -32,16 +31,10 @@
       border: none;
       border-radius: 8px;
     }
+
   </style>
 </head>
-  
-<!-- LIFF 初始化 + 登錄送出 -->
-<script>  
-  const LIFF_IDqq = "2008096451-cORglo9A";
-  const API_URL = "https://script.google.com/macros/s/AKfycbwxqIKuk4VqHeib3Mi_xxE6yS5R8V55wyiQVIS6VgF6PEnNa93lVSoBBiX4OYksDuaiUw/exec";
-  const VERSION = "V29_#260129"; 
-</script>  
-  
+
 <body>
 
   <h3>💲非<span style="color: red;">速</span>不可.[<span id="version">V</span>]</h3>
@@ -57,7 +50,17 @@
   </button>
 
   <script>
+    
+<!-- LIFF 初始化 + 登錄送出 -->
+  const LIFF_IDqq = "2008096451-cORglo9A";
+  const API_URL = "https://script.google.com/macros/s/AKfycbwxqIKuk4VqHeib3Mi_xxE6yS5R8V55wyiQVIS6VgF6PEnNa93lVSoBBiX4OYksDuaiUw/exec";
+  const VERSION = "V29_#260129"; 
 
+  document.getElementById("version").textContent = VERSION;
+    
+    // ==============================
+    // 快速記帳
+    // ==============================
     function submitQuick() {
 
       const text = document.getElementById("quickText").value.trim();
