@@ -53,9 +53,46 @@
       const text = document.getElementById("quickText").value.trim();
 
       if (!text) {
-        alert("請輸入快速記帳的內容;金額收入正數支出負數 店家 付款 分類;用空格區分");
+        alert(
+          "請輸入快速記帳內容\n\n" +
+          "格式：金額 店家 付款 分類\n\n" +
+          "例如：\n" +
+          "-34 全家 現金 食"
+        );
         return;
       }
+
+        // 用空白切割
+        const parts = text.split(/\s+/);
+      
+        // 必須剛好 4 個欄位
+        if (parts.length !== 4) {
+      
+          alert(
+            "快速記帳格式錯誤！\n\n" +
+            "必須輸入 4 個欄位：\n" +
+            "金額 店家 付款 分類\n\n" +
+            "例如：\n" +
+            "-34 全家 現金 食\n\n" +
+            "目前輸入：\n" +
+            text
+          );
+      
+          return;
+        }
+      
+        // 檢查金額是否為數字
+        if (isNaN(Number(parts[0]))) {
+      
+          alert(
+            "金額格式錯誤！\n\n" +
+            "第一欄必須是數字\n\n" +
+            "例如：\n" +
+            "-34 全家 現金 食"
+          );
+      
+          return;
+        }
 
       // 原本的 LIFF URL
       const liffUrl =
