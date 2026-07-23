@@ -341,6 +341,21 @@ function loadQuickData() {
       new Event("change", { bubbles: true })
     );
   }
+  
+  // =========================
+  // 幣別預設台幣
+  // =========================
+  
+  const currencySelect =
+    document.getElementById("currency");
+
+  if (currencySelect) {
+    currencySelect.value = "台幣";
+
+    currencySelect.dispatchEvent(
+      new Event("change", { bubbles: true })
+    );
+  }
 
 }
 
