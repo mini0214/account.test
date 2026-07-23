@@ -497,45 +497,50 @@ function loadQuickData() {
           // ============================================
           // 5. 顯示訊息
           // ============================================
-          
+                    
           if (liff.isInClient()) {
           
+              // ========================================
+              // LINE LIFF
+              // ========================================
               try {
           
-                  // 先顯示完成訊息
-                  alert(msg);
-          
-                  // 使用者按下確定後
-                  // 傳送到 LINE
-                  const result = await liff.sendMessages([
+                  // 先傳送訊息到 LINE
+                  await liff.sendMessages([
                       {
                           type: "text",
                           text: msg
                       }
                   ]);
           
-                  console.log("LINE 訊息傳送成功", result);
+                  console.log("LINE 訊息傳送成功");
           
-                  // 傳送完成後關閉 LIFF
+                  // 再顯示完成訊息
+                  alert(msg);
+          
+                  // 使用者按下確定後關閉 LIFF
                   liff.closeWindow();
           
               } catch (err) {
           
-                  console.error("LINE 傳送失敗", err);
+                  console.error("LINE 訊息傳送失敗", err);
           
                   alert(
                       "❌ LINE 訊息傳送失敗\n\n" +
                       err.message
                   );
-          
               }
           
           } else {
           
+              // ========================================
+              // 一般 Web 瀏覽器
+              // ========================================
+          
               alert(msg);
           
-              // WEB 可能無法關閉
-              window.close();
+              // 按下確定後，轉到 quick.html
+              window.location.href = "quick.html";
           
           }
   
