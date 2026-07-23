@@ -260,43 +260,88 @@ function loadQuickData() {
   const payment = parts[2];
   const type = parts[3];
 
-  // ============================================
-  // 下面的 ID 要依照你 liff.html 實際的 HTML ID
-  // ============================================
+  // =========================
+  // 1. 支出 / 收入
+  // =========================
 
-  // 金額
-  const amountInput = document.getElementById("amount");
-  if (amountInput) {
-    amountInput.value = Math.abs(Number(amount));
+  if (Number(amount) < 0) {
+
+    // 選擇支出
+    document.getElementById("btnPayout").click();
+
+    // 金額填入 payout
+    const payoutInput = document.getElementById("payout");
+
+    payoutInput.value = Math.abs(Number(amount));
+
+    payoutInput.dispatchEvent(
+      new Event("input", { bubbles: true })
+    );
+
+    payoutInput.dispatchEvent(
+      new Event("change", { bubbles: true })
+    );
+
+  } else {
+
+    // 如果正數就是收入
+    document.getElementById("btnIncome").click();
+
+    const incomeInput = document.getElementById("income");
+
+    incomeInput.value = Number(amount);
+
+    incomeInput.dispatchEvent(
+      new Event("input", { bubbles: true })
+    );
+
+    incomeInput.dispatchEvent(
+      new Event("change", { bubbles: true })
+    );
   }
 
-  // 店家
+  // =========================
+  // 2. 店家
+  // =========================
+
   const storeInput = document.getElementById("store");
+
   if (storeInput) {
     storeInput.value = store;
+    storeInput.dispatchEvent(
+      new Event("input", { bubbles: true })
+    );
+    storeInput.dispatchEvent(
+      new Event("change", { bubbles: true })
+    );
   }
 
-  // 付款
+  // =========================
+  // 3. 付款
+  // =========================
+
   const paymentSelect = document.getElementById("payment");
+
   if (paymentSelect) {
     paymentSelect.value = payment;
+    paymentSelect.dispatchEvent(
+      new Event("change", { bubbles: true })
+    );
   }
 
-  // 分類
+  // =========================
+  // 4. 分類
+  // =========================
+
   const typeSelect = document.getElementById("type");
+
   if (typeSelect) {
     typeSelect.value = type;
+    typeSelect.dispatchEvent(
+      new Event("change", { bubbles: true })
+    );
   }
 
-  // 金額正負：負數 = 支出
-  if (Number(amount) < 0) {
-    const expenseButton = document.getElementById("expense");
-    if (expenseButton) {
-      expenseButton.click();
-    }
-  }
-
-  console.log("快速記帳資料已填入");
 }
 
   // --- 店家提示邏輯 ---
