@@ -166,6 +166,11 @@
       await Promise.all([
   
         liff.init({ liffId: LIFF_IDa }).then(async () => {
+
+          console.log("LIFF 初始化成功");
+
+          console.log("isInClient:", liff.isInClient());
+          console.log("isLoggedIn:", liff.isLoggedIn());
   
           if (!liff.isLoggedIn()) {
             liff.login();
@@ -173,6 +178,8 @@
           }
   
           userProfile = await liff.getProfile();
+
+          console.log("使用者:", userProfile);
         }),  
         loadListData(),  
         loadStoreList()
@@ -497,15 +504,12 @@ function loadQuickData() {
           // ============================================
           // 5. 顯示訊息
           // ============================================
-                    
+                              
           if (liff.isInClient()) {
           
-              // ========================================
-              // LINE LIFF
-              // ========================================
               try {
           
-                  // 1. 先傳送訊息到 LINE
+                  // 1. 傳送訊息
                   await liff.sendMessages([
                       {
                           type: "text",
@@ -518,8 +522,8 @@ function loadQuickData() {
                   // 2. 顯示完成訊息
                   alert(msg);
           
-                  // 3. 確定後回到 quick.html
-                  window.location.href = "quick.html";
+                  // 3. 關閉 LIFF
+                  liff.closeWindow();
           
               } catch (err) {
           
@@ -533,13 +537,8 @@ function loadQuickData() {
           
           } else {
           
-              // ========================================
-              // 一般 Web 瀏覽器
-              // ========================================
-          
               alert(msg);
           
-              // 確定後回到 quick.html
               window.location.href = "quick.html";
           }
   
