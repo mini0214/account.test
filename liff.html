@@ -153,11 +153,6 @@
 
   const getEl = (id) => document.getElementById(id);
 
-  // 讀取 LINE 傳入的快速記帳內容
-  const quickParams = new URLSearchParams(window.location.search);
-  const quickText = quickParams.get("quick");
-
-  console.log("quickText =", quickText);
   // --- 初始化啟動 ---
   async function initApp(){
     try {
@@ -171,7 +166,6 @@
         loadListData(),
         loadStoreList()
       ]);
-      loadQuickInput();
     } catch (err) { console.error("初始化失敗：", err); }
   }
 
@@ -220,68 +214,6 @@
     } catch (err) { console.error("店家載入失敗", err); }
   }
 
-// ================================
-// LINE 快速記帳
-// 格式：-30 全家 現金 食
-// ================================
-function loadQuickInput() {
-
-  if (!quickText) {
-    console.log("沒有 quick 參數");
-    return;
-  }
-
-  console.log("收到快速記帳：", quickText);
-
-  const parts = quickText.trim().split(/\s+/);
-
-  //if (parts.length < 4) {
-  //  alert("快速記帳格式錯誤\n\n正確格式：\n-30 全家 現金 食");
-  //  return;
-  //}
-
-  const amount = Number(parts[0]);
-  const store = parts[1];
-  const payment = parts[2];
-  const type = parts[3];
-
-  if (isNaN(amount)) {
-    alert("金額錯誤：" + parts[0]);
-    return;
-  }
-
-  // 日期：今天
-  getEl("date").valueAsDate = new Date();
-
-  // 店家
-  getEl("store").value = store;
-
-  // 金額
-  if (amount < 0) {
-    btnPayout.click();
-    getEl("payout").value = Math.abs(amount);
-  } else {
-    btnIncome.click();
-    getEl("income").value = amount;
-  }
-
-  // 付款
-  getEl("payment").value = payment;
-
-  // 分類
-  getEl("type").value = type;
-
-  // 台幣
-  const twd = [...getEl("currency").options]
-    .find(o => o.dataset.name === "台幣");
-
-  if (twd) {
-    getEl("currency").value = twd.value;
-  }
-
-  console.log("快速記帳完成");
-}
- 
   // --- 店家提示邏輯 ---
   getEl("store").addEventListener("input", () => {
     const val = getEl("store").value.toLowerCase();
