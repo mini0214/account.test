@@ -245,6 +245,9 @@ function loadQuickData() {
 
   if (!quick) return;
 
+  // ✅ 確認是快速記帳
+  isQuickInput = true;
+
   console.log("收到快速記帳資料：", quick);
 
   const parts = quick.trim().split(/\s+/);
@@ -491,17 +494,53 @@ function loadQuickData() {
             });
           }
   
-          // ✅ 5. 顯示 Alert 與發送 LINE
-          alert(msg);
-  
+          // ============================================
+          // 5. 顯示訊息
+          // ============================================
+          
           if (liff.isInClient()) {
-            try {
-              await liff.sendMessages([{ type: "text", text: msg }]);
-            } catch (err) { console.warn("LINE 傳送失敗", err); }
+          
+              // =========================
+              // LINE 內開啟 LIFF
+              // =========================
+          
+              try {
+          
+                  // 先將訊息送回 LINE
+                  await liff.sendMessages([
+                      {
+                          type: "text",
+                          text: msg
+                      }
+                  ]);
+          
+                  // 顯示完成訊息
+                  alert(msg);
+          
+                  // 使用者按下「確定」後
+                  // 關閉 LIFF 回到 LINE
+                  liff.closeWindow();
+          
+              } catch (err) {
+          
+                  console.warn("LINE 傳送失敗", err);
+          
+                  alert(msg);
+          
+              }
+          
+          } else {
+          
+              // =========================
+              // 一般 WEB 瀏覽器
+              // =========================
+          
+              alert(msg);
+          
+              // 關閉目前視窗
+              window.close();
+          
           }
-  
-          getEl("expenseForm").reset();
-          getEl("date").valueAsDate = new Date();
   
       } catch (err) {
           console.error(err);
