@@ -234,39 +234,70 @@
     } catch (err) { console.error("店家載入失敗", err); }
   }
   
-  // ============================================
-  // 接收 URL ?quick= 傳入的快速記帳資料
-  // 例如：
-  // liff.html?quick=-32%20全家%20現金%20食
-  // ============================================
-  function loadQuickData() {
-  
-    const params = new URLSearchParams(window.location.search);
-    const quick = params.get("quick");
-  
-    if (!quick) return;
-  
-    console.log("收到 quick：", quick);
-  
-    // 例如：-32 全家 現金 食
-    const parts = quick.trim().split(/\s+/);
-  
-    if (parts.length < 4) {
-      alert("快速記帳格式錯誤");
-      return;
-    }
-  
-    const amount = parts[0];
-    const store = parts[1];
-    const payment = parts[2];
-    const type = parts[3];
-  
-    // 將資料填入原本的欄位
-    document.querySelector("#amount").value = amount;
-    document.querySelector("#store").value = store;
-    document.querySelector("#payment").value = payment;
-    document.querySelector("#type").value = type;
+// ============================================
+// 快速記帳：讀取 URL ?quick=
+// 例如：
+// liff.html?quick=-12%20全家%20現金%20食
+// ============================================
+function loadQuickData() {
+
+  const params = new URLSearchParams(window.location.search);
+  const quick = params.get("quick");
+
+  if (!quick) return;
+
+  console.log("收到快速記帳資料：", quick);
+
+  const parts = quick.trim().split(/\s+/);
+
+  if (parts.length < 4) {
+    console.warn("快速記帳格式錯誤");
+    return;
   }
+
+  const amount = parts[0];
+  const store = parts[1];
+  const payment = parts[2];
+  const type = parts[3];
+
+  // ============================================
+  // 下面的 ID 要依照你 liff.html 實際的 HTML ID
+  // ============================================
+
+  // 金額
+  const amountInput = document.getElementById("amount");
+  if (amountInput) {
+    amountInput.value = Math.abs(Number(amount));
+  }
+
+  // 店家
+  const storeInput = document.getElementById("store");
+  if (storeInput) {
+    storeInput.value = store;
+  }
+
+  // 付款
+  const paymentSelect = document.getElementById("payment");
+  if (paymentSelect) {
+    paymentSelect.value = payment;
+  }
+
+  // 分類
+  const typeSelect = document.getElementById("type");
+  if (typeSelect) {
+    typeSelect.value = type;
+  }
+
+  // 金額正負：負數 = 支出
+  if (Number(amount) < 0) {
+    const expenseButton = document.getElementById("expense");
+    if (expenseButton) {
+      expenseButton.click();
+    }
+  }
+
+  console.log("快速記帳資料已填入");
+}
 
   // --- 店家提示邏輯 ---
   getEl("store").addEventListener("input", () => {
