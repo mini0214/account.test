@@ -151,6 +151,9 @@
   let userProfile = null;
   window.otherList = null; 
 
+  // ✅ 記錄是否為快速記帳
+  let isQuickInput = false;
+
   const getEl = (id) => document.getElementById(id);
 
   // --- 初始化啟動 ---
@@ -246,6 +249,9 @@ function loadQuickData() {
 
   if (!quick) return;
 
+  // ✅ 標記為快速記帳
+  isQuickInput = true;
+
   console.log("收到快速記帳資料：", quick);
 
   const parts = quick.trim().split(/\s+/);
@@ -307,10 +313,10 @@ function loadQuickData() {
   const storeInput = document.getElementById("store");
 
   if (storeInput) {
+    // 只設定店家，不觸發 input
     storeInput.value = store;
-    storeInput.dispatchEvent(
-      new Event("input", { bubbles: true })
-    );
+  
+    // 觸發 change
     storeInput.dispatchEvent(
       new Event("change", { bubbles: true })
     );
@@ -350,7 +356,7 @@ function loadQuickData() {
     document.getElementById("currency");
 
   if (currencySelect) {
-    currencySelect.value = "台幣:1";
+    currencySelect.value = "1";//台幣
 
     currencySelect.dispatchEvent(
       new Event("change", { bubbles: true })
@@ -371,10 +377,15 @@ function loadQuickData() {
       const div = document.createElement("div");
       div.textContent = m.store + (m.type ? `（${m.type}）` : "");
       div.onclick = () => {
+      
         getEl("store").value = m.store;
         sugg.style.display = "none";
-        if (m.type) {
+      
+        // ✅ 如果是快速記帳，而且已經有分類
+        // 就不要用店家的分類覆蓋
+        if (m.type && !isQuickInput) {
           getEl("type").value = m.type;
+      
           if (!getEl("type").value) {
             getEl("type").add(new Option(m.type, m.type));
             getEl("type").value = m.type;
