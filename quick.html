@@ -9,6 +9,7 @@
     body { font-family: Arial, sans-serif; padding: 30px 20px; background: #f5f5f5; }
     input { width: 100%; box-sizing: border-box; font-size: 20px; padding: 15px; margin-bottom: 20px; }
     button { width: 100%; padding: 15px; font-size: 20px; background: #06c755; color: white; border: none; border-radius: 8px; }
+    .form-row { display: flex; align-items: center; margin: 20px 0; white-space: nowrap; /* ✅ 關鍵：不允許自動換行 */ }    
   </style>
 </head>
 
@@ -16,11 +17,14 @@
 
   <h3>💲非<span style="color: red;">速</span>不可.[<span id="version">V</span>]</h3>
 
-  <input
-    id="quickText"
-    type="text"
-    placeholder="-32 全家 現金 食"
-  >
+  <div class="form-row">
+    <label for="quickText">快速：</label>
+    <input 
+      type="text" 
+      id="quickText" 
+      placeholder="-32 全家 現金 食"
+    >
+  </div>
 
   <button onclick="submitQuick()">
     送出
