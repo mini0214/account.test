@@ -156,45 +156,38 @@
 
   const getEl = (id) => document.getElementById(id);
 
-  // --- 初始化啟動 ---
-  async function initApp(){
+  // --- 初始化啟動 (修復 Quick 資料填入順序) ---
+  async function initApp() {
     try {
-  
       getEl("version").textContent = VERSION;
       getEl("date").valueAsDate = new Date();
   
+      // 1. 先執行 LIFF 初始化與登入驗證
+      await liff.init({ liffId: LIFF_IDa });
+      console.log("LIFF 初始化成功");
+  
+      if (!liff.isLoggedIn()) {
+        liff.login();
+        return; // 未登入時直接停住，等待導頁
+      }
+  
+      userProfile = await liff.getProfile();
+      console.log("使用者:", userProfile);
+  
+      // 2. 確定登入後，平行載入下拉選單與店家資料
       await Promise.all([
-  
-        liff.init({ liffId: LIFF_IDa }).then(async () => {
-
-          console.log("LIFF 初始化成功");
-
-          console.log("isInClient:", liff.isInClient());
-          console.log("isLoggedIn:", liff.isLoggedIn());
-  
-          if (!liff.isLoggedIn()) {
-            liff.login();
-            return;
-          }
-  
-          userProfile = await liff.getProfile();
-
-          console.log("使用者:", userProfile);
-        }),  
-        loadListData(),  
+        loadListData(),
         loadStoreList()
       ]);
   
-      // 所有下拉選單載入完成後
+      // 3. 所有選單 DOM 都渲染完成後，才帶入 quick 參數
       loadQuickData();
   
     } catch (err) {
-  
       console.error("初始化失敗：", err);
-  
     }
   }
-
+  
   // --- 載入清單 (幣別/分類/付款) 保持原功能 ---
   async function loadListData() {
     try {
@@ -240,130 +233,79 @@
     } catch (err) { console.error("店家載入失敗", err); }
   }
   
-// ============================================
-// 快速記帳：讀取 URL ?quick=
-// 例如：
-// liff.html?quick=-12%20全家%20現金%20食
-// ============================================
-function loadQuickData() {
-
-  const params = new URLSearchParams(window.location.search);
-  const quick = params.get("quick");
-
-  if (!quick) return;
-
-  // ✅ 確認是快速記帳
-  isQuickInput = true;
-
-  console.log("收到快速記帳資料：", quick);
-
-  const parts = quick.trim().split(/\s+/);
-
-  if (parts.length < 4) {
-    console.warn("快速記帳格式錯誤");
-    return;
-  }
-
-  const amount = parts[0];
-  const store = parts[1];
-  const payment = parts[2];
-  const type = parts[3];
-
-  // =========================
-  // 1. 支出 / 收入
-  // =========================
-
-  if (Number(amount) < 0) {
-
-    document.getElementById("btnPayout").click();
-
-    const payoutInput = document.getElementById("payout");
-    payoutInput.value = Math.abs(Number(amount));
-
-    payoutInput.dispatchEvent(
-      new Event("input", { bubbles: true })
-    );
-
-  } else {
-
-    document.getElementById("btnIncome").click();
-
-    const incomeInput = document.getElementById("income");
-    incomeInput.value = Number(amount);
-
-    incomeInput.dispatchEvent(
-      new Event("input", { bubbles: true })
-    );
-  }
-
-  // =========================
-  // 2. 店家
-  // =========================
-
-  const storeInput = document.getElementById("store");
-
-  if (storeInput) {
-    storeInput.value = store;
-
-    // 不觸發 input
-    // 避免店家自動分類功能干擾快速輸入
-    storeInput.dispatchEvent(
-      new Event("change", { bubbles: true })
-    );
-  }
-
-  // =========================
-  // 3. 幣別：預設台幣
-  // =========================
-
-  const currencySelect =
-    document.getElementById("currency");
-
-  if (currencySelect) {
-
-    // 找名稱為「台幣」的選項
-    const option = [...currencySelect.options]
-      .find(o => o.dataset.name === "台幣");
-
-    if (option) {
-      currencySelect.value = option.value;
+  // ============================================
+  // 快速記帳：讀取 URL ?quick=
+  // ============================================
+  function loadQuickData() {
+    const params = new URLSearchParams(window.location.search);
+    const quick = params.get("quick");
+  
+    if (!quick) return;
+  
+    isQuickInput = true;
+    console.log("收到快速記帳資料：", quick);
+  
+    const parts = quick.trim().split(/\s+/);
+    if (parts.length < 4) {
+      console.warn("快速記帳格式錯誤");
+      return;
     }
+  
+    const amount = parts[0];
+    const store = parts[1];
+    const payment = parts[2];
+    const type = parts[3];
+  
+    // 1. 支出 / 收入
+    if (Number(amount) < 0) {
+      document.getElementById("btnPayout").click();
+      const payoutInput = document.getElementById("payout");
+      payoutInput.value = Math.abs(Number(amount));
+      payoutInput.dispatchEvent(new Event("input", { bubbles: true }));
+    } else {
+      document.getElementById("btnIncome").click();
+      const incomeInput = document.getElementById("income");
+      incomeInput.value = Number(amount);
+      incomeInput.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  
+    // 2. 店家
+    const storeInput = document.getElementById("store");
+    if (storeInput) {
+      storeInput.value = store;
+      storeInput.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  
+    // 3. 幣別：預設台幣
+    const currencySelect = document.getElementById("currency");
+    if (currencySelect) {
+      const option = [...currencySelect.options].find(o => o.dataset.name === "台幣");
+      if (option) {
+        currencySelect.value = option.value;
+      } else if (currencySelect.options.length > 1) {
+        // 備用方案：若找不到指定「台幣」，預設抓第一個有效幣別
+        currencySelect.selectedIndex = 1;
+      }
+    }
+  
+    // 4. 付款
+    const paymentSelect = document.getElementById("payment");
+    if (paymentSelect) {
+      paymentSelect.value = payment;
+    }
+  
+    // 5. 分類
+    const typeSelect = document.getElementById("type");
+    if (typeSelect) {
+      typeSelect.value = type;
+    }
+  
+    // 6. 確定資料帶入完成後自動送出 (延遲 300ms 確保 DOM 事件處理完畢)
+    setTimeout(() => {
+      console.log("快速記帳資料已填入，準備自動送出");
+      document.getElementById("expenseForm").requestSubmit();
+    }, 300);
   }
-
-  // =========================
-  // 4. 付款
-  // =========================
-
-  const paymentSelect =
-    document.getElementById("payment");
-
-  if (paymentSelect) {
-    paymentSelect.value = payment;
-  }
-
-  // =========================
-  // 5. 分類
-  // =========================
-
-  const typeSelect =
-    document.getElementById("type");
-
-  if (typeSelect) {
-    typeSelect.value = type;
-  }
-
-  // =========================
-  // 6. 快速輸入完成後自動送出
-  // =========================
-
-  setTimeout(() => {
-
-    console.log("快速記帳資料已填入，準備自動送出");
-
-    document.getElementById("expenseForm").requestSubmit();
-
-  }, 500);
-}
   
   // --- 店家提示邏輯 ---
   getEl("store").addEventListener("input", () => {
