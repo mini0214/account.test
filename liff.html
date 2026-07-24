@@ -502,44 +502,39 @@ function loadQuickData() {
           }
   
           // ============================================
-          // 5. 顯示訊息
+          // 5. 顯示訊息 (優化權限判斷與補授權機制)
           // ============================================
-                              
           if (liff.isInClient()) {
+            try {
+              // 1. 檢查是否有 chat_message.write 權限
+              const permission = await liff.permission.query("chat_message.write");
           
-              try {
-          
-                  // 1. 傳送訊息
-                  await liff.sendMessages([
-                      {
-                          type: "text",
-                          text: msg
-                      }
-                  ]);
-          
-                  console.log("LINE 訊息傳送成功");
-          
-                  // 2. 顯示完成訊息
-                  alert(msg);
-          
-                  // 3. 關閉 LIFF
-                  liff.closeWindow();
-          
-              } catch (err) {
-          
-                  console.error("LINE 訊息傳送失敗", err);
-          
-                  alert(
-                      "❌ LINE 訊息傳送失敗\n\n" +
-                      err.message
-                  );
+              if (permission.state === "none") {
+                // 若尚未授權，跳出提示要求使用者補授權
+                alert("⚠️ 需要同意「傳送訊息」權限才能自動發送記帳結果至聊天室。");
+                liff.permission.requestAll();
+                return;
               }
           
+              if (permission.state === "granted") {
+                // 2. 已授權，正常發送訊息
+                await liff.sendMessages([{ type: "text", text: msg }]);
+                console.log("LINE 訊息傳送成功");
+                liff.closeWindow();
+              } else {
+                // 3. 被拒絕授權 (denied)，顯示 Alert 後關閉
+                alert("⚠️ 記帳成功！（因未授權發送訊息，結果僅顯示於此）：\n\n" + msg);
+                liff.closeWindow();
+              }
+            } catch (err) {
+              console.error("LINE 訊息傳送失敗", err);
+              // 即使 sendMessages 失敗，資料庫已寫入，不應視為完全失敗
+              alert("⚠️ 記帳已成功儲存，但發送 LINE 訊息失敗：\n" + err.message + "\n\n【記帳明細】\n" + msg);
+              liff.closeWindow();
+            }
           } else {
-          
-              alert(msg);
-          
-              window.location.href = "quick.html";
+            alert(msg);
+            window.location.href = "quick.html";
           }
   
       } catch (err) {
