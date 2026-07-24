@@ -518,66 +518,63 @@ function loadQuickData() {
           // ============================================
           // 5. 顯示訊息
           // ============================================
-                              
           if (liff.isInClient()) {
             try {
-        
-                // ============================================
-                // 確認是否已取得 chat_message.write 權限
-                // ============================================
-                const permission = await liff.permission.query(
-                    "chat_message.write"
-                );
-        
-                console.log("LINE 訊息權限：", permission);
-        
-                // 如果尚未授權
-                if (permission.state !== "granted") {
-        
-                    alert(
-                        "⚠️ LINE 尚未授權訊息發送權限\n\n" +
-                        "請先授權後，再重新執行快速記帳。"
-                    );
-        
-                    return;
-                }
-        
-                // ============================================
-                // 發送 LINE 訊息
-                // ============================================
-                await liff.sendMessages([
-                    {
-                        type: "text",
-                        text: msg
+            
+                // 儲存資料
+                // 查詢總額
+                // 組合 msg
+            
+            
+                if (liff.isInClient()) {
+            
+                    try {
+            
+                        await liff.sendMessages([
+                            {
+                                type: "text",
+                                text: msg
+                            }
+                        ]);
+            
+                        alert(msg);
+            
+                        liff.closeWindow();
+            
+                    } catch (err) {
+            
+                        console.error("LINE 訊息傳送失敗", err);
+            
+                        alert(
+                            "❌ LINE 訊息傳送失敗\n\n" +
+                            err.message
+                        );
                     }
-                ]);
-        
-                console.log("LINE 訊息傳送成功");
-        
-                alert(msg);
-        
-                liff.closeWindow();
-        
+            
+                } else {
+            
+                    alert(msg);
+            
+                    window.location.href = "quick.html";
+                }
+            
+            
             } catch (err) {
-        
-                console.error("LINE 訊息傳送失敗", err);
-        
-                alert(
-                    "❌ LINE 訊息傳送失敗\n\n" +
-                    err.message
-                );
+            
+                console.error(err);
+            
+                alert("❌ 發生錯誤：" + err.message);
+            
+            } finally {
+            
+                clearInterval(sendingTimer);
+            
+                loadingMsg.style.display = "none";
+            
+                submitBtn.disabled = false;
+            
+                submitBtn.innerText = "送出";
             }
-        
-        } catch (err) {
-          console.error(err);
-          alert("❌ 發生錯誤：" + err.message);
-      } finally {
-          // --- 無論成功或失敗，停止計時並恢復 UI ---
-          clearInterval(sendingTimer);
-          loadingMsg.style.display = "none";
-          submitBtn.disabled = false;
-          submitBtn.innerText = "送出";
-      }
     });
   
     window.addEventListener("load", initApp);
