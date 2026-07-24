@@ -166,6 +166,11 @@
       await Promise.all([
   
         liff.init({ liffId: LIFF_IDa }).then(async () => {
+
+          console.log("LIFF 初始化成功");
+
+          console.log("isInClient:", liff.isInClient());
+          console.log("isLoggedIn:", liff.isLoggedIn());
   
           if (!liff.isLoggedIn()) {
             liff.login();
@@ -173,16 +178,14 @@
           }
   
           userProfile = await liff.getProfile();
+
+          console.log("使用者:", userProfile);
         }),  
         loadListData(),  
-        loadStoreList(),
-        loadQuickData()
+        loadStoreList()
       ]);
   
-      // ============================================
-      // 等 LIFF、下拉選單、店家清單全部載入完成
-      // 再處理 quick
-      // ============================================
+      // 所有下拉選單載入完成後
       loadQuickData();
   
     } catch (err) {
@@ -249,7 +252,7 @@ function loadQuickData() {
 
   if (!quick) return;
 
-  // ✅ 標記為快速記帳
+  // ✅ 確認是快速記帳
   isQuickInput = true;
 
   console.log("收到快速記帳資料：", quick);
@@ -272,37 +275,24 @@ function loadQuickData() {
 
   if (Number(amount) < 0) {
 
-    // 選擇支出
     document.getElementById("btnPayout").click();
 
-    // 金額填入 payout
     const payoutInput = document.getElementById("payout");
-
     payoutInput.value = Math.abs(Number(amount));
 
     payoutInput.dispatchEvent(
       new Event("input", { bubbles: true })
     );
 
-    payoutInput.dispatchEvent(
-      new Event("change", { bubbles: true })
-    );
-
   } else {
 
-    // 如果正數就是收入
     document.getElementById("btnIncome").click();
 
     const incomeInput = document.getElementById("income");
-
     incomeInput.value = Number(amount);
 
     incomeInput.dispatchEvent(
       new Event("input", { bubbles: true })
-    );
-
-    incomeInput.dispatchEvent(
-      new Event("change", { bubbles: true })
     );
   }
 
@@ -313,58 +303,68 @@ function loadQuickData() {
   const storeInput = document.getElementById("store");
 
   if (storeInput) {
-    // 只設定店家，不觸發 input
     storeInput.value = store;
-  
-    // 觸發 change
+
+    // 不觸發 input
+    // 避免店家自動分類功能干擾快速輸入
     storeInput.dispatchEvent(
       new Event("change", { bubbles: true })
     );
   }
 
   // =========================
-  // 3. 付款
+  // 3. 幣別：預設台幣
   // =========================
 
-  const paymentSelect = document.getElementById("payment");
-
-  if (paymentSelect) {
-    paymentSelect.value = payment;
-    paymentSelect.dispatchEvent(
-      new Event("change", { bubbles: true })
-    );
-  }
-
-  // =========================
-  // 4. 分類
-  // =========================
-
-  const typeSelect = document.getElementById("type");
-
-  if (typeSelect) {
-    typeSelect.value = type;
-    typeSelect.dispatchEvent(
-      new Event("change", { bubbles: true })
-    );
-  }
-  
-  // =========================
-  // 幣別預設台幣
-  // =========================
-  
   const currencySelect =
     document.getElementById("currency");
 
   if (currencySelect) {
-    currencySelect.value = "1";//台幣
 
-    currencySelect.dispatchEvent(
-      new Event("change", { bubbles: true })
-    );
+    // 找名稱為「台幣」的選項
+    const option = [...currencySelect.options]
+      .find(o => o.dataset.name === "台幣");
+
+    if (option) {
+      currencySelect.value = option.value;
+    }
   }
 
-}
+  // =========================
+  // 4. 付款
+  // =========================
 
+  const paymentSelect =
+    document.getElementById("payment");
+
+  if (paymentSelect) {
+    paymentSelect.value = payment;
+  }
+
+  // =========================
+  // 5. 分類
+  // =========================
+
+  const typeSelect =
+    document.getElementById("type");
+
+  if (typeSelect) {
+    typeSelect.value = type;
+  }
+
+  // =========================
+  // 6. 快速輸入完成後自動送出
+  // =========================
+
+  setTimeout(() => {
+
+    console.log("快速記帳資料已填入，準備自動送出");
+
+    document.getElementById("expenseForm").requestSubmit();
+
+  }, 500);
+}
+  
   // --- 店家提示邏輯 ---
   getEl("store").addEventListener("input", () => {
     const val = getEl("store").value.toLowerCase();
@@ -501,17 +501,46 @@ function loadQuickData() {
             });
           }
   
-          // ✅ 5. 顯示 Alert 與發送 LINE
-          alert(msg);
-  
+          // ============================================
+          // 5. 顯示訊息
+          // ============================================
+                              
           if (liff.isInClient()) {
-            try {
-              await liff.sendMessages([{ type: "text", text: msg }]);
-            } catch (err) { console.warn("LINE 傳送失敗", err); }
+          
+              try {
+          
+                  // 1. 傳送訊息
+                  await liff.sendMessages([
+                      {
+                          type: "text",
+                          text: msg
+                      }
+                  ]);
+          
+                  console.log("LINE 訊息傳送成功");
+          
+                  // 2. 顯示完成訊息
+                  alert(msg);
+          
+                  // 3. 關閉 LIFF
+                  liff.closeWindow();
+          
+              } catch (err) {
+          
+                  console.error("LINE 訊息傳送失敗", err);
+          
+                  alert(
+                      "❌ LINE 訊息傳送失敗\n\n" +
+                      err.message
+                  );
+              }
+          
+          } else {
+          
+              alert(msg);
+          
+              window.location.href = "quick.html";
           }
-  
-          getEl("expenseForm").reset();
-          getEl("date").valueAsDate = new Date();
   
       } catch (err) {
           console.error(err);
