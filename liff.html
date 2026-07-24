@@ -156,61 +156,60 @@
 
   const getEl = (id) => document.getElementById(id);
 
-  // --- 初始化啟動 (支援 Web 瀏覽器與 LINE 內部雙模式) ---
+  // --- 初始化啟動 (修復 Web 端 Access Token Revoked 錯誤) ---
   async function initApp() {
     try {
       getEl("version").textContent = VERSION;
       getEl("date").valueAsDate = new Date();
   
-      // 1. 初始化 LIFF SDK
+      // 1. 初始化 LIFF
       await liff.init({ liffId: LIFF_IDa });
       console.log("LIFF 初始化成功");
   
-      // 2. 判斷環境與登入狀態
+      // 2. 判斷環境與取得 Profile (加入 Token 驗證保護)
       if (liff.isInClient()) {
-        // 📱 在 LINE APP 內部：必須登入
+        // 📱 LINE App 內
         if (!liff.isLoggedIn()) {
           liff.login();
           return;
         }
         userProfile = await liff.getProfile();
-        console.log("LINE 使用者:", userProfile);
       } else {
-        // 🌐 在一般外部 Web 瀏覽器：
+        // 🌐 外部 Web 瀏覽器
         if (liff.isLoggedIn()) {
           try {
+            // 嘗試取得 Profile，若 Token 已被撤銷/過期會在這裡拋出 Error
             userProfile = await liff.getProfile();
-          } catch (e) {
-            console.warn("無法取得 Web 使用者 Profile", e);
+          } catch (profileErr) {
+            console.warn("LIFF Token 已失效/撤銷，自動登出並轉為訪客模式：", profileErr);
+            liff.logout(); // 清除無效的 Token
+            userProfile = { userId: "Web_Guest", displayName: "Web用戶" };
           }
         } else {
-          console.log("Web 模式：未登入 LINE，以訪客身份載入頁面");
-          // 給予預設備用 Profile，避免後續送出表單時存取 userProfile 爆錯
-          userProfile = {
-            userId: "Web_Guest",
-            displayName: "Web用戶"
-          };
+          userProfile = { userId: "Web_Guest", displayName: "Web用戶" };
         }
       }
   
-      // 3. 確定登入/訪客身份後，平行載入下拉選單與店家資料
+      console.log("目前使用者 Profile:", userProfile);
+  
+      // 3. 平行載入選單與店家資料
       await Promise.all([
         loadListData(),
         loadStoreList()
       ]);
   
-      // 4. 所有選單 DOM 都渲染完成後，帶入 quick 參數
+      // 4. 帶入 quick 快速記帳資料
       loadQuickData();
   
     } catch (err) {
-      console.error("初始化失敗：", err);
-      // 即使 LIFF 初始化失敗，依然嘗試載入 Web 介面與資料
+      console.error("初始化過程發生錯誤：", err);
+      // 🛡️ 容錯保險機制：即便 LIFF 徹底出錯，也不要卡死 Web 頁面
+      userProfile = { userId: "Web_Guest", displayName: "Web用戶" };
       try {
-        userProfile = { userId: "Web_Guest", displayName: "Web用戶" };
         await Promise.all([loadListData(), loadStoreList()]);
         loadQuickData();
       } catch (e) {
-        console.error("備用載入失敗：", e);
+        console.error("載入選單失敗：", e);
       }
     }
   }
