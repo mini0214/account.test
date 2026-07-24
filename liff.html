@@ -153,6 +153,7 @@
 
   // ✅ 記錄是否為快速記帳
   let isQuickInput = false;
+  let isAutoSubmitting = false;
 
   const getEl = (id) => document.getElementById(id);
 
@@ -163,35 +164,43 @@
       getEl("version").textContent = VERSION;
       getEl("date").valueAsDate = new Date();
   
+      await liff.init({
+        liffId: LIFF_IDa
+      });
+  
+      console.log("LIFF 初始化成功");
+      console.log("isInClient:", liff.isInClient());
+      console.log("isLoggedIn:", liff.isLoggedIn());
+  
+      if (!liff.isLoggedIn()) {
+  
+        liff.login();
+        return;
+      }
+  
+      // 取得使用者資料
+      userProfile = await liff.getProfile();
+  
+      console.log("使用者:", userProfile);
+  
+      // ============================================
+      // 載入其他資料
+      // ============================================
       await Promise.all([
-  
-        liff.init({ liffId: LIFF_IDa }).then(async () => {
-
-          console.log("LIFF 初始化成功");
-
-          console.log("isInClient:", liff.isInClient());
-          console.log("isLoggedIn:", liff.isLoggedIn());
-  
-          if (!liff.isLoggedIn()) {
-            liff.login();
-            return;
-          }
-  
-          userProfile = await liff.getProfile();
-
-          console.log("使用者:", userProfile);
-        }),  
-        loadListData(),  
+        loadListData(),
         loadStoreList()
       ]);
   
-      // 所有下拉選單載入完成後
+      // ============================================
+      // 所有資料完成後才執行快速記帳
+      // ============================================
       loadQuickData();
   
     } catch (err) {
   
       console.error("初始化失敗：", err);
   
+      alert("❌ 初始化失敗：" + err.message);
     }
   }
 
@@ -358,10 +367,15 @@ function loadQuickData() {
 
   setTimeout(() => {
 
+    // 防止重複送出
+    if (isAutoSubmitting) return;
+  
+    isAutoSubmitting = true;
+  
     console.log("快速記帳資料已填入，準備自動送出");
-
+  
     document.getElementById("expenseForm").requestSubmit();
-
+  
   }, 800);
 }
   
@@ -506,43 +520,55 @@ function loadQuickData() {
           // ============================================
                               
           if (liff.isInClient()) {
-          
-              try {
-          
-                  // 1. 傳送訊息
-                  await liff.sendMessages([
-                      {
-                          type: "text",
-                          text: msg
-                      }
-                  ]);
-          
-                  console.log("LINE 訊息傳送成功");
-          
-                  // 2. 顯示完成訊息
-                  alert(msg);
-          
-                  // 3. 關閉 LIFF
-                  liff.closeWindow();
-          
-              } catch (err) {
-          
-                  console.error("LINE 訊息傳送失敗", err);
-          
-                  alert(
-                      "❌ LINE 訊息傳送失敗\n\n" +
-                      err.message
-                  );
-              }
-          
-          } else {
-          
-              alert(msg);
-          
-              window.location.href = "quick.html";
-          }
-  
-      } catch (err) {
+            try {
+        
+                // ============================================
+                // 確認是否已取得 chat_message.write 權限
+                // ============================================
+                const permission = await liff.permission.query(
+                    "chat_message.write"
+                );
+        
+                console.log("LINE 訊息權限：", permission);
+        
+                // 如果尚未授權
+                if (permission.state !== "granted") {
+        
+                    alert(
+                        "⚠️ LINE 尚未授權訊息發送權限\n\n" +
+                        "請先授權後，再重新執行快速記帳。"
+                    );
+        
+                    return;
+                }
+        
+                // ============================================
+                // 發送 LINE 訊息
+                // ============================================
+                await liff.sendMessages([
+                    {
+                        type: "text",
+                        text: msg
+                    }
+                ]);
+        
+                console.log("LINE 訊息傳送成功");
+        
+                alert(msg);
+        
+                liff.closeWindow();
+        
+            } catch (err) {
+        
+                console.error("LINE 訊息傳送失敗", err);
+        
+                alert(
+                    "❌ LINE 訊息傳送失敗\n\n" +
+                    err.message
+                );
+            }
+        
+        } catch (err) {
           console.error(err);
           alert("❌ 發生錯誤：" + err.message);
       } finally {
