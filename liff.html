@@ -469,40 +469,54 @@
             });
           }
   
-          // ============================================
-          // 5. 顯示訊息 (優化權限判斷與補授權機制)
+// ============================================
+          // 5. 顯示訊息與結束邏輯 (區分 LINE/WEB 與 快速/手動)
           // ============================================
           if (liff.isInClient()) {
+            // 📱 在 LINE App 內部環境
             try {
-              // 1. 檢查是否有 chat_message.write 權限
               const permission = await liff.permission.query("chat_message.write");
-          
+              
               if (permission.state === "none") {
-                // 若尚未授權，跳出提示要求使用者補授權
                 alert("⚠️ 需要同意「傳送訊息」權限才能自動發送記帳結果至聊天室。");
                 liff.permission.requestAll();
                 return;
               }
-          
+              
               if (permission.state === "granted") {
-                // 2. 已授權，正常發送訊息
                 await liff.sendMessages([{ type: "text", text: msg }]);
                 console.log("LINE 訊息傳送成功");
-                liff.closeWindow();
               } else {
-                // 3. 被拒絕授權 (denied)，顯示 Alert 後關閉
                 alert("⚠️ 記帳成功！（非速不可發送訊息，結果僅顯示於此）：\n\n" + msg);
-                liff.closeWindow();
               }
             } catch (err) {
               console.error("LINE 訊息傳送失敗", err);
-              // 即使 sendMessages 失敗，資料庫已寫入，不應視為完全失敗
               alert("⚠️ 記帳已成功儲存，但發送 LINE 訊息失敗：\n" + err.message + "\n\n【記帳明細】\n" + msg);
+            }
+
+            // 🎯 LINE 內部的跳轉/關閉判斷
+            if (isQuickInput) {
+              // 快速帶入：跳轉至 quick.html
+              window.location.href = "quick.html";
+            } else {
+              // 手動輸入：關閉 LIFF 視窗回到 LINE 聊天室
               liff.closeWindow();
             }
+
           } else {
+            // 🌐 在外部 Web 瀏覽器環境
             alert(msg);
-            window.location.href = "quick.html";
+
+            // 🎯 Web 內部的跳轉/留存判斷
+            if (isQuickInput) {
+              // 快速帶入：跳轉至 quick.html
+              window.location.href = "quick.html";
+            } else {
+              // 手動輸入：重置表單，留在原本 liff.html 頁面
+              getEl("expenseForm").reset();
+              getEl("date").valueAsDate = new Date();
+              btnPayout.click(); // 恢復預設為支出狀態
+            }
           }
   
       } catch (err) {
