@@ -156,54 +156,57 @@
 
   const getEl = (id) => document.getElementById(id);
 
-  // --- 初始化啟動 (修復 Web 端 Access Token Revoked 錯誤) ---
+// --- 初始化啟動 (修復 Web 端未能正常觸發 LINE 登入問題) ---
   async function initApp() {
     try {
       getEl("version").textContent = VERSION;
       getEl("date").valueAsDate = new Date();
-  
+
       // 1. 初始化 LIFF
       await liff.init({ liffId: LIFF_IDa });
       console.log("LIFF 初始化成功");
-  
-      // 2. 判斷環境與取得 Profile (加入 Token 驗證保護)
+
+      // 2. 判斷環境與取得 Profile
       if (liff.isInClient()) {
-        // 📱 LINE App 內
+        // 📱 LINE App 內部環境
         if (!liff.isLoggedIn()) {
           liff.login();
           return;
         }
         userProfile = await liff.getProfile();
       } else {
-        // 🌐 外部 Web 瀏覽器
-        if (liff.isLoggedIn()) {
-          try {
-            // 嘗試取得 Profile，若 Token 已被撤銷/過期會在這裡拋出 Error
-            userProfile = await liff.getProfile();
-          } catch (profileErr) {
-            console.warn("LIFF Token 已失效/撤銷，自動登出並轉為訪客模式：", profileErr);
-            liff.logout(); // 清除無效的 Token
-            userProfile = { userId: "Web_Guest", displayName: "Web用戶" };
-          }
-        } else {
-          userProfile = { userId: "Web_Guest", displayName: "Web用戶" };
+        // 🌐 外部 Web 瀏覽器環境
+        if (!liff.isLoggedIn()) {
+          // 💡 關鍵修正：外部網頁未登入時，自動引導跳轉至 LINE 登入頁面
+          liff.login();
+          return;
+        }
+
+        try {
+          // 已登入，嘗試取得 LINE 個人資料
+          userProfile = await liff.getProfile();
+        } catch (profileErr) {
+          console.warn("LIFF Token 已失效/撤銷，嘗試重新登入：", profileErr);
+          liff.logout();
+          liff.login(); // Token 無效時強制重新登入
+          return;
         }
       }
-  
+
       console.log("目前使用者 Profile:", userProfile);
-  
+
       // 3. 平行載入選單與店家資料
       await Promise.all([
         loadListData(),
         loadStoreList()
       ]);
-  
+
       // 4. 帶入 quick 快速記帳資料
       loadQuickData();
-  
+
     } catch (err) {
       console.error("初始化過程發生錯誤：", err);
-      // 🛡️ 容錯保險機制：即便 LIFF 徹底出錯，也不要卡死 Web 頁面
+      // 🛡️ 容錯保險機制：即便 LIFF 徹底出錯，才使用訪客模式，避免頁面卡死
       userProfile = { userId: "Web_Guest", displayName: "Web用戶" };
       try {
         await Promise.all([loadListData(), loadStoreList()]);
