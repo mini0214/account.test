@@ -469,7 +469,7 @@
             });
           }
   
-// ============================================
+          // ============================================
           // 5. 顯示訊息與結束邏輯 (區分 LINE/WEB 與 快速/手動)
           // ============================================
           if (liff.isInClient()) {
@@ -486,33 +486,35 @@
               if (permission.state === "granted") {
                 await liff.sendMessages([{ type: "text", text: msg }]);
                 console.log("LINE 訊息傳送成功");
-              } else {
-                alert("⚠️ 記帳成功！（非速不可發送訊息，結果僅顯示於此）：\n\n" + msg);
               }
             } catch (err) {
               console.error("LINE 訊息傳送失敗", err);
-              alert("⚠️ 記帳已成功儲存，但發送 LINE 訊息失敗：\n" + err.message + "\n\n【記帳明細】\n" + msg);
             }
 
-            // 🎯 LINE 內部的跳轉/關閉判斷
+            // 📢 關鍵：不論發送訊息成功與否，皆跳出 Alert 彈窗讓使用者確認
+            alert(msg);
+
+            // 🎯 按下「確定」後的跳轉/留存判斷
             if (isQuickInput) {
-              // 快速帶入：跳轉至 quick.html
+              // ⚡ 快速帶入：跳轉至 quick.html
               window.location.href = "quick.html";
             } else {
-              // 手動輸入：關閉 LIFF 視窗回到 LINE 聊天室
-              liff.closeWindow();
+              // ✍️ 手動輸入：留在原頁面 (liff.html)，並重置表單供下次輸入
+              getEl("expenseForm").reset();
+              getEl("date").valueAsDate = new Date();
+              btnPayout.click(); // 恢復預設為支出狀態
             }
 
           } else {
             // 🌐 在外部 Web 瀏覽器環境
             alert(msg);
 
-            // 🎯 Web 內部的跳轉/留存判斷
+            // 🎯 按下「確定」後的跳轉/留存判斷
             if (isQuickInput) {
-              // 快速帶入：跳轉至 quick.html
+              // ⚡ 快速帶入：跳轉至 quick.html
               window.location.href = "quick.html";
             } else {
-              // 手動輸入：重置表單，留在原本 liff.html 頁面
+              // ✍️ 手動輸入：留在原本 liff.html 頁面，並重置表單
               getEl("expenseForm").reset();
               getEl("date").valueAsDate = new Date();
               btnPayout.click(); // 恢復預設為支出狀態
