@@ -156,35 +156,62 @@
 
   const getEl = (id) => document.getElementById(id);
 
-  // --- 初始化啟動 (修復 Quick 資料填入順序) ---
+  // --- 初始化啟動 (支援 Web 瀏覽器與 LINE 內部雙模式) ---
   async function initApp() {
     try {
       getEl("version").textContent = VERSION;
       getEl("date").valueAsDate = new Date();
   
-      // 1. 先執行 LIFF 初始化與登入驗證
+      // 1. 初始化 LIFF SDK
       await liff.init({ liffId: LIFF_IDa });
       console.log("LIFF 初始化成功");
   
-      if (!liff.isLoggedIn()) {
-        liff.login();
-        return; // 未登入時直接停住，等待導頁
+      // 2. 判斷環境與登入狀態
+      if (liff.isInClient()) {
+        // 📱 在 LINE APP 內部：必須登入
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
+        userProfile = await liff.getProfile();
+        console.log("LINE 使用者:", userProfile);
+      } else {
+        // 🌐 在一般外部 Web 瀏覽器：
+        if (liff.isLoggedIn()) {
+          try {
+            userProfile = await liff.getProfile();
+          } catch (e) {
+            console.warn("無法取得 Web 使用者 Profile", e);
+          }
+        } else {
+          console.log("Web 模式：未登入 LINE，以訪客身份載入頁面");
+          // 給予預設備用 Profile，避免後續送出表單時存取 userProfile 爆錯
+          userProfile = {
+            userId: "Web_Guest",
+            displayName: "Web用戶"
+          };
+        }
       }
   
-      userProfile = await liff.getProfile();
-      console.log("使用者:", userProfile);
-  
-      // 2. 確定登入後，平行載入下拉選單與店家資料
+      // 3. 確定登入/訪客身份後，平行載入下拉選單與店家資料
       await Promise.all([
         loadListData(),
         loadStoreList()
       ]);
   
-      // 3. 所有選單 DOM 都渲染完成後，才帶入 quick 參數
+      // 4. 所有選單 DOM 都渲染完成後，帶入 quick 參數
       loadQuickData();
   
     } catch (err) {
       console.error("初始化失敗：", err);
+      // 即使 LIFF 初始化失敗，依然嘗試載入 Web 介面與資料
+      try {
+        userProfile = { userId: "Web_Guest", displayName: "Web用戶" };
+        await Promise.all([loadListData(), loadStoreList()]);
+        loadQuickData();
+      } catch (e) {
+        console.error("備用載入失敗：", e);
+      }
     }
   }
   
